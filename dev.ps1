@@ -3,15 +3,10 @@
 
 Write-Host "🚀 Iniciando PitayaCore AI en modo local..." -ForegroundColor Cyan
 
-# Determinar directorio base de manera dinámica y agnóstica
+# Determinar directorio base
 $BaseDir = $PSScriptRoot
 if (-not $BaseDir) {
     $BaseDir = Get-Location
-}
-if (-not (Test-Path "$BaseDir\api")) {
-    if (Test-Path "$BaseDir\pitayacore\api") {
-        $BaseDir = "$BaseDir\pitayacore"
-    }
 }
 
 # Asegurar que estamos en el directorio base correcto
