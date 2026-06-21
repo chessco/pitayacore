@@ -12,7 +12,7 @@ import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
-    origin: ['https://acuacore.pitayacode.io', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ['https://pitayacore.pitayacode.io', 'http://localhost:3000', 'http://localhost:5173'],
     credentials: true,
   },
 })

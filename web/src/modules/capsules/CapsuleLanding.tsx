@@ -36,7 +36,7 @@ export const CapsuleLanding: React.FC = () => {
           ? `${apiUrl}/api/capsule-studio/capsules/slug/${slug}`
           : `${apiUrl}/api/capsules/${slug}`;
 
-        const role = localStorage.getItem('acuacore_role') || 'tenant';
+        const role = localStorage.getItem('pitayacore_role') || 'tenant';
         const res = await axios.get(endpoint, {
           headers: {
             'x-tenant-id': selectedTenant?.id || '',
@@ -64,7 +64,7 @@ export const CapsuleLanding: React.FC = () => {
   if (loading) return <div className="h-screen flex items-center justify-center text-slate-400 font-medium">Sincronizando experiencia...</div>;
   if (!capsule) return <div className="h-screen flex items-center justify-center text-red-500 font-bold underline">Cápsula no disponible en este momento.</div>;
 
-  const heroImage = resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "https://acuacore.io/default-share.png";
+  const heroImage = resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "https://pitayacore.io/default-share.png";
 
   return (
     <div className="min-h-screen bg-white font-['Inter'] selection:bg-blue-100 text-slate-900 scroll-smooth">

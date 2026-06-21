@@ -72,7 +72,7 @@ export const CampaignManager: React.FC = () => {
       setLoading(true);
       setHasError(false);
       const token = localStorage.getItem('token');
-      const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+      const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
 
       let apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -118,7 +118,7 @@ export const CampaignManager: React.FC = () => {
     if (activeTab === 'campaigns' && selectedTenant) {
       const fetchAudiences = async () => {
         const token = localStorage.getItem('token');
-        const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+        const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
         let apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') apiUrl = `http://${window.location.hostname}:3014`;
         
@@ -802,7 +802,7 @@ export const CampaignManager: React.FC = () => {
                         <MessageCircle size={14} className="text-white" />
                       </div>
                       <div>
-                        <p className="text-white text-xs font-bold">{selectedWaCampaign.capsule?.title || 'AcuaCore'}</p>
+                        <p className="text-white text-xs font-bold">{selectedWaCampaign.capsule?.title || 'PitayaCore'}</p>
                         <p className="text-green-200 text-[9px]">En línea</p>
                       </div>
                     </div>
@@ -1241,7 +1241,7 @@ export const CampaignManager: React.FC = () => {
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asunto del Email</label>
                       <input 
-                        type="text" required placeholder="Ej: Optimiza tu FCA con AcuaCore"
+                        type="text" required placeholder="Ej: Optimiza tu FCA con PitayaCore"
                         value={campaignData.subject} onChange={e => setCampaignData({...campaignData, subject: e.target.value})}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10"
                       />

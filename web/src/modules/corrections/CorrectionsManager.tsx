@@ -56,7 +56,7 @@ export function CorrectionsManager() {
   
   const handleExportMD = () => {
     let md = '# Correcciones Humanas (Golden Answers)\n\n'
-    md += `Inquilino: ${selectedTenant?.name || 'AcuaCore'}\n`
+    md += `Inquilino: ${selectedTenant?.name || 'PitayaCore'}\n`
     md += `Fecha: ${new Date().toLocaleDateString()}\n\n---\n\n`
     
     corrections.forEach(c => {

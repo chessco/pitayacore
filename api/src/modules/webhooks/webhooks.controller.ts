@@ -22,8 +22,8 @@ export class WebhooksController {
 
     // tenantId is handled by middleware, so we don't need to pass it explicitly to service
     // but we can log it
-    console.log(`[Acuacore Webhook] Received message for tenant ${tenantId} from ${payload.userId}. Content: ${payload.content}`);
-    console.log(`[Acuacore Webhook] Skills active:`, payload.skills);
+    console.log(`[Pitayacore Webhook] Received message for tenant ${tenantId} from ${payload.userId}. Content: ${payload.content}`);
+    console.log(`[Pitayacore Webhook] Skills active:`, payload.skills);
     
     return this.conversationsService.handleIncomingMessage(
       payload.userId,

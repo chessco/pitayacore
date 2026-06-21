@@ -94,7 +94,7 @@ export const CapsuleStudioLayout: React.FC = () => {
         <div className="p-4 border-t border-slate-50">
           <Link to="/app" className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all">
             <ArrowLeft size={20} />
-            Volver a Acuacore
+            Volver a Pitayacore
           </Link>
         </div>
       </aside>

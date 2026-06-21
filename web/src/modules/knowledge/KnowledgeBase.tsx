@@ -214,7 +214,7 @@ export function KnowledgeBase() {
     <div className="p-8 bg-surface min-h-[calc(100vh-80px)] overflow-y-auto">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-        <span>Acuacore AI</span>
+        <span>Pitayacore AI</span>
         <ChevronRight size={10} />
         <span className="text-brand-blue">Base de Conocimientos</span>
       </div>

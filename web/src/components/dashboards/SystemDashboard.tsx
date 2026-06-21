@@ -175,7 +175,7 @@ export function SystemDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight font-display text-brand-deep">
-                {selectedTenant?.brandingConfig?.brandName || 'AcuaCore AI'}
+                {selectedTenant?.brandingConfig?.brandName || 'PitayaCore AI'}
               </h1>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sistema</p>
             </div>

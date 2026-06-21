@@ -49,7 +49,7 @@ export const LeadManager: React.FC<LeadManagerProps> = ({ setActiveTab }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
       const token = localStorage.getItem('token');
-      const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+      const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
       const tenantId = localStorage.getItem('tenantId') || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
 
       const response = await axios.post(`${apiUrl}/api/capsule-studio/leads/${lead.id}/sync`, {}, {
@@ -101,7 +101,7 @@ export const LeadManager: React.FC<LeadManagerProps> = ({ setActiveTab }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
       const token = localStorage.getItem('token');
-      const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+      const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
       const tenantId = localStorage.getItem('tenantId') || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
 
       const response = await axios.get(`${apiUrl}/api/capsule-studio/leads`, {
@@ -153,7 +153,7 @@ export const LeadManager: React.FC<LeadManagerProps> = ({ setActiveTab }) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `leads_acuacore_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `leads_pitayacore_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

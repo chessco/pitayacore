@@ -19,7 +19,7 @@ export class PredictiveService {
     this.logger.log(`Generating predictive insight for tenant ${tenantId}`);
 
     const prompt = `
-      SISTEMA: Hub Predictivo AcuaCore AI.
+      SISTEMA: Hub Predictivo PitayaCore AI.
       CONTEXTO: Análisis de parámetros en cultivo de camarón.
       DATOS ACTUALES: ${JSON.stringify(data)}
       
@@ -79,7 +79,7 @@ export class PredictiveService {
     }
 
     const prompt = `
-      SISTEMA: Analista de Conversaciones AcuaCore AI.
+      SISTEMA: Analista de Conversaciones PitayaCore AI.
       CONVERSACIÓN RECIENTE:
       ${context}
       

@@ -61,7 +61,7 @@ export class IdeasService {
 
   async generateWithAI(tenantId: string, prompt: string) {
     const systemPrompt = `
-Eres el Asistente Creativo de AcuaCore AI.
+Eres el Asistente Creativo de PitayaCore AI.
 Tu objetivo es generar ideas de proyectos, funcionalidades, aplicaciones o iniciativas de negocio basadas en el siguiente tema proporcionado por el usuario: "${prompt || 'Ideas innovadoras al azar'}".
 
 INSTRUCCIONES IMPORTANTES:

@@ -61,7 +61,7 @@ export function Overview({ setActiveSubTab }: OverviewProps) {
         <div className="relative z-10 max-w-xl">
           <h1 className="text-3xl font-black mb-2 tracking-tight">Bienvenido a tu Workspace</h1>
           <p className="opacity-90 leading-relaxed text-sm md:text-base">
-            Tu centro de conocimiento inteligente. Todo lo que registres, cargues y estructures en tu espacio de trabajo es procesado por la IA de AcuaCore para brindarte análisis profundos y respuestas contextualizadas.
+            Tu centro de conocimiento inteligente. Todo lo que registres, cargues y estructures en tu espacio de trabajo es procesado por la IA de PitayaCore para brindarte análisis profundos y respuestas contextualizadas.
           </p>
         </div>
         <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">

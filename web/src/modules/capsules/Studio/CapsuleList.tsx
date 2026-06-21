@@ -28,7 +28,7 @@ export const CapsuleList: React.FC = () => {
   const fetchData = async () => {
     if (!selectedTenant) return;
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+    const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
 
     console.log('STUDIO FETCH:', { tenantId: selectedTenant.id, role });
 
@@ -74,7 +74,7 @@ export const CapsuleList: React.FC = () => {
     setCreating(true);
     try {
       const token = localStorage.getItem('token');
-      const role = localStorage.getItem('acuacore_role') || 'ADMIN';
+      const role = localStorage.getItem('pitayacore_role') || 'ADMIN';
 
       const res = await axios.post(apiUrl + '/api/capsule-studio/capsules', {
         title: newTitle,
@@ -82,7 +82,7 @@ export const CapsuleList: React.FC = () => {
         slug: newTitle.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7),
         agentId: agents[0].id, // Usamos el primer agente disponible
         contentBlocks: [],
-        promptConfig: { agentName: newTitle, agentGreeting: '¡Hola! Soy un experto de AcuaCore.', extraInstructions: '' },
+        promptConfig: { agentName: newTitle, agentGreeting: '¡Hola! Soy un experto de PitayaCore.', extraInstructions: '' },
         ctaConfig: { text: 'Contactar Experto', link: '#' }
       }, {
         headers: {

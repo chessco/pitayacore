@@ -542,15 +542,15 @@ export class CapsulesService {
         include: { agent: true, tenant: true },
       });
 
-      if (!capsule) return '<html><title>AcuaCore</title></html>';
+      if (!capsule) return '<html><title>PitayaCore</title></html>';
 
       // Extraer datos para OG
-      const title = capsule.title || 'AcuaCore - Cápsula Interactiva';
+      const title = capsule.title || 'PitayaCore - Cápsula Interactiva';
       const description = capsule.description || 'Descubre esta nueva experiencia interactiva impulsada por IA.';
-      const url = `https://acuacore.pitayacode.io/capsules/${slug}`;
+      const url = `https://pitayacore.pitayacode.io/capsules/${slug}`;
       
       // Buscar imagen (Hero o Logo del Tenant)
-      let imageUrl = 'https://acuacore.pitayacode.io/logo192.png';
+      let imageUrl = 'https://pitayacore.pitayacode.io/logo192.png';
       if (capsule.contentBlocks) {
         const blocks = capsule.contentBlocks as any[];
         const heroBlock = blocks.find(b => b.type === 'hero');
@@ -591,7 +591,7 @@ export class CapsulesService {
 </body>
 </html>`;
     } catch (error) {
-      return '<html><title>AcuaCore</title></html>';
+      return '<html><title>PitayaCore</title></html>';
     }
   }
 }

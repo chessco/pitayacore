@@ -20,7 +20,7 @@ export class AIService {
     });
 
     const basePrompt = agent?.prompt || 
-      'Eres el Asistente de Workspace de AcuaCore AI. Tu función es analizar notas, documentos e ideas del Workspace para responder preguntas, resumir información y extraer conocimiento clave de forma proactiva. Responde siempre en español y mantén un tono profesional.';
+      'Eres el Asistente de Workspace de PitayaCore AI. Tu función es analizar notas, documentos e ideas del Workspace para responder preguntas, resumir información y extraer conocimiento clave de forma proactiva. Responde siempre en español y mantén un tono profesional.';
 
     // 2. Fetch workspace items
     const [notes, documents, ideas] = await Promise.all([

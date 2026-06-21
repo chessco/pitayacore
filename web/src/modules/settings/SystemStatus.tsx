@@ -66,14 +66,14 @@ export function SystemStatus({ flowApiKey }: SystemStatusProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {/* AcuaCore Card */}
+        {/* PitayaCore Card */}
         <div className="dashboard-card p-5 bg-white border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-brand-blue">
                 <Activity size={16} />
               </div>
-              <span className="text-xs font-bold text-slate-700">AcuaCore API</span>
+              <span className="text-xs font-bold text-slate-700">PitayaCore API</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">Online</span>
           </div>
@@ -88,9 +88,9 @@ export function SystemStatus({ flowApiKey }: SystemStatusProps) {
               <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Túnel Público (ngrok)</p>
               <div className="flex items-center justify-between bg-indigo-50/50 p-2 rounded-lg border border-indigo-100/50">
                 <code className="text-[10px] text-indigo-600 font-mono truncate mr-2">
-                  {status?.acuacoreApiUrl || 'Detectando...'}
+                  {status?.pitayacoreApiUrl || 'Detectando...'}
                 </code>
-                <a href={status?.acuacoreApiUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-600">
+                <a href={status?.pitayacoreApiUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-600">
                   <ExternalLink size={12} />
                 </a>
               </div>

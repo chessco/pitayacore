@@ -156,8 +156,8 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
     })
       .then(res => res.json())
       .then(data => {
-        const role = localStorage.getItem('acuacore_role');
-        const userEmail = localStorage.getItem('acuacore_user_email');
+        const role = localStorage.getItem('pitayacore_role');
+        const userEmail = localStorage.getItem('pitayacore_user_email');
 
         let filtered = data.map((c: any) => {
           const rawId = c.userId || c.externalId || 'Anónimo';
@@ -431,7 +431,7 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
         <div className="p-4 sm:p-6">
           <div className="mb-1 flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-brand-blue rounded-full" />
-            <span className="text-[9px] font-black text-brand-blue uppercase tracking-[0.2em]">{selectedTenant?.brandingConfig?.brandName || selectedTenant?.name || 'AcuaCore AI'}</span>
+            <span className="text-[9px] font-black text-brand-blue uppercase tracking-[0.2em]">{selectedTenant?.brandingConfig?.brandName || selectedTenant?.name || 'PitayaCore AI'}</span>
           </div>
           <div className="flex justify-between items-center mb-4 sm:mb-6">
             <h2 className="text-lg sm:text-xl font-black text-slate-800">Bandeja</h2>

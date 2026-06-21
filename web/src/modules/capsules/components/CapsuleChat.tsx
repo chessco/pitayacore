@@ -106,7 +106,7 @@ export const CapsuleChat: React.FC<CapsuleChatProps> = ({
           ? `${apiUrl}/api/capsule-studio/capsules/slug/${slug}`
           : `${apiUrl}/api/capsules/${slug}`;
 
-        const role = localStorage.getItem('acuacore_role') || 'tenant';
+        const role = localStorage.getItem('pitayacore_role') || 'tenant';
         const res = await axios.get(endpoint, {
           headers: isPreview ? {
             'x-tenant-id': selectedTenant?.id || '',
@@ -177,7 +177,7 @@ export const CapsuleChat: React.FC<CapsuleChatProps> = ({
         ? `${apiUrl}/api/capsule-studio/capsules/slug/${slug}/chat`
         : `${apiUrl}/api/capsules/${slug}/chat`;
 
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       const res = await axios.post(endpoint, {
         message: userMsg,
         userId: userId,

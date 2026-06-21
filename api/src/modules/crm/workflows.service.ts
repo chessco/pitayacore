@@ -36,7 +36,7 @@ export class WorkflowsService {
         return;
       }
 
-      const message = `¡Hola ${lead.name}! 👋 Gracias por interesarte en "${lead.capsule.title}". Soy el asistente de IA de AcuaCore. ¿En qué puedo ayudarte hoy?`;
+      const message = `¡Hola ${lead.name}! 👋 Gracias por interesarte en "${lead.capsule.title}". Soy el asistente de IA de PitayaCore. ¿En qué puedo ayudarte hoy?`;
 
       this.logger.log(`[Workflow] Sending welcome message to ${lead.phone} (Tenant: ${tenantId})`);
 

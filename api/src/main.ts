@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // CORS dinámico para producción
   app.enableCors({
-    origin: [/^https?:\/\/localhost:\d+$/, 'https://acuacore.pitayacode.io'],
+    origin: [/^https?:\/\/localhost:\d+$/, 'https://pitayacore.pitayacode.io'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     exposedHeaders: ['set-cookie'],

@@ -38,7 +38,7 @@ function AppContent() {
   }, [selectedTenant, tenantLanguages, i18n]);
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('acuacore_auth') === 'true';
+    return localStorage.getItem('pitayacore_auth') === 'true';
   });
   
   const handleLogin = (user: any) => {
@@ -62,8 +62,8 @@ function AppContent() {
     setIsAuthenticated(true);
     setRole(userRole);
     setPermissions(user.permissions);
-    localStorage.setItem('acuacore_auth', 'true');
-    localStorage.setItem('acuacore_user_email', user.email);
+    localStorage.setItem('pitayacore_auth', 'true');
+    localStorage.setItem('pitayacore_user_email', user.email);
   };
 
 

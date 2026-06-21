@@ -72,7 +72,7 @@ export function Storefront() {
   // SEO & Meta Tags Update
   useEffect(() => {
     if (!loading && products.length > 0) {
-      const storeName = slug?.toUpperCase() || 'AcuaCore'
+      const storeName = slug?.toUpperCase() || 'PitayaCore'
       const activeProduct = selectedProduct || 
         (new URLSearchParams(window.location.search).get('addToCart') 
           ? products.find(p => p.id === new URLSearchParams(window.location.search).get('addToCart')) 
@@ -106,7 +106,7 @@ export function Storefront() {
         { property: 'og:image', content: image },
         { property: 'og:type', content: activeProduct ? 'product' : 'website' },
         { property: 'og:url', content: window.location.href },
-        { property: 'og:site_name', content: 'AcuaCore' }
+        { property: 'og:site_name', content: 'PitayaCore' }
       ]
 
       // Add Meta Product-Specific Tags for Catalog Sync
@@ -150,7 +150,7 @@ export function Storefront() {
         "@context": "https://schema.org/",
         "@type": "Store",
         "name": storeName,
-        "description": `Tienda oficial de ${storeName} en AcuaCore.`,
+        "description": `Tienda oficial de ${storeName} en PitayaCore.`,
         "url": window.location.href,
         "itemListElement": products.slice(0, 10).map((p, i) => ({
           "@type": "ListItem",
@@ -359,7 +359,7 @@ export function Storefront() {
           </motion.div>
           <div className="flex flex-col">
             <span className="text-xl font-black text-slate-800 tracking-tight font-outfit uppercase leading-none">Tienda <span className="text-emerald-500 italic">{slug}</span></span>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">AcuaCore Commerce</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">PitayaCore Commerce</span>
           </div>
         </div>
 
@@ -825,7 +825,7 @@ export function Storefront() {
                       <div className="flex justify-between items-end">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Titular</p>
-                          <p className="text-sm font-bold truncate max-w-[150px]">{shippingData.name || 'Cliente AcuaCore'}</p>
+                          <p className="text-sm font-bold truncate max-w-[150px]">{shippingData.name || 'Cliente PitayaCore'}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Envío a</p>
@@ -836,7 +836,7 @@ export function Storefront() {
 
                     <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex gap-3 items-center">
                       <ShieldCheck className="text-emerald-500" />
-                      <p className="text-[10px] font-bold text-emerald-800 leading-tight uppercase">Tu pago está protegido por el sistema de garantía de AcuaCore AI.</p>
+                      <p className="text-[10px] font-bold text-emerald-800 leading-tight uppercase">Tu pago está protegido por el sistema de garantía de PitayaCore AI.</p>
                     </div>
                   </div>
                 ) : (

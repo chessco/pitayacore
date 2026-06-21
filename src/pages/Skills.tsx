@@ -121,7 +121,7 @@ export default function Skills() {
             </div>
             <h3 className="text-2xl font-bold text-white font-display">Optimización Automática de Prompts</h3>
             <p className="text-slate-400 max-w-xl text-base font-medium leading-relaxed italic">
-              AcuaCore AI utiliza aprendizaje federado para refinar las instrucciones de tus agentes basándose en resultados operativos reales.
+              PitayaCore AI utiliza aprendizaje federado para refinar las instrucciones de tus agentes basándose en resultados operativos reales.
             </p>
             <div className="flex gap-4 pt-4">
                <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5">Activar Auto-Tuning</button>

@@ -41,7 +41,7 @@ export const CapsuleEditor: React.FC = () => {
 
   useEffect(() => {
     const fetchKBs = async () => {
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       try {
         const res = await axios.get(apiUrl + '/api/knowledge-base', {
           headers: {
@@ -60,7 +60,7 @@ export const CapsuleEditor: React.FC = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       try {
         const res = await axios.get(apiUrl + '/api/ecommerce/products', {
           headers: {
@@ -79,7 +79,7 @@ export const CapsuleEditor: React.FC = () => {
 
   useEffect(() => {
     const fetchAgents = async () => {
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       try {
         const res = await axios.get(apiUrl + '/api/agents', {
           headers: {
@@ -98,7 +98,7 @@ export const CapsuleEditor: React.FC = () => {
 
   useEffect(() => {
     const fetchCapsule = async () => {
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       try {
         const res = await axios.get(`${apiUrl}/api/capsule-studio/capsules/${id}`, {
           headers: {
@@ -131,7 +131,7 @@ export const CapsuleEditor: React.FC = () => {
       // Sanitize data: remove relational fields that Prisma can't handle in update
       const { agent, tenant, _count, id: _id, createdAt, updatedAt, ...updatableData } = dataToSave;
       
-      const role = localStorage.getItem('acuacore_role') || 'tenant';
+      const role = localStorage.getItem('pitayacore_role') || 'tenant';
       await axios.patch(`${apiUrl}/api/capsule-studio/capsules/${id}`, updatableData, {
         headers: {
           'x-tenant-id': selectedTenant?.id || '',
@@ -484,7 +484,7 @@ export const CapsuleEditor: React.FC = () => {
                                       <button 
                                         onClick={() => {
                                           const t = (block.data.levels?.[i]?.title || "").toLowerCase();
-                                          let suggestions = ["ACUACORE PRO", "OPTIMIZACIÓN"];
+                                          let suggestions = ["PITAYACORE PRO", "OPTIMIZACIÓN"];
                                           if (t.includes('nutrición') || t.includes('funcional')) suggestions = ["INMUNIDAD", "FCR OPTIMO", "BIO-SEGURIDAD"];
                                           else if (t.includes('metabólico') || t.includes('crecimiento')) suggestions = ["CRECIMIENTO", "VITALIDAD", "MAX POTENCIAL"];
                                           else if (t.includes('salud') || t.includes('supervivencia') || t.includes('protección')) suggestions = ["RESILIENCIA", "BIORREMEDIACIÓN", "CALIDAD AGUA"];

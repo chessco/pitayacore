@@ -105,7 +105,7 @@ export function ProfitabilityReport() {
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                   <Sparkles size={20} className="text-amber-300" />
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight">Análisis Estratégico de AcuaCore AI</h3>
+                <h3 className="text-xl font-black uppercase tracking-tight">Análisis Estratégico de PitayaCore AI</h3>
               </div>
               <div className="prose prose-invert max-w-none prose-sm">
                 <ReactMarkdown>{insights}</ReactMarkdown>

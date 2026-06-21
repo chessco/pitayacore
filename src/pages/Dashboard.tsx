@@ -34,7 +34,7 @@ const data = [
 ];
 
 const activity = [
-  { id: 1, type: 'ai', user: 'IA AcuaCore', action: 'resolvió consulta técnica', tenant: 'OceanPulse', time: '14:22', detail: '"Los niveles de salinidad recomendados para la etapa 2 son..."', icon: Bot, color: 'text-blue-600 bg-blue-100' },
+  { id: 1, type: 'ai', user: 'IA PitayaCore', action: 'resolvió consulta técnica', tenant: 'OceanPulse', time: '14:22', detail: '"Los niveles de salinidad recomendados para la etapa 2 son..."', icon: Bot, color: 'text-blue-600 bg-blue-100' },
   { id: 2, type: 'human', user: 'Admin Carlos', action: 'intervino en chat', tenant: 'AquaTech', time: '13:58', icon: UserCheck, color: 'text-purple-600 bg-purple-100' },
   { id: 3, type: 'skill', user: "Habilidad 'Soporte'", action: 'actualizada', tenant: 'Sistema', time: '12:30', icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-100' },
   { id: 4, type: 'kb', user: 'Dra. Elena', action: 'creó nueva entrada en Base de Conocimiento', tenant: 'Global Bio', time: '11:15', icon: FileEdit, color: 'text-amber-600 bg-amber-100' },

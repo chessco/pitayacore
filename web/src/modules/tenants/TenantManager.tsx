@@ -66,7 +66,7 @@ export function TenantManager({ setActiveTab }: { setActiveTab: (tab: string) =>
   )
 
   const currentUserRole = (() => {
-    const role = localStorage.getItem('acuacore_role') || 
+    const role = localStorage.getItem('pitayacore_role') || 
                  localStorage.getItem('userRole') || 
                  localStorage.getItem('role') || 
                  'OWNER';

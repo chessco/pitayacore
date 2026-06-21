@@ -69,7 +69,7 @@ Este documento establece los procedimientos operativos estándar para el manejo 
 ## 2. EQUIPAMIENTO REQUERIDO
 - Kit de medición multiparamétrico.
 - Equipo de protección personal (EPP).
-- Software de registro AcuaCore.
+- Software de registro PitayaCore.
 
 ## 3. PROCEDIMIENTO PASO A PASO
 1. Verificación inicial de parámetros ambientales.

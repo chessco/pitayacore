@@ -1,5 +1,5 @@
 /**
- * Configuración Maestra de Prompts para AcuaCore AI
+ * Configuración Maestra de Prompts para PitayaCore AI
  * Aquí puedes definir y ajustar la personalidad de tus agentes especializados.
  */
 

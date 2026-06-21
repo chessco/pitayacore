@@ -30,7 +30,7 @@ export function UserManager() {
   
   // Resolve the current user role from multiple possible localStorage keys
   const getResolvedRole = () => {
-    const role = localStorage.getItem('acuacore_role') || 
+    const role = localStorage.getItem('pitayacore_role') || 
                  localStorage.getItem('userRole') || 
                  localStorage.getItem('role') || 
                  'OWNER';

@@ -12,10 +12,16 @@ import { AuthController } from './auth.controller';
         PassportModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET') || 'pitaya_secret_prod_key',
-                signOptions: { expiresIn: '1d' },
-            }),
+            useFactory: async (configService: ConfigService) => {
+                const secret = configService.get<string>('JWT_SECRET');
+                if (!secret) {
+                    throw new Error('JWT_SECRET environment variable is required');
+                }
+                return {
+                    secret,
+                    signOptions: { expiresIn: '1d' },
+                };
+            },
             inject: [ConfigService],
         }),
     ],

@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards }
 import { NotesService } from './notes.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto/notes.dto';
 
-// TODO: Import the specific auth and permissions guard for AcuaCore
+// TODO: Import the specific auth and permissions guard for PitayaCore
 
 @Controller('workspace/notes')
 export class NotesController {

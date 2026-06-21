@@ -101,7 +101,7 @@ export default function Settings() {
                        </div>
                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Primary Model</span>
                     </div>
-                    <h4 className="text-xl font-bold text-slate-900 font-display">AcuaCore Brain (v4)</h4>
+                    <h4 className="text-xl font-bold text-slate-900 font-display">PitayaCore Brain (v4)</h4>
                     <p className="text-sm text-slate-500 font-medium">Motor principal optimizado para decisiones biológicas.</p>
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">ACTIVO</span>

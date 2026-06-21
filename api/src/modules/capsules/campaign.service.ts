@@ -111,7 +111,7 @@ export class CampaignService {
     
     const primaryColor = config.primaryColor || '#001A41';
     const accentColor = config.accentColor || '#2563eb';
-    const logoUrl = config.logoUrl || 'https://acuacore.io/logo-white.png';
+    const logoUrl = config.logoUrl || 'https://pitayacore.io/logo-white.png';
     const ctaText = config.ctaText || 'Explorar Cápsula Interactiva';
     const footerText = config.footerText || '© 2026 Acuaequipos Capsulas Acuicolas. Todos los derechos reservados.';
     
@@ -529,7 +529,7 @@ export class CampaignService {
           campaignId,
           type: 'FOLLOWUP_SENT',
           email,
-          userAgent: 'AcuaCore AI Bot',
+          userAgent: 'PitayaCore AI Bot',
         },
       });
 

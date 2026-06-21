@@ -19,7 +19,7 @@ export class ApiKeyGuard implements CanActivate {
       // Mock a system user for the request if authenticated via API key
       request.user = {
         userId: 'system-api',
-        email: 'system@acuacore.ai',
+        email: 'system@pitayacore.ai',
         role: 'SYSTEM',
         tenantId: tenantId // Pass the tenant ID from header
       };

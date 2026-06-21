@@ -73,18 +73,18 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   });
 
   const [role, setRoleState] = useState<'system' | 'admin' | 'tenant' | 'operator'>(() => {
-    return (localStorage.getItem('acuacore_role') as any) || 'tenant';
+    return (localStorage.getItem('pitayacore_role') as any) || 'tenant';
   });
 
   const [permissions, setPermissionsState] = useState<{ menus: string[]; actions: string[] } | null>(() => {
-    const saved = localStorage.getItem('acuacore_permissions');
+    const saved = localStorage.getItem('pitayacore_permissions');
     return saved ? JSON.parse(saved) : null;
   });
 
   const setPermissions = (perms: { menus: string[]; actions: string[] } | null) => {
     setPermissionsState(perms);
-    if (perms) localStorage.setItem('acuacore_permissions', JSON.stringify(perms));
-    else localStorage.removeItem('acuacore_permissions');
+    if (perms) localStorage.setItem('pitayacore_permissions', JSON.stringify(perms));
+    else localStorage.removeItem('pitayacore_permissions');
   };
 
   const refreshTenants = async () => {
@@ -127,7 +127,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
   const setRole = (newRole: 'system' | 'admin' | 'tenant' | 'operator') => {
     setRoleState(newRole);
-    localStorage.setItem('acuacore_role', newRole);
+    localStorage.setItem('pitayacore_role', newRole);
   };
 
   const [tenantLanguages, setTenantLanguages] = useState<Record<string, 'es' | 'en'>>(() => {

@@ -147,7 +147,7 @@ export const CheckoutBlock: React.FC<CheckoutBlockProps> = ({ data, apiUrl, slug
               <ShieldCheck size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-[#001A41]">Checkout AcuaCore</h3>
+              <h3 className="text-lg font-black text-[#001A41]">Checkout PitayaCore</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Procesado por Stripe & SSL</p>
             </div>
           </div>

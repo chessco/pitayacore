@@ -41,7 +41,7 @@ export default function KnowledgeBase() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
           <nav className="flex items-center gap-2 text-[10px] font-black text-slate-400 mb-2 uppercase tracking-[0.2em]">
-            <span className="hover:text-primary cursor-pointer transition-colors">AcuaCore AI</span>
+            <span className="hover:text-primary cursor-pointer transition-colors">PitayaCore AI</span>
             <ChevronRight size={10} />
             <span className="text-slate-600">Base de Conocimientos</span>
           </nav>

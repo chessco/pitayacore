@@ -323,7 +323,7 @@ export class EcommerceService {
           }
 
           // QR Code (Tracking)
-          const qrData = `https://acuacore.io/store/${order.tenant.slug}/order/${order.id}`;
+          const qrData = `https://pitayacore.io/store/${order.tenant.slug}/order/${order.id}`;
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
           try {
             const qrResponse = await axios.get(qrUrl, { responseType: 'arraybuffer' });
@@ -382,8 +382,8 @@ export class EcommerceService {
           // Footer
           const footerY = 700;
           doc.moveTo(50, footerY).lineTo(550, footerY).stroke('#f1f5f9');
-          doc.fontSize(8).fillColor('#94a3b8').text('Gracias por su preferencia. Esta es una remisión electrónica generada por AcuaCore AI.', 50, footerY + 15, { align: 'center' });
-          doc.text(`${order.tenant.name} - ${order.tenant.slug}.acuacore.io`, 50, footerY + 30, { align: 'center' });
+          doc.fontSize(8).fillColor('#94a3b8').text('Gracias por su preferencia. Esta es una remisión electrónica generada por PitayaCore AI.', 50, footerY + 15, { align: 'center' });
+          doc.text(`${order.tenant.name} - ${order.tenant.slug}.pitayacore.io`, 50, footerY + 30, { align: 'center' });
 
           doc.end();
         } catch (err) {
@@ -559,7 +559,7 @@ export class EcommerceService {
     const report = await this.getProfitabilityReport(tenantId);
     const predictions = await this.getStockPredictions(tenantId);
 
-    const prompt = `Actúa como un Director Financiero (CFO) y Estratega de Ecommerce experto para la plataforma AcuaCore.
+    const prompt = `Actúa como un Director Financiero (CFO) y Estratega de Ecommerce experto para la plataforma PitayaCore.
     Analiza los siguientes datos de rendimiento de la tienda y proporciona 3 a 5 insights accionables y estratégicos para el dueño del negocio.
     
     DATOS FINANCIEROS (Últimos 30 días aprox):

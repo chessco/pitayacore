@@ -56,7 +56,7 @@ export default function Layout({ children }: LayoutProps) {
             <Droplets size={24} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">AcuaCore AI</h1>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">PitayaCore AI</h1>
             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-1">Operaciones</p>
           </div>
         </div>

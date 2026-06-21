@@ -102,7 +102,7 @@ export const DeepExplanationBlock: React.FC<DeepExplanationProps> = ({ data }) =
               
               <div className="hidden lg:block relative pr-10">
                 <div className="px-6 py-3 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm text-[10px] font-black uppercase tracking-widest text-blue-200">
-                  Ciencia Exclusiva AcuaCore
+                  Ciencia Exclusiva PitayaCore
                 </div>
               </div>
             </motion.div>
@@ -139,7 +139,7 @@ export const DeepExplanationBlock: React.FC<DeepExplanationProps> = ({ data }) =
             <div className="space-y-8">
               <div className="flex items-center justify-between border-b border-slate-100 pb-6">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                  <Layers size={16} className="text-blue-600" /> Capas de Valor AcuaCore
+                  <Layers size={16} className="text-blue-600" /> Capas de Valor PitayaCore
                 </h3>
                 <span className="text-[10px] font-bold text-slate-400 px-3 py-1 bg-slate-50 rounded-full">3 NIVELES DE IMPACTO</span>
               </div>
@@ -196,7 +196,7 @@ export const DeepExplanationBlock: React.FC<DeepExplanationProps> = ({ data }) =
                         <ParsedContent content={level.content} variant="light" />
                       </div>
                       <div className="pt-4 border-t border-slate-50 flex flex-wrap gap-3">
-                        {(level.tags || ["AcuaCore Pro", "Optimización"]).map((tag, idx) => (
+                        {(level.tags || ["PitayaCore Pro", "Optimización"]).map((tag, idx) => (
                           <div key={idx} className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-100/50 shadow-sm">
                             {tag}
                           </div>

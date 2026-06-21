@@ -1,6 +1,6 @@
-# Guía de Pruebas - AcuaCore API
+# Guía de Pruebas - PitayaCore API
 
-Este documento detalla la infraestructura de pruebas implementada para garantizar la seguridad y estabilidad del ecosistema AcuaCore AI.
+Este documento detalla la infraestructura de pruebas implementada para garantizar la seguridad y estabilidad del ecosistema PitayaCore AI.
 
 ## Estructura de Pruebas
 
@@ -43,12 +43,12 @@ npm run test:e2e
 El sistema utiliza un `ApiKeyGuard` global (mediante `CombinedAuthGuard`). Todas las peticiones deben incluir la cabecera:
 
 - **Header**: `x-api-key`
-- **Valor**: Configurado en `INTERNAL_API_KEY` (Default: `pitaya_internal_secret_2026`)
+- **Valor**: Configurado en la variable de entorno `INTERNAL_API_KEY` (sin valor por defecto en producción para máxima seguridad).
 
 ### Ejemplo de petición autenticada (curl):
 ```bash
-curl -X POST http://localhost:3014/api/ai/analyze-conversation \
-  -H "x-api-key: pitaya_internal_secret_2026" \
+curl -X POST http://localhost:3015/api/ai/analyze-conversation \
+  -H "x-api-key: <tu_internal_api_key_de_las_variables_de_entorno>" \
   -H "Content-Type: application/json" \
   -d '{"messages": []}'
 ```

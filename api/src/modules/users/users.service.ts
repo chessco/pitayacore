@@ -40,7 +40,7 @@ export class UsersService {
       data: {
         ...data,
         tenantId,
-        password: data.password || 'acuacore123', // Default password if not provided
+        password: data.password || 'pitayacore123', // Default password if not provided
       }
     });
 

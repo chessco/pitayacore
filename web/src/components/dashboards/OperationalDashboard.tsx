@@ -55,15 +55,15 @@ import axios from 'axios'
 
 export function OperationalDashboard() {
   const [activeTab, setActiveTab] = useState(() => {
-    const savedTab = localStorage.getItem('acuacore_active_tab');
+    const savedTab = localStorage.getItem('pitayacore_active_tab');
     if (savedTab) return savedTab;
     
-    const role = localStorage.getItem('acuacore_role');
+    const role = localStorage.getItem('pitayacore_role');
     return role === 'operator' ? 'conversations' : 'dashboard';
   })
 
   useEffect(() => {
-    localStorage.setItem('acuacore_active_tab', activeTab);
+    localStorage.setItem('pitayacore_active_tab', activeTab);
   }, [activeTab]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -239,7 +239,7 @@ export function OperationalDashboard() {
             {!isSidebarCollapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <h1 className="text-lg font-bold tracking-tight font-display text-brand-deep">
-                  {selectedTenant?.brandingConfig?.brandName || 'AcuaCore AI'}
+                  {selectedTenant?.brandingConfig?.brandName || 'PitayaCore AI'}
                 </h1>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operaciones</p>
               </motion.div>
