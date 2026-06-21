@@ -55,7 +55,7 @@ export const CapsuleChat: React.FC<CapsuleChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     { 
       role: 'assistant', 
-      content: agentGreeting || `¡Hola! Soy **${agentName}** 🦐\n\nCuéntame sobre tu cultivo y te ayudaré a optimizar la alimentación para mejorar tu **FCA**.`,
+      content: agentGreeting || `¡Hola! Soy **${agentName}** 🤖\n\nCuéntame sobre tus necesidades y te ayudaré a optimizar tus procesos y resultados.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -281,7 +281,7 @@ export const CapsuleChat: React.FC<CapsuleChatProps> = ({
                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                  <CheckCircle size={14} className="text-emerald-400" />
                </div>
-               <p className="text-[11px] font-bold text-emerald-50 leading-tight">Optimización de FCA garantizada</p>
+               <p className="text-[11px] font-bold text-emerald-50 leading-tight">Optimización de procesos garantizada</p>
              </div>
              <div className="flex items-center gap-3">
                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
@@ -440,9 +440,9 @@ export const CapsuleChat: React.FC<CapsuleChatProps> = ({
         {/* Dynamic Chips (Quick Replies) */}
         <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar z-10 bg-[#e5ddd5]/80 backdrop-blur-sm">
           {[
-            { label: '🚀 Optimizar mi cultivo', icon: Zap },
-            { label: '🌡️ Ajuste por clima', icon: Thermometer },
-            { label: '📉 Reducir FCA', icon: BarChart3 },
+            { label: '🚀 Optimizar procesos', icon: Zap },
+            { label: '📊 Análisis de rendimiento', icon: BarChart3 },
+            { label: '📉 Reducir costos', icon: BarChart3 },
           ].map(chip => (
             <button 
               key={chip.label}

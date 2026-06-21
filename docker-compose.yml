@@ -1,11 +1,11 @@
 services:
   mysql:
     image: mysql:8
-    container_name: luxury-mysql-prod
+    container_name: pitayacore-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: acuacore_pass
-      MYSQL_DATABASE: acuacore_db
+      MYSQL_DATABASE: pitayacore_db
     ports:
       - "3306:3306"
     volumes:
@@ -15,12 +15,12 @@ services:
 
   postgres:
     image: ankane/pgvector:latest
-    container_name: acua-core-postgres
+    container_name: pitayacore-pgvector
     restart: always
     environment:
       POSTGRES_USER: acuacore_user
       POSTGRES_PASSWORD: acuacore_pass
-      POSTGRES_DB: acuacore_vectors
+      POSTGRES_DB: pitayacore_vector
     ports:
       - "5434:5432"
     volumes:
@@ -32,16 +32,16 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: acua-core-api
+    container_name: pitayacore-api
     restart: always
     env_file:
-      - ./api/.env.prod
+      - ./api/.env.pitayacore
     environment:
-      DATABASE_URL: "mysql://root:acuacore_pass@luxury-mysql-prod:3306/acuacore_db"
-      VECTOR_DATABASE_URL: "postgresql://acuacore_user:acuacore_pass@acua-core-postgres:5432/acuacore_vectors"
-      PORT: 3014
+      DATABASE_URL: "mysql://root:acuacore_pass@pitayacore-mysql:3306/pitayacore_db"
+      VECTOR_DATABASE_URL: "postgresql://acuacore_user:acuacore_pass@pitayacore-pgvector:5432/pitayacore_vector"
+      PORT: 3015
     ports:
-      - "3014:3014"
+      - "3015:3015"
     networks:
       - pitaya_net
     depends_on:
@@ -50,7 +50,7 @@ services:
 
   flow:
     image: node:20-alpine
-    container_name: flow
+    container_name: pitayacore-flow
     restart: always
     command: ["tail", "-f", "/dev/null"] # Placeholder for flow service
     networks:

@@ -33,7 +33,7 @@ export function UserManager() {
     const role = localStorage.getItem('acuacore_role') || 
                  localStorage.getItem('userRole') || 
                  localStorage.getItem('role') || 
-                 'PRODUCER';
+                 'OWNER';
     
     // Map 'tenant' to 'ADMIN' if that's what the frontend uses
     if (role.toLowerCase() === 'tenant') return 'ADMIN';

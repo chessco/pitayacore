@@ -69,7 +69,7 @@ export function TenantManager({ setActiveTab }: { setActiveTab: (tab: string) =>
     const role = localStorage.getItem('acuacore_role') || 
                  localStorage.getItem('userRole') || 
                  localStorage.getItem('role') || 
-                 'PRODUCER';
+                 'OWNER';
     if (role.toLowerCase() === 'tenant') return 'ADMIN';
     return role.toUpperCase();
   })();

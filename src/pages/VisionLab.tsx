@@ -17,14 +17,14 @@ import { GoogleGenAI } from "@google/genai";
 import { motion, AnimatePresence } from 'motion/react';
 
 // Hardcoded images for demo/fallback
-const fishSamples = [
-  "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&q=80&w=800",
-  "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&q=80&w=800",
-  "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&q=80&w=800"
+const inspectionSamples = [
+  "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1590986424791-2355385d0442?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800"
 ];
 
 export default function VisionLab() {
-  const [selectedImg, setSelectedImg] = useState(fishSamples[0]);
+  const [selectedImg, setSelectedImg] = useState(inspectionSamples[0]);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
 
@@ -38,7 +38,7 @@ export default function VisionLab() {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
-          { text: "Analiza esta imagen de un pez en acuicultura. Identifica: 1. Estado de salud aparente (Bueno/Regular/Crítico). 2. Posibles parásitos externos. 3. Estimación de peso visual. 4. Recomendación inmediata. Responde en JSON con las llaves: health, parasite_risk, weight_est, recommendation." },
+          { text: "Analiza esta imagen de control de calidad e inspección visual. Identifica: 1. Estado de conformidad (Bueno/Alerta/Crítico). 2. Posibles anomalías o defectos detectados. 3. Estimación de volumen o conteo visual. 4. Recomendación inmediata de operación. Responde en JSON con las llaves: health, parasite_risk, weight_est, recommendation." },
           { inlineData: { mimeType: "image/jpeg", data: await fetchImageAsBase64(selectedImg) } }
         ],
         config: {
@@ -81,14 +81,14 @@ export default function VisionLab() {
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-widest">Módulo Bio-Óptico v1.9</span>
+            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-widest">Módulo Visión AI v1.9</span>
           </div>
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <Scan className="text-primary" size={40} />
             Laboratorio de Visión
           </h1>
           <p className="text-slate-500 mt-4 font-body leading-relaxed max-w-xl">
-            Inspección automatizada mediante procesamiento de imágenes. Detecta patologías, estima biomasa y monitorea comportamientos anómalos sin intervención física.
+            Inspección automatizada mediante procesamiento de imágenes. Detecta anomalías, estima volumen/cantidades y monitorea control de calidad sin intervención física.
           </p>
         </div>
 
@@ -112,7 +112,7 @@ export default function VisionLab() {
           <div className="relative aspect-video bg-slate-900 rounded-[2.5rem] overflow-hidden border-4 border-slate-800 shadow-2xl group">
             <img 
               src={selectedImg} 
-              alt="Fish Scan" 
+              alt="Inspection Scan" 
               className={`w-full h-full object-cover transition-all duration-700 ${analyzing ? 'brightness-50 scale-105 blur-sm' : ''}`}
             />
             
@@ -158,7 +158,7 @@ export default function VisionLab() {
           </div>
 
           <div className="flex gap-4 p-2 overflow-x-auto invisible-scrollbar">
-            {fishSamples.map((img, i) => (
+            {inspectionSamples.map((img, i) => (
               <button 
                 key={i}
                 onClick={() => setSelectedImg(img)}
@@ -201,7 +201,7 @@ export default function VisionLab() {
                     className="space-y-6"
                   >
                     <div>
-                      <p className="text-[10px] text-white/40 uppercase mb-2 tracking-widest">Salud Biológica</p>
+                      <p className="text-[10px] text-white/40 uppercase mb-2 tracking-widest">Estado de Conformidad</p>
                       <div className="flex items-center gap-3">
                         <span className={`text-xl font-bold ${analysis.health === 'Bueno' ? 'text-green-400' : 'text-amber-400'}`}>
                           {analysis.health}
@@ -214,11 +214,11 @@ export default function VisionLab() {
 
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <p className="text-[10px] text-white/40 uppercase mb-1 tracking-widest">Riesgo Parasitario</p>
+                        <p className="text-[10px] text-white/40 uppercase mb-1 tracking-widest">Riesgo de Anomalías</p>
                         <p className="text-sm font-bold text-white/90">{analysis.parasite_risk}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-white/40 uppercase mb-1 tracking-widest">Est. Biomasa</p>
+                        <p className="text-[10px] text-white/40 uppercase mb-1 tracking-widest">Est. Cantidad/Volumen</p>
                         <p className="text-sm font-bold text-white/90">{analysis.weight_est}</p>
                       </div>
                     </div>

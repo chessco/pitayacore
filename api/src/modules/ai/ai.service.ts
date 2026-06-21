@@ -34,7 +34,7 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
 - Si es WHATSAPP: Sé conciso, usa párrafos cortos y emojis si es apropiado.
 - Si es WEB/APP: Sé más estructurado, usa negritas y listas si es necesario.
 - Si es API: Entrega información técnica pura y directa.`;
-    const basePersona = systemInstruction || `Eres AcuaCore AI, un asesor experto en acuacultura. Tu objetivo es proporcionar consejos precisos, técnicos y útiles.`;
+    const basePersona = systemInstruction || `Eres PitayaCore AI, un asistente inteligente experto. Tu objetivo es proporcionar consejos precisos, técnicos y útiles.`;
     const activeSystemPrompt = `${basePersona}\n\n${globalRules}`;
 
     const contents = [
@@ -138,21 +138,21 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     
     // Use Gemini to determine the best keywords for this image
     const keywordsPrompt = `Based on this campaign description: "${prompt}", 
-    identify if the topic is primarily: "shrimp", "fish", "laboratory", "technology", or "general_aquaculture". 
+    identify if the topic is primarily: "business", "science", "marketing", "technology", or "general". 
     Return ONLY the category name in lowercase.`;
     
     const category = (await this.generateRaw(keywordsPrompt)).toLowerCase().trim();
     this.logger.log(`[Nano Banana] Category identified: ${category}`);
 
     const imageMap: Record<string, string> = {
-      shrimp: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&q=80&w=1200", // Shrimp farm
-      fish: "https://images.unsplash.com/photo-1524704685771-3080448aa751?auto=format&fit=crop&q=80&w=1200", // Fish farming
-      laboratory: "https://images.unsplash.com/photo-1576086213369-97a306dca665?auto=format&fit=crop&q=80&w=1200", // Lab/Science
-      technology: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200", // Tech/Data
-      general_aquaculture: "https://images.unsplash.com/photo-1615147342761-9238e15d8b96?auto=format&fit=crop&q=80&w=1200", // General pond
+      business: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200", 
+      marketing: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200", 
+      science: "https://images.unsplash.com/photo-1576086213369-97a306dca665?auto=format&fit=crop&q=80&w=1200", 
+      technology: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200", 
+      general: "https://images.unsplash.com/photo-1615147342761-9238e15d8b96?auto=format&fit=crop&q=80&w=1200", 
     };
 
-    const imageUrl = imageMap[category] || imageMap.general_aquaculture;
+    const imageUrl = imageMap[category] || imageMap.general;
     return imageUrl;
   }
 
@@ -226,7 +226,7 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
 
   private calculateConfidence(text: string): number {
     // Basic heuristic: check for uncertainty markers
-    const uncertaintyMarkers = ['maybe', 'not sure', 'could be', 'consult a biologist', 'I don\'t know'];
+    const uncertaintyMarkers = ['maybe', 'not sure', 'could be', 'consult an expert', 'I don\'t know'];
     let score = 1.0;
     uncertaintyMarkers.forEach(marker => {
       if (text.toLowerCase().includes(marker)) {

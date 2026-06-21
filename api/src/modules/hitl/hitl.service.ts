@@ -21,7 +21,7 @@ export class HitlService {
     });
   }
 
-  async createAction(messageId: string, level: string = 'BIOLOGIST', comments?: string, initialContent?: string) {
+  async createAction(messageId: string, level: string = 'EXPERT', comments?: string, initialContent?: string) {
     const tenantId = getTenantId();
     
     // Check if message exists
@@ -195,7 +195,7 @@ export class HitlService {
   }
 
   private getNextLevel(currentLevel: string): string {
-    const levels = ['BIOLOGIST', 'ADVISOR', 'DIRECTOR'];
+    const levels = ['EXPERT', 'ADVISOR', 'DIRECTOR'];
     const currentIndex = levels.indexOf(currentLevel);
     return currentIndex < levels.length - 1 ? levels[currentIndex + 1] : 'DIRECTOR';
   }

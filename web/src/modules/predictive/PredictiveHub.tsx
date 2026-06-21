@@ -58,7 +58,7 @@ export function PredictiveHub() {
       console.warn('API Insight failed, using fallback:', error);
       // Fallback mock
       setTimeout(() => {
-        setInsight("Basado en la tendencia de las últimas 6 horas, se observa una disminución gradual del oxígeno disuelto (-0.3 mg/L por hora) coincidiendo con el aumento de temperatura. \n\nRECOMENDACIONES:\n1. Incrementar aireación en Jaula 04-B de inmediato.\n2. Reducir ración de alimento en un 15% para las próximas 2 comidas.\n3. Monitorear amonio total en 4 horas.");
+        setInsight("Basado en la tendencia de las últimas 6 horas, se observa una fluctuación en los sensores de rendimiento de la línea principal coincidiendo con el aumento de temperatura del sistema. \n\nRECOMENDACIONES:\n1. Ajustar el sistema de enfriamiento en el Sector 04-B de inmediato.\n2. Reducir la tasa de carga de procesamiento en un 15% para los próximos ciclos.\n3. Monitorear los niveles de consumo de energía en 4 horas.");
         setAnalyzing(false);
       }, 1000);
       return;
@@ -85,7 +85,7 @@ export function PredictiveHub() {
             Hub Predictivo
           </h1>
           <p className="text-slate-500 mt-2 max-w-2xl text-sm leading-relaxed">
-            Nuestra IA analiza tendencias de sensores en tiempo real para predecir anomalías biológicas y optimizar la producción mediante modelos de aprendizaje automático.
+            Nuestra IA analiza tendencias de sensores en tiempo real para predecir anomalías operativas y optimizar el rendimiento mediante modelos de aprendizaje automático.
           </p>
         </div>
         <button 
@@ -109,7 +109,7 @@ export function PredictiveHub() {
                 <div className="w-8 h-8 bg-brand-blue-light rounded-lg flex items-center justify-center text-brand-blue">
                   <TrendingUp size={18} />
                 </div>
-                Proyección de Biomasa (Kg)
+                Proyección de Rendimiento de Producción
               </h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 ml-11">Intervalo: 24h | Confianza: 98.4%</p>
             </div>
@@ -232,7 +232,7 @@ export function PredictiveHub() {
             <div className="relative z-10">
               <h4 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-2">Alerta de Riesgo Alto</h4>
               <p className="text-rose-800/80 text-xs leading-relaxed font-medium">
-                Tendencia de <span className="font-bold text-rose-600 underline">Hipoxia</span> detectada en Jaula 04-B. Riesgo crítico estimado en <span className="font-bold">15%</span> para las próximas 3 horas.
+                Tendencia de <span className="font-bold text-rose-600 underline">Sobrecalentamiento/Desviación</span> detectada en la Línea de Producción 04-B. Riesgo crítico estimado en <span className="font-bold">15%</span> para las próximas 3 horas.
               </p>
             </div>
             <div className="absolute top-0 right-0 p-3">
@@ -246,9 +246,9 @@ export function PredictiveHub() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Temperatura Opt.', value: '28.7°C', change: '+0.4', status: 'normal', icon: <TrendingUp className="text-slate-400" size={14} /> },
-          { label: 'Estrés Biológico', value: 'Bajo', change: 'Estable', status: 'success', icon: <ShieldCheck className="text-emerald-500" size={14} /> },
-          { label: 'FCR Estimado', value: '1.24', change: '-2%', status: 'success', icon: <Target className="text-brand-blue" size={14} /> },
-          { label: 'Supervivencia P.', value: '96.2%', change: '+0.2', status: 'success', icon: <Zap className="text-amber-500" size={14} /> }
+          { label: 'Riesgo Operativo', value: 'Bajo', change: 'Estable', status: 'success', icon: <ShieldCheck className="text-emerald-500" size={14} /> },
+          { label: 'Eficiencia FCO', value: '1.24', change: '-2%', status: 'success', icon: <Target className="text-brand-blue" size={14} /> },
+          { label: 'Tasa Rendimiento P.', value: '96.2%', change: '+0.2', status: 'success', icon: <Zap className="text-amber-500" size={14} /> }
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">

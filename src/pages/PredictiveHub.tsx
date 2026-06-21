@@ -45,7 +45,7 @@ export default function PredictiveHub() {
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: "Actúa como un experto en analítica predictiva para acuicultura. Analiza estos datos: Oxígeno bajando de 8.2 a 6.4, Temperatura subiendo de 15.1 a 16.4. Predice el riesgo de estrés biológico y da 3 recomendaciones cortas. Responde en español y formato profesional.",
+        contents: "Actúa como un experto en analítica predictiva y optimización operativa industrial. Analiza estos datos: Tasa de flujo bajando de 8.2 a 6.4, Temperatura subiendo de 15.1 a 16.4. Predice el riesgo de desviación operativa y da 3 recomendaciones cortas. Responde en español y formato profesional.",
       });
       setInsight(response.text || "No se pudo generar el insight.");
     } catch (error) {
@@ -66,7 +66,7 @@ export default function PredictiveHub() {
             Hub Predictivo <span className="text-secondary text-base font-medium px-3 py-1 bg-secondary-container/30 rounded-full">Proyección Pro</span>
           </h1>
           <p className="text-slate-500 mt-2 max-w-2xl font-body">
-            Algoritmos avanzados de aprendizaje automático analizan las tendencias de los sensores en tiempo real para predecir anomalías biológicas antes de que ocurran.
+            Algoritmos avanzados de aprendizaje automático analizan las tendencias de los sensores en tiempo real para predecir anomalías operativas antes de que ocurran.
           </p>
         </div>
         <button 
@@ -88,7 +88,7 @@ export default function PredictiveHub() {
             <div>
               <h3 className="font-bold text-slate-900 flex items-center gap-2 italic">
                 <TrendingUp size={20} className="text-primary" />
-                PROYECCIÓN DE BIOMASA (KG)
+                PROYECCIÓN DE RENDIMIENTO DE PRODUCCIÓN
               </h3>
               <p className="text-xs text-slate-400 font-mono">Intervalo: 24h | Confianza: 98.4%</p>
             </div>
@@ -187,7 +187,7 @@ export default function PredictiveHub() {
             <div>
               <h4 className="font-bold text-amber-900 text-sm uppercase tracking-wider">Alerta de Riesgo</h4>
               <p className="text-amber-800/80 text-xs mt-1">
-                Tendencia de oxígeno disuelto a la baja detectada en <span className="font-bold">Jaula 04-B</span>. Riesgo de hipoxia estimado en el 15% para las próximas 3 horas.
+                Tendencia de temperatura al alza detectada en <span className="font-bold">Línea 04-B</span>. Riesgo de desviación operativa estimado en el 15% para las próximas 3 horas.
               </p>
             </div>
           </div>
@@ -198,9 +198,9 @@ export default function PredictiveHub() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Temperatura Opt.', value: '16.2°C', change: '+0.4', status: 'normal' },
-          { label: 'Estrés Biológico', value: 'Bajo', change: 'Estable', status: 'success' },
-          { label: 'Consumo Pienso', value: '840kg', change: '-4%', status: 'warning' },
-          { label: 'Crecimiento ESP', value: '1.24g/d', change: '+0.2', status: 'success' }
+          { label: 'Riesgo Operativo', value: 'Bajo', change: 'Estable', status: 'success' },
+          { label: 'Consumo Energético', value: '840kW/h', change: '-4%', status: 'warning' },
+          { label: 'Rendimiento ESP', value: '1.24 uds/s', change: '+0.2', status: 'success' }
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest flex items-center justify-between">
@@ -236,9 +236,9 @@ export default function PredictiveHub() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {[
-                { id: 'PH-402', time: 'Hoy, 09:15', event: 'Cambio Salinidad', confidence: '92%', action: 'Ajuste Feed' },
-                { id: 'PH-401', time: 'Hoy, 04:30', event: 'Pico Térmico', confidence: '89%', action: 'Oxigenación' },
-                { id: 'PH-399', time: 'Ayer, 22:00', event: 'Patrón Crecimiento', confidence: '99%', action: 'Observación' }
+                { id: 'PH-402', time: 'Hoy, 09:15', event: 'Fluctuación Flujo', confidence: '92%', action: 'Ajuste Alimentador' },
+                { id: 'PH-401', time: 'Hoy, 04:30', event: 'Pico Térmico', confidence: '89%', action: 'Enfriamiento' },
+                { id: 'PH-399', time: 'Ayer, 22:00', event: 'Patrón Rendimiento', confidence: '99%', action: 'Observación' }
               ].map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-mono text-xs text-slate-500">{row.id}</td>

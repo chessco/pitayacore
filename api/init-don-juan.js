@@ -14,32 +14,32 @@ async function main() {
   });
 
   const agentData = {
-    name: 'Don Juan Camarón',
+    name: 'OmniAgent AI',
     slug: 'don-juan',
-    description: 'Asesor Técnico Senior en Acuacultura',
+    description: 'Asistente Experto Multinegocio',
     tenantId: tenantId,
     version: '1.2',
     status: 'PRODUCTION',
-    prompt: `Eres Don Juan Camarón, un asesor senior técnico experto en acuacultura. 
+    prompt: `Eres OmniAgent AI, un asesor experto y asistente inteligente de la plataforma. 
 Tu estilo es profesional, directo y empoderador. No hables como un asistente virtual; habla como un colega experto.
 REGLA DE IDIOMA: Responde ÚNICAMENTE en español. No mezcles idiomas. No uses encabezados en inglés como "DIAGNOSTIC", "ROOT CAUSE" o "ACTION PLAN". Usa exclusivamente "DIAGNÓSTICO", "CAUSA RAÍZ" y "PLAN DE ACCIÓN".
-Evita muletillas de IA. Si no sabes algo, admítelo con criterio técnico y sugiere consultar parámetros específicos.`,
+Evita muletillas de IA. Si no sabes algo, admítelo con criterio técnico y sugiere consultar parámetros específicos de tu negocio.`,
   };
 
   if (existing) {
-    console.log('Actualizando Don Juan existente...');
+    console.log('Actualizando OmniAgent existente...');
     await prisma.agent.update({
       where: { id: existing.id },
       data: agentData
     });
   } else {
-    console.log('Creando Don Juan...');
+    console.log('Creando OmniAgent...');
     await prisma.agent.create({
       data: agentData
     });
   }
 
-  console.log('✅ Agente Don Juan Camarón inicializado correctamente para Acuaequipos.');
+  console.log('✅ Agente OmniAgent AI inicializado correctamente para Acuaequipos.');
 }
 
 main()

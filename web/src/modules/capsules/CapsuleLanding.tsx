@@ -69,7 +69,7 @@ export const CapsuleLanding: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-['Inter'] selection:bg-blue-100 text-slate-900 scroll-smooth">
       <Helmet>
-        <title>{capsule.title} | AcuaCore</title>
+        <title>{capsule.title} | PitayaCore</title>
         <meta name="description" content={capsule.description} />
         
         {/* Open Graph / Facebook */}
@@ -94,8 +94,8 @@ export const CapsuleLanding: React.FC = () => {
               <Zap size={22} fill="currentColor" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tight text-[#001A41]">Acuaequipos</span>
-              <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Inteligencia para Acuicultura</span>
+              <span className="text-xl font-black tracking-tight text-[#001A41]">{selectedTenant?.name || 'PitayaCore'}</span>
+              <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Inteligencia de Negocio</span>
             </div>
           </div>
 
@@ -202,10 +202,10 @@ export const CapsuleLanding: React.FC = () => {
             >
               <div 
                 className="rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border-4 md:border-8 border-white cursor-zoom-in"
-                onClick={() => setSelectedImage(resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "/shrimp_hero.png")}
+                onClick={() => setSelectedImage(resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "/business_hero.png")}
               >
                 <img
-                  src={resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "/shrimp_hero.png"}
+                  src={resolveImageUrl(capsule.contentBlocks?.find((b: any) => b.type === 'hero')?.data?.image) || "/business_hero.png"}
                   alt={capsule.title}
                   className="w-full h-[300px] md:h-[500px] object-cover"
                 />
@@ -220,7 +220,7 @@ export const CapsuleLanding: React.FC = () => {
                   <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                     <TrendingUp size={20} />
                   </div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Mejora tu FCA</span>
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Mejora tu FCO</span>
                 </div>
                 <div className="text-5xl font-black text-blue-600 leading-none mb-2">-12%</div>
                 <p className="text-[10px] text-slate-500 leading-tight font-medium">Reducción promedio en nuestros clientes</p>
@@ -251,7 +251,7 @@ export const CapsuleLanding: React.FC = () => {
                   className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-blue-900/5 border border-slate-50 space-y-6"
                 >
                   <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                    <Fish size={28} />
+                    <TrendingUp size={28} />
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-black text-[#001A41]">{item.name}</h3>
@@ -303,10 +303,10 @@ export const CapsuleLanding: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <CapsuleChat
             slug={capsule.slug}
-            agentName={capsule.promptConfig?.agentName || capsule.agent?.name || 'Don Juan Camarón'}
+            agentName={capsule.promptConfig?.agentName || capsule.agent?.name || 'Asistente de IA'}
             agentGreeting={capsule.promptConfig?.agentGreeting}
-            agentPortrait={resolveImageUrl(capsule.promptConfig?.agentPortrait) || "/don_juan_final.jpg"}
-            onPortraitClick={() => setSelectedImage(resolveImageUrl(capsule.promptConfig?.agentPortrait) || "/don_juan_final.jpg")}
+            agentPortrait={resolveImageUrl(capsule.promptConfig?.agentPortrait) || "/avatar_default.png"}
+            onPortraitClick={() => setSelectedImage(resolveImageUrl(capsule.promptConfig?.agentPortrait) || "/avatar_default.png")}
             preview={window.location.search.includes('preview=true')}
             agentRoles={capsule.promptConfig?.agentRoles}
           />
@@ -325,10 +325,10 @@ export const CapsuleLanding: React.FC = () => {
           <h2 className="text-3xl font-black text-[#001A41]">¿Qué puedes lograr con esta cápsula?</h2>
           <div className="grid md:grid-cols-4 gap-8">
             {[
-              { icon: Zap, title: "Reduce costos de alimentación", desc: "Alimenta lo justo, evita sobrealimentación y desperdicio." },
-              { icon: TrendingUp, title: "Mejora el crecimiento", desc: "Raciones balanceadas para mayor ganancia de peso." },
-              { icon: BarChart3, title: "Optimiza el FCA", desc: "Maximiza la eficiencia y rentabilidad de tu cultivo." },
-              { icon: Database, title: "Decisiones basadas en datos", desc: "Recomendaciones técnicas personalizadas para tu cultivo." }
+              { icon: Zap, title: "Reduce costos de operación", desc: "Alimenta tus decisiones eficientemente y evita desperdicios." },
+              { icon: TrendingUp, title: "Mejora el crecimiento", desc: "Raciones balanceadas para mayor ganancia y rendimiento." },
+              { icon: BarChart3, title: "Optimiza el FCO", desc: "Maximiza la eficiencia y rentabilidad de tu negocio." },
+              { icon: Database, title: "Decisiones basadas en datos", desc: "Recomendaciones técnicas personalizadas para tu negocio." }
             ].map((item, idx) => (
               <div key={idx} className="flex flex-col items-center text-center space-y-4">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shadow-sm">
@@ -395,10 +395,10 @@ export const CapsuleLanding: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="flex items-center gap-3 grayscale opacity-70">
               <Zap size={24} className="text-slate-900" />
-              <span className="font-black text-xl tracking-tight text-[#001A41]">Acuaequipos</span>
+              <span className="font-black text-xl tracking-tight text-[#001A41]">{selectedTenant?.name || 'PitayaCore'}</span>
             </div>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-              © 2024 Acuaequipos. Todos los derechos reservados.
+              © 2024 {selectedTenant?.name || 'PitayaCore'}. Todos los derechos reservados.
             </p>
             <div className="flex gap-10">
               <a href="#" className="text-slate-400 hover:text-blue-600 transition-colors">

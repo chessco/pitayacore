@@ -102,8 +102,8 @@ export class AiRouterService {
 
   private async classifyComplexity(input: string) {
     // Using a very small prompt to classify
-    const prompt = `Classify the complexity of this aquaculture query: "${input}". 
-    Options: low (greetings, simple info), technical (diseases, water parameters), critical (emergencies, high-value loss).
+    const prompt = `Classify the complexity of this user query: "${input}". 
+    Options: low (greetings, simple info), technical (troubleshooting, technical details), critical (emergencies, business critical).
     Return JSON: { "complexity": "low" | "technical" | "critical" }`;
     
     const result = await this.ai.generateRaw(prompt, 'gemini-2.5-flash');
@@ -116,7 +116,7 @@ export class AiRouterService {
 
   private async handleRAG(input: string, tenantId: string, skills?: any, history: any[] = [], agentSlug?: string, channel: string = 'whatsapp', metadata?: any) {
     // 1. Load Agent Persona
-    let persona = `Eres AcuaCore AI, un asesor experto en acuacultura.`;
+    let persona = `Eres PitayaCore AI, un asistente inteligente experto.`;
     
     if (agentSlug) {
       const agent = await this.agentsService.findBySlug(agentSlug, tenantId);
@@ -126,10 +126,11 @@ export class AiRouterService {
       } else {
         this.logger.warn(`[AiRouter] Agent slug '${agentSlug}' provided but not found. Using default persona.`);
       }
-    } else if (skills?.don_juan_camaron) {
+    } else if (skills?.default_assistant || skills?.don_juan_camaron) {
         // Fallback para retrocompatibilidad
-        const donJuan = await this.agentsService.findBySlug('don-juan', tenantId);
-        persona = donJuan?.prompt || persona;
+        const assistant = await this.agentsService.findBySlug('default-assistant', tenantId)
+          || await this.agentsService.findBySlug('don-juan', tenantId);
+        persona = assistant?.prompt || persona;
     }
 
     // 2. SEMANTIC SEARCH (RAG 2.0)

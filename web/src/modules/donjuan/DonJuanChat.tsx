@@ -56,22 +56,22 @@ export const DonJuanChat: React.FC = () => {
       });
       setAgents(res.data);
       
-      // Default to any don-juan agent if it exists, otherwise first agent
-      const donJuan = res.data.find((a: any) => a.slug?.toLowerCase().includes('don-juan'));
-      if (donJuan) {
-        setSelectedAgent(donJuan);
+      // Default to any default-assistant or don-juan agent if it exists, otherwise first agent
+      const defaultAgent = res.data.find((a: any) => a.slug?.toLowerCase().includes('default-assistant') || a.slug?.toLowerCase().includes('don-juan'));
+      if (defaultAgent) {
+        setSelectedAgent(defaultAgent);
       } else if (res.data.length > 0) {
         setSelectedAgent(res.data[0]);
       } else {
         // Fallback para cuando el catálogo está vacío
-        const fallbackAgent = { id: 'fallback', name: 'Don Juan Camarón', slug: 'don-juan-camaron' };
+        const fallbackAgent = { id: 'fallback', name: 'OmniAgent AI', slug: 'default-assistant' };
         setSelectedAgent(fallbackAgent);
         setAgents([fallbackAgent]);
       }
     } catch (err) {
       console.error('Error fetching agents:', err);
       // Fallback on error
-      const fallbackAgent = { id: 'fallback', name: 'Don Juan Camarón', slug: 'don-juan-camaron' };
+      const fallbackAgent = { id: 'fallback', name: 'OmniAgent AI', slug: 'default-assistant' };
       setSelectedAgent(fallbackAgent);
       setAgents([fallbackAgent]);
     } finally {
@@ -156,7 +156,7 @@ export const DonJuanChat: React.FC = () => {
       <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-            <Fish size={20} />
+            <Bot size={20} />
           </div>
           <div className="relative">
             <button 

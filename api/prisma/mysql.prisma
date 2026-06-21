@@ -376,9 +376,9 @@ enum CampaignChannel {
 }
 
 enum User_role {
-  PRODUCER
-  BIOLOGIST
-  TECHNICAL_ADVISOR
+  OWNER
+  EXPERT
+  ADVISOR
   DIRECTOR
   ADMIN
   OPERATOR
@@ -697,8 +697,8 @@ model WorkspaceRelation {
   companyId         String?
   contactId         String?
   opportunityId     String?
-  farmId            String?
-  productionCycleId String?
+  externalEntityId  String?
+  externalEntityType String?
   knowledgeId       String?
   
   createdAt         DateTime @default(now())

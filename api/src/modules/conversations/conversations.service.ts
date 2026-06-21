@@ -157,7 +157,7 @@ export class ConversationsService {
         data: {
           messageId: savedAiMessage.id,
           tenantId,
-          level: 'BIOLOGIST',
+          level: 'EXPERT',
           status: 'PENDING',
         },
       });

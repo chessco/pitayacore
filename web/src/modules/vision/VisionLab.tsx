@@ -17,9 +17,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 
 const feeds = [
-  { id: 1, name: 'Patología WSSV', url: '/wssv_sample.png' },
-  { id: 2, name: 'Enfermedad Peces', url: '/fish_sample.png' },
-  { id: 3, name: 'Espécimen Sano', url: '/healthy_sample.png' },
+  { id: 1, name: 'Anomalía Tipo A', url: '/anomaly_a_sample.png' },
+  { id: 2, name: 'Defectos Superficiales', url: '/defect_sample.png' },
+  { id: 3, name: 'Inspección Conforme', url: '/conforming_sample.png' },
 ];
 
 export function VisionLab() {
@@ -34,15 +34,15 @@ export function VisionLab() {
     setResults(null);
     
     try {
-      const prompt = `Analiza esta imagen como un experto en patología acuícola. 
-      Busca específicamente signos de enfermedades como Mancha Blanca (WSSV), Necrosis, parásitos o estrés.
+      const prompt = `Analiza esta imagen como un experto en control de calidad e inspección visual industrial. 
+      Busca específicamente anomalías, defectos superficiales, problemas de empaque, daños estructurales o desviaciones estándar.
       Responde EXCLUSIVAMENTE en formato JSON válido (sin markdown) con esta estructura:
       {
-        "specie": "especie",
+        "specie": "Categoría / Tipo de Producto",
         "health": "Óptimo | Alerta | Crítico",
         "confidence": número,
-        "biomass_est": "estimación",
-        "anomalies": "Descripción detallada del signo clínico o enfermedad detectada"
+        "biomass_est": "Estimación de volumen o cantidad",
+        "anomalies": "Descripción detallada de la anomalía o defecto detectado"
       }`;
 
       let imageUrl = activeFeed.url;
@@ -108,7 +108,7 @@ export function VisionLab() {
             Laboratorio de Visión
           </h1>
           <p className="text-slate-500 mt-2 max-w-2xl text-sm leading-relaxed">
-            Inspección automatizada mediante procesamiento de imágenes. Detecta patologías, estima biomasa y monitorea comportamientos anómalos en tiempo real.
+            Inspección automatizada mediante procesamiento de imágenes. Detecta anomalías, estima volumen/cantidades y monitorea control de calidad en tiempo real.
           </p>
         </div>
         
@@ -268,12 +268,12 @@ export function VisionLab() {
                     </div>
                     <div className="space-y-4 text-left">
                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ESPECIE DETECTADA</p>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">CATEGORÍA/TIPO DETECTADO</p>
                           <p className="font-bold text-brand-blue">{results.specie}</p>
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ESTADO SALUD</p>
+                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ESTADO</p>
                              <p className="font-bold text-emerald-500">{results.health}</p>
                           </div>
                           <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
@@ -282,7 +282,7 @@ export function VisionLab() {
                           </div>
                        </div>
                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">DIAGNÓSTICO PATOLÓGICO</p>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">DETALLES DE ANOMALÍA</p>
                           <p className={`font-bold ${results.anomalies?.toLowerCase() !== 'ninguna' ? 'text-rose-400' : 'text-slate-200'}`}>
                             {results.anomalies}
                           </p>
@@ -330,14 +330,14 @@ export function VisionLab() {
         />
         <ToolCard 
            icon={<Activity size={20} />}
-           title="Monitor de Comportamiento"
-           desc="Analiza patrones de nado y velocidad para detectar estrés de forma temprana."
+           title="Monitor de Operaciones"
+           desc="Analiza patrones de flujo y velocidad para detectar cuellos de botella en tiempo real."
            color="purple"
         />
         <ToolCard 
            icon={<AlertCircle size={20} />}
-           title="Detector de Patógenos"
-           desc="Detección visual de manchas blancas, necrosis y otros signos clínicos externos."
+           title="Detector de Anomalías"
+           desc="Detección visual de fisuras, grietas, decoloraciones y otros defectos externos."
            color="rose"
         />
       </div>

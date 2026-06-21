@@ -1,12 +1,12 @@
 services:
   postgres:
     image: ankane/pgvector:latest
-    container_name: acua-core-postgres
+    container_name: pitayacore-pgvector
     restart: always
     environment:
       POSTGRES_USER: acuacore_user
       POSTGRES_PASSWORD: acuacore_pass
-      POSTGRES_DB: acuacore_vectors
+      POSTGRES_DB: pitayacore_vector
     ports:
       - "5434:5432"
     volumes:
@@ -18,12 +18,12 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: acua-core-api
+    container_name: pitayacore-api
     restart: always
     env_file:
-      - ./api/.env
+      - ./api/.env.pitayacore
     ports:
-      - "3014:3014"
+      - "3015:3015"
     networks:
       - pitaya_net
     volumes:

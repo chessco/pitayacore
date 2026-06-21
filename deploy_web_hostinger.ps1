@@ -1,4 +1,4 @@
-# PitayaCode AcuaCore - Web Deployment Script (Hostinger)
+# PitayaCode PitayaCore - Web Deployment Script (Hostinger)
 # Uso: .\deploy_web_hostinger.ps1
 
 $ErrorActionPreference = "Stop"
@@ -9,9 +9,9 @@ $SSH_USER = "u471794305"
 $SSH_HOST = "185.212.71.206"
 $SSH_PORT = "65002"
 $SSH_KEY = "$env:USERPROFILE\.ssh\id_citaia"
-$REMOTE_PATH = "domains/acuacore.pitayacode.io/public_html" 
+$REMOTE_PATH = "domains/pitayacore.pitayacode.io/public_html" 
 
-Write-Host "--- Iniciando Despliegue Web (Hostinger) - AcuaCore ---" -ForegroundColor Cyan
+Write-Host "--- Iniciando Despliegue Web (Hostinger) - PitayaCore ---" -ForegroundColor Cyan
 
 try {
     # 1. Construir el proyecto
@@ -29,7 +29,7 @@ try {
     cmd /c "$TAR_CMD | $SSH_CMD"
 
     Write-Host "--- DESPLIEGUE WEB COMPLETADO CON ÉXITO ---" -ForegroundColor Green
-    Write-Host "URL: https://acuacore.pitayacode.io" -ForegroundColor Cyan
+    Write-Host "URL: https://pitayacore.pitayacode.io" -ForegroundColor Cyan
 }
 catch {
     Write-Host "Error durante el despliegue: $($_.Exception.Message)" -ForegroundColor Red
