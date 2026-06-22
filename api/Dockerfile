@@ -8,6 +8,8 @@ RUN npm install
 COPY . .
 RUN npx prisma generate --schema=prisma/mysql.prisma
 RUN npx prisma generate --schema=prisma/postgres.prisma
+RUN mkdir -p public
+RUN touch create-system-user.js
 RUN npm run build
 
 FROM node:20-alpine
