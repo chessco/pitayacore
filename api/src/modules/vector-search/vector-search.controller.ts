@@ -2,7 +2,7 @@ import { Controller, Post, Body, Param, HttpCode, UseGuards } from '@nestjs/comm
 import { VectorSearchService } from './vector-search.service';
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
-@Controller('api/tenants/:tenantId')
+@Controller('tenants/:tenantId')
 @UseGuards(TenantOwnershipGuard)
 export class VectorSearchController {
   constructor(private readonly vectorSearchService: VectorSearchService) {}

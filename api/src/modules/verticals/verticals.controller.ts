@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { VerticalsService } from './verticals.service';
 
-@Controller('api/verticals')
+@Controller('verticals')
 export class VerticalsController {
   constructor(private readonly verticalsService: VerticalsService) {}
 

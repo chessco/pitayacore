@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/c
 import { SocialPostsService } from './social-posts.service';
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
-@Controller('api/tenants/:tenantId/social-posts')
+@Controller('tenants/:tenantId/social-posts')
 @UseGuards(TenantOwnershipGuard)
 export class SocialPostsController {
   constructor(private readonly socialPostsService: SocialPostsService) {}

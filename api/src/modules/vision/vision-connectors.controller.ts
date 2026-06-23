@@ -2,7 +2,7 @@ import { Controller, Post, Body, Param, UseGuards, HttpException, HttpStatus } f
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 import { VisionConnectorsService } from './vision-connectors.service';
 
-@Controller('api/tenants/:tenantId/vision/connectors')
+@Controller('tenants/:tenantId/vision/connectors')
 @UseGuards(TenantOwnershipGuard)
 export class VisionConnectorsController {
   constructor(private readonly connectorsService: VisionConnectorsService) {}

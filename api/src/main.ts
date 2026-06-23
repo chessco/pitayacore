@@ -29,7 +29,7 @@ async function bootstrap() {
     credentials: true,
     exposedHeaders: ['set-cookie'],
   });
-  // app.setGlobalPrefix('api'); // Removed to fix double /api/api/ prefix
+  app.setGlobalPrefix('api'); // Restored to fix global routes
   // Aumentar el límite de tamaño para recibir payloads de Flow (ej. base64 o skills grandes)
   const { json, urlencoded } = require('express');
   app.use(json({ limit: '10mb' }));

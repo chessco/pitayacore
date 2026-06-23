@@ -10,7 +10,7 @@ import {
 import { ChatSessionsService } from './chat-sessions.service';
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
-@Controller('api/tenants/:tenantId/chat-sessions')
+@Controller('tenants/:tenantId/chat-sessions')
 @UseGuards(TenantOwnershipGuard)
 export class ChatSessionsController {
   constructor(private readonly chatSessionsService: ChatSessionsService) {}

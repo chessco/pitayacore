@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { VisionService } from './vision.service';
 
-@Controller('api/vision')
+@Controller('vision')
 export class VisionController {
   constructor(private readonly visionService: VisionService) {}
 
