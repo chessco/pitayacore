@@ -10,7 +10,12 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('api/system/status')
+  @Get('health')
+  getHealth() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  @Get('system/status')
   getSystemStatus() {
     return {
       status: 'online',
