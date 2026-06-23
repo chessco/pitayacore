@@ -44,10 +44,12 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { VisionCampaignsModule } from './modules/vision-campaigns/vision-campaigns.module';
 import { VectorSearchModule } from './modules/vector-search/vector-search.module';
 import { VisionDashboardModule } from './modules/vision-dashboard/vision-dashboard.module';
-
+import { SocialPostsModule } from './modules/social-posts/social-posts.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -87,6 +89,7 @@ import { VisionDashboardModule } from './modules/vision-dashboard/vision-dashboa
     VisionCampaignsModule,
     VectorSearchModule,
     VisionDashboardModule,
+    SocialPostsModule,
   ],
   controllers: [AppController],
   providers: [

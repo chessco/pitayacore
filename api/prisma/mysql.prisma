@@ -46,6 +46,7 @@ model Tenant {
   characters         Character[]
   assets             Asset[]
   wallet             CreditWallet?
+  socialPosts        SocialPost[]
 }
 
 model HumanCorrection {
@@ -956,4 +957,21 @@ model AgentConfiguration {
   model       String @default("gpt-5.5")
 
   agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model SocialPost {
+  id          String    @id @default(uuid())
+  tenantId    String
+  platform    String    // 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'LINKEDIN'
+  content     String    @db.Text
+  mediaUrls   Json      // Array of asset storage paths
+  status      String    @default("DRAFT") // 'DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED'
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
 }
