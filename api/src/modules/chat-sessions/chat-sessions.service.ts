@@ -15,9 +15,18 @@ export class ChatSessionsService {
     private readonly falProvider: FalProvider,
   ) {}
 
+  private async resolveTenantId(tenantId: string): Promise<string> {
+    if (tenantId === 'DEFAULT_TENANT') {
+      const defaultTenant = await this.db.mysql.tenant.findFirst();
+      return defaultTenant?.id || tenantId;
+    }
+    return tenantId;
+  }
+
   async getSessions(tenantId: string) {
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     return this.db.mysql.conversation.findMany({
-      where: { tenantId, source: 'CREATIVE_CHAT' },
+      where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
       include: {
         messages: {
@@ -60,10 +69,11 @@ export class ChatSessionsService {
   }
 
   async createSession(tenantId: string, title: string) {
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     const meta = { title };
     const session = await this.db.mysql.conversation.create({
       data: {
-        tenantId,
+        tenantId: resolvedTenantId,
         source: 'CREATIVE_CHAT',
         metadata: JSON.stringify(meta),
       },
@@ -238,16 +248,17 @@ Devuelve un JSON con:
       const agent = await this.db.mysql.agent.findFirst({
         where: { tenantId: session.tenantId },
       });
-      capsule = await this.db.mysql.capsule.create({
-        data: {
-          tenantId: session.tenantId,
-          title: 'Creative Chat Capsule',
-          slug: 'creative-chat-' + session.id,
-          topic: 'Creative',
-          contentBlocks: {},
-          agentId: agent?.id || 'GLOBAL_AGENT', // fallback
-        },
-      });
+      const capsuleData: any = {
+        tenantId: session.tenantId,
+        title: 'Creative Chat Capsule',
+        slug: 'creative-chat-' + session.id.slice(0, 8),
+        topic: 'Creative',
+        contentBlocks: {},
+      };
+      if (agent?.id) {
+        capsuleData.agentId = agent.id;
+      }
+      capsule = await this.db.mysql.capsule.create({ data: capsuleData });
     }
 
     const campaign = await this.db.mysql.campaign.create({
