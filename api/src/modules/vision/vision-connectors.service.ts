@@ -2,16 +2,24 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 import { GeminiProvider } from '../../infrastructure/providers/ai/gemini.provider';
 import { FalProvider } from '../../infrastructure/providers/image/fal.provider';
+import { CreditsService } from '../credits/credits.service';
 
 @Injectable()
 export class VisionConnectorsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly geminiProvider: GeminiProvider,
-    private readonly falProvider: FalProvider
+    private readonly falProvider: FalProvider,
+    private readonly creditsService: CreditsService
   ) {}
 
   async generateFromConnector(tenantId: string, verticalId: string, inputData: any) {
+    // 0. Deduct 1 credit for image generation
+    try {
+      await this.creditsService.deductCredit(tenantId, 1, `Generación de Asset Vision para ${verticalId}`);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.PAYMENT_REQUIRED);
+    }
     // Map verticalId to agent slug
     const agentMap: Record<string, string> = {
       'acuacore': 'aquaculture-educator',

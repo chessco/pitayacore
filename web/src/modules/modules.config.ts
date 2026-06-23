@@ -19,7 +19,8 @@ import {
   CreditCard,
   Target,
   Trophy,
-  FolderOpen
+  FolderOpen,
+  Layers
 } from 'lucide-react';
 import { WorkspaceView } from './workspace/WorkspaceView';
 import { Inbox } from './inbox/Inbox';
@@ -48,6 +49,7 @@ import { DealsBoard } from './crm/DealsBoard';
 import { LeadScoring } from './crm/LeadScoring';
 import { CRMOverview } from './crm/CRMOverview';
 import { ModuleManager } from './system/ModuleManager';
+import { VerticalsManager } from './system/VerticalsManager';
 
 export interface ModuleConfig {
   id: string;           
@@ -319,6 +321,14 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     icon: Package,
     component: ModuleManager,
     description: 'Activación dinámica de capacidades SaaS.',
+    category: 'sistema'
+  },
+  {
+    id: 'verticals',
+    label: 'Verticales',
+    icon: Layers,
+    component: VerticalsManager,
+    description: 'Visualización de soluciones y plataformas conectadas.',
     category: 'sistema'
   }
 ];

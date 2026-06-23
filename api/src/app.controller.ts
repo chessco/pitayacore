@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
+import { Public } from './common/guards/public.decorator';
 import { AppService } from './app.service';
 
-@Controller()
+@Controller('api')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -10,6 +11,7 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Public()
   @Get('health')
   getHealth() {
     return { status: 'ok', timestamp: new Date().toISOString() };
