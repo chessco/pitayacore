@@ -41,6 +41,7 @@ import { CreditsModule } from './modules/credits/credits.module';
 import { VisionModule } from './modules/vision/vision.module';
 import { ChatSessionsModule } from './modules/chat-sessions/chat-sessions.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { VisionCampaignsModule } from './modules/vision-campaigns/vision-campaigns.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { BrandsModule } from './modules/brands/brands.module';
     VisionModule,
     ChatSessionsModule,
     BrandsModule,
+    VisionCampaignsModule,
   ],
   controllers: [AppController],
   providers: [
