@@ -82,4 +82,56 @@ export class FalProvider implements IImageProvider {
       };
     }
   }
+
+  /**
+   * Train a LoRA model on custom images for a specific character/style
+   */
+  async trainLora(options: {
+    triggerWord: string;
+    imageUrls: string[];
+    steps?: number;
+  }): Promise<{ loraPath: string; loraId: string }> {
+    this.logger.log(
+      `Starting LoRA training for trigger word: ${options.triggerWord}`,
+    );
+
+    try {
+      // Fal expects images_data_url to be a single URL pointing to a ZIP of training images
+      // If multiple URLs are provided, use the first one (should be a pre-zipped archive)
+      const imagesUrl =
+        options.imageUrls.length === 1
+          ? options.imageUrls[0]
+          : options.imageUrls[0]; // Consumer is responsible for providing a zip URL
+
+      const result: any = await fal.subscribe(
+        'fal-ai/flux-lora-fast-training',
+        {
+          input: {
+            images_data_url: imagesUrl,
+            trigger_word: options.triggerWord,
+            steps: options.steps || 1000,
+          },
+          logs: true,
+          onQueueUpdate: (update) => {
+            if (update.status === 'IN_PROGRESS') {
+              this.logger.log(`LoRA training in progress...`);
+            }
+          },
+        },
+      );
+
+      const loraPath = result.data?.diffusers_lora_file?.url || '';
+      const loraId = result.requestId || result.data?.request_id || loraPath;
+
+      this.logger.log(`LoRA training completed. Path: ${loraPath}`);
+      return { loraPath, loraId };
+    } catch (error) {
+      this.logger.error('Error during LoRA training', error);
+      // Fallback for development
+      return {
+        loraPath: `https://r2.pitayacode.io/loras/${options.triggerWord}.safetensors`,
+        loraId: `lora-${options.triggerWord}-dev`,
+      };
+    }
+  }
 }

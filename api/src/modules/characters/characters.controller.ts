@@ -34,4 +34,13 @@ export class CharactersController {
   delete(@Param('tenantId') tenantId: string, @Param('id') id: string) {
     return this.charactersService.delete(tenantId, id);
   }
+
+  @Post(':id/train-lora')
+  trainLora(
+    @Param('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { imageUrls: string[] },
+  ) {
+    return this.charactersService.trainLora(tenantId, id, body.imageUrls);
+  }
 }

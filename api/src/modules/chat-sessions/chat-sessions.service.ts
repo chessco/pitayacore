@@ -134,9 +134,27 @@ Devuelve un JSON con:
         'Eres un Director Creativo experto.',
       );
 
-      // 2. Generate Image with Fal
+      // 2. Generate Image with Fal (inject Character LoRA if session has one)
+      const sessionMetaForLora: any = session.metadata
+        ? JSON.parse(session.metadata as string)
+        : {};
+      let loraPath: string | undefined;
+
+      if (sessionMetaForLora.characterId) {
+        const character = await this.db.mysql.character.findFirst({
+          where: { id: sessionMetaForLora.characterId },
+        });
+        if (character?.loraId) {
+          const loraAsset = await this.db.mysql.asset.findFirst({
+            where: { id: character.loraId },
+          });
+          loraPath = loraAsset?.storagePath;
+        }
+      }
+
       const falResult = await this.falProvider.generateImage(
         strategy.imagePrompt,
+        loraPath ? { loras: [{ path: loraPath, scale: 1.0 }] } : undefined,
       );
 
       // 3. Save AI Message
