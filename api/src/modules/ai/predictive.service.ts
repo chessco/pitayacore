@@ -47,32 +47,40 @@ export class PredictiveService {
   async analyzeConversation(messages: any[]) {
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return {
-        sentiment: "Neutral",
-        intent: "Soporte",
-        summary: "Sin mensajes para analizar.",
-        suggestedResponse: "Hola, ¿en qué puedo ayudarte?",
+        sentiment: 'Neutral',
+        intent: 'Soporte',
+        summary: 'Sin mensajes para analizar.',
+        suggestedResponse: 'Hola, ¿en qué puedo ayudarte?',
         confidence: 1.0,
-        references: []
+        references: [],
       };
     }
     const lastMessage = messages[messages.length - 1]?.content || '';
     // Use the full conversation context for search, not just the last message
     const recentMessages = messages.slice(-15);
-    const context = recentMessages.map(m => `${m.role === 'user' ? 'CLIENTE' : 'AI'}: ${m.content}`).join('\n');
-    
+    const context = recentMessages
+      .map((m) => `${m.role === 'user' ? 'CLIENTE' : 'AI'}: ${m.content}`)
+      .join('\n');
+
     // Build a search query from recent user messages to capture the real topic
-    const userMessages = recentMessages.filter(m => m.role === 'user').map(m => m.content);
+    const userMessages = recentMessages
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content);
     const searchQuery = userMessages.slice(-3).join(' '); // Last 3 user messages for KB search
-    
+
     let references: any[] = [];
     try {
       // Search using combined context from recent user messages
-      const realRefs = await this.kbService.search(searchQuery, 3) as any[];
+      const realRefs = (await this.kbService.search(searchQuery, 3)) as any[];
       if (realRefs && realRefs.length > 0) {
-        references = await Promise.all(realRefs.map(async (ref: any) => {
-          const kb = await this.db.mysql.knowledgeBase.findUnique({ where: { id: ref.refId } });
-          return { id: ref.refId, title: kb?.title || 'Documento Técnico' };
-        }));
+        references = await Promise.all(
+          realRefs.map(async (ref: any) => {
+            const kb = await this.db.mysql.knowledgeBase.findUnique({
+              where: { id: ref.refId },
+            });
+            return { id: ref.refId, title: kb?.title || 'Documento Técnico' };
+          }),
+        );
       }
     } catch (searchError) {
       this.logger.error(`KB Search failed: ${searchError.message}`);
@@ -105,37 +113,37 @@ export class PredictiveService {
 
     try {
       const tenantId = getTenantId();
-      
+
       // Fetch the "Don Juan Camarón" skill or any active skill for this tenant
       const activeSkill = await this.db.mysql.skill.findFirst({
-        where: { 
-          OR: [
-            { tenantId },
-            { tenantId: 'DEFAULT_TENANT' }
-          ],
-          id: { contains: 'juan' } // Specifically look for the Juan skill for now
-        }
+        where: {
+          OR: [{ tenantId }, { tenantId: 'DEFAULT_TENANT' }],
+          id: { contains: 'juan' }, // Specifically look for the Juan skill for now
+        },
       });
 
       const result = await this.aiService.generateResponse(
-        prompt, 
-        [], 
-        'gemini-2.5-flash', 
-        activeSkill?.prompt
+        prompt,
+        [],
+        'gemini-2.5-flash',
+        activeSkill?.prompt,
       );
-      
+
       const jsonMatch = result.content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("La IA no devolvió un formato JSON válido.");
+        throw new Error('La IA no devolvió un formato JSON válido.');
       }
 
-        try {
+      try {
         const parsed = JSON.parse(jsonMatch[0]);
         // Merge or prioritize references found by semantic search if AI returned empty
-        if ((!parsed.references || parsed.references.length === 0) && references.length > 0) {
+        if (
+          (!parsed.references || parsed.references.length === 0) &&
+          references.length > 0
+        ) {
           parsed.references = references;
         }
-        
+
         // Final deduplication of references by ID
         if (parsed.references && parsed.references.length > 0) {
           const uniqueRefs = [];
@@ -151,18 +159,21 @@ export class PredictiveService {
 
         return parsed;
       } catch (parseError) {
-        this.logger.error(`Failed to parse AI JSON: ${jsonMatch[0].substring(0, 100)}...`);
+        this.logger.error(
+          `Failed to parse AI JSON: ${jsonMatch[0].substring(0, 100)}...`,
+        );
         throw new Error('Formato JSON inválido detectado.');
       }
     } catch (error) {
       this.logger.error(`Error analyzing conversation: ${error.message}`);
       return {
-        sentiment: "Neutral",
-        intent: "Soporte",
+        sentiment: 'Neutral',
+        intent: 'Soporte',
         summary: `Error: ${error.message}. (Modo Resiliencia activado para diagnóstico)`,
-        suggestedResponse: "Lo siento, hubo un error técnico al analizar esta parte. Por favor, reintenta en un momento.",
+        suggestedResponse:
+          'Lo siento, hubo un error técnico al analizar esta parte. Por favor, reintenta en un momento.',
         confidence: 0.8,
-        references: []
+        references: [],
       };
     }
   }

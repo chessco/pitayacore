@@ -7,11 +7,15 @@ export const AI_AGENTS = {
   EMAIL_MARKETING: {
     name: 'Email Marketing Strategist',
     role: 'Consultor Senior en Marketing',
-    description: 'Experto en redactar campañas persuasivas para todo tipo de clientes y audiencias.',
-    
+    description:
+      'Experto en redactar campañas persuasivas para todo tipo de clientes y audiencias.',
+
     generatePrompt: (capsule: any, tone: string) => {
-      const contextBlocks = capsule.contentBlocks?.map((b: any) => `- ${b.title || b.type}: ${b.data?.text || ''}`).join('\n') || '';
-      
+      const contextBlocks =
+        capsule.contentBlocks
+          ?.map((b: any) => `- ${b.title || b.type}: ${b.data?.text || ''}`)
+          .join('\n') || '';
+
       return `Actúa como un experto consultor senior en marketing. 
 Tu objetivo es escribir un correo altamente persuasivo y profesional para invitar a usuarios a ver una cápsula de conocimiento titulada "${capsule.title}".
  
@@ -38,8 +42,8 @@ ENTREGABLE (JSON ESTRICTO):
 }
  
 Importante: Responde ÚNICAMENTE con el objeto JSON. Sin explicaciones adicionales.`;
-    }
+    },
   },
-  
+
   // Aquí puedes agregar más agentes en el futuro (ej. Agente de Soporte Técnico, Agente de Ventas WhatsApp, etc.)
 };

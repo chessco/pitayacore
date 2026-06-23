@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Headers,
+} from '@nestjs/common';
 import { CapsulesService } from './capsules.service';
 import { CampaignService } from './campaign.service';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
@@ -21,7 +32,10 @@ export class CapsuleStudioController {
 
   @Post('capsules')
   create(@Request() req: any, @Body() body: any) {
-    return this.capsulesService.create({ ...body, tenantId: req.user.tenantId });
+    return this.capsulesService.create({
+      ...body,
+      tenantId: req.user.tenantId,
+    });
   }
 
   @Get('capsules/:id')
@@ -35,8 +49,17 @@ export class CapsuleStudioController {
   }
 
   @Patch('capsules/:id/status')
-  updateStatus(@Request() req: any, @Param('id') id: string, @Body() body: { status: string }) {
-    return this.capsulesService.updateStatus(id, req.user.tenantId, body.status, req.user);
+  updateStatus(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ) {
+    return this.capsulesService.updateStatus(
+      id,
+      req.user.tenantId,
+      body.status,
+      req.user,
+    );
   }
 
   @Delete('capsules/:id')
@@ -51,7 +74,10 @@ export class CapsuleStudioController {
 
   @Get('campaigns/whatsapp')
   getWhatsAppCampaigns(@Request() req: any) {
-    return this.campaignService.getWhatsAppCampaigns(req.user.tenantId, req.user);
+    return this.campaignService.getWhatsAppCampaigns(
+      req.user.tenantId,
+      req.user,
+    );
   }
 
   @Post('campaigns')
@@ -60,8 +86,17 @@ export class CapsuleStudioController {
   }
 
   @Patch('campaigns/:id')
-  updateCampaign(@Request() req: any, @Param('id') id: string, @Body() body: any) {
-    return this.campaignService.updateCampaign(req.user.tenantId, id, body, req.user);
+  updateCampaign(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
+    return this.campaignService.updateCampaign(
+      req.user.tenantId,
+      id,
+      body,
+      req.user,
+    );
   }
 
   @Post('campaigns/:id/send')
@@ -78,15 +113,20 @@ export class CapsuleStudioController {
   getAnalytics(@Request() req: any) {
     return this.capsulesService.getAnalytics(req.user.tenantId);
   }
- 
+
   @Get('branding')
   getBranding(@Request() req: any) {
     return this.capsulesService.getBranding(req.user.tenantId);
   }
- 
+
   @Get('capsules/slug/:slug')
   async findBySlug(@Request() req: any, @Param('slug') slug: string) {
-    return this.capsulesService.findBySlug(slug, req.user.tenantId, true, req.user); // true = includeDrafts
+    return this.capsulesService.findBySlug(
+      slug,
+      req.user.tenantId,
+      true,
+      req.user,
+    ); // true = includeDrafts
   }
 
   @Post('capsules/slug/:slug/chat')
@@ -96,7 +136,13 @@ export class CapsuleStudioController {
     @Body() body: any,
   ) {
     // Reutilizar la lógica de chat existente pero permitiendo borradores
-    return this.capsulesService.chat(slug, body, req.user.tenantId, true, req.user); // true = includeDrafts
+    return this.capsulesService.chat(
+      slug,
+      body,
+      req.user.tenantId,
+      true,
+      req.user,
+    ); // true = includeDrafts
   }
 
   @Post('branding')
@@ -127,8 +173,17 @@ export class CapsuleStudioController {
   }
 
   @Patch('campaigns/:id/whatsapp-message')
-  updateWhatsAppMessage(@Request() req: any, @Param('id') id: string, @Body() body: { message: string }) {
-    return this.campaignService.updateCampaign(req.user.tenantId, id, { whatsappMessage: body.message }, req.user);
+  updateWhatsAppMessage(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { message: string },
+  ) {
+    return this.campaignService.updateCampaign(
+      req.user.tenantId,
+      id,
+      { whatsappMessage: body.message },
+      req.user,
+    );
   }
 
   @Get('campaigns/:id/whatsapp-links')

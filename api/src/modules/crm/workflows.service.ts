@@ -19,34 +19,41 @@ export class WorkflowsService {
     try {
       const lead = await this.db.mysql.lead.findUnique({
         where: { id: leadId },
-        include: { capsule: true, contact: true }
+        include: { capsule: true, contact: true },
       });
 
       if (!lead || !lead.phone) {
-        this.logger.debug(`Skipping welcome message: Lead ${leadId} has no phone.`);
+        this.logger.debug(
+          `Skipping welcome message: Lead ${leadId} has no phone.`,
+        );
         return;
       }
 
       const tenantId = lead.tenantId;
-      const flowApiUrl = process.env.FLOW_API_URL || 'https://flow-api.pitayacode.io';
+      const flowApiUrl =
+        process.env.FLOW_API_URL || 'https://flow-api.pitayacode.io';
       const internalKey = process.env.INTERNAL_API_KEY;
 
       if (!internalKey) {
-        this.logger.error('INTERNAL_API_KEY not defined. Cannot send welcome message.');
+        this.logger.error(
+          'INTERNAL_API_KEY not defined. Cannot send welcome message.',
+        );
         return;
       }
 
       const message = `¡Hola ${lead.name}! 👋 Gracias por interesarte en "${lead.capsule.title}". Soy el asistente de IA de PitayaCore. ¿En qué puedo ayudarte hoy?`;
 
-      this.logger.log(`[Workflow] Sending welcome message to ${lead.phone} (Tenant: ${tenantId})`);
+      this.logger.log(
+        `[Workflow] Sending welcome message to ${lead.phone} (Tenant: ${tenantId})`,
+      );
 
       await firstValueFrom(
         this.httpService.post(`${flowApiUrl}/whatsapp/internal/send`, {
           tenantId,
           to: lead.phone,
           content: message,
-          key: internalKey
-        })
+          key: internalKey,
+        }),
       );
 
       // Registrar actividad
@@ -57,11 +64,10 @@ export class WorkflowsService {
             contactId: lead.contactId,
             type: 'WHATSAPP',
             subject: 'Mensaje Automático de Bienvenida',
-            content: message
-          }
+            content: message,
+          },
         });
       }
-
     } catch (error) {
       this.logger.error(`Failed to trigger welcome message: ${error.message}`);
     }
@@ -78,12 +84,14 @@ export class WorkflowsService {
       where: {
         tenantId,
         stage: 'NEGOTIATION',
-        updatedAt: { lt: fortyEightHoursAgo }
+        updatedAt: { lt: fortyEightHoursAgo },
       },
-      include: { contact: true }
+      include: { contact: true },
     });
 
-    this.logger.log(`[Workflow] Found ${staleDeals.length} stale deals for tenant ${tenantId}`);
+    this.logger.log(
+      `[Workflow] Found ${staleDeals.length} stale deals for tenant ${tenantId}`,
+    );
 
     for (const deal of staleDeals) {
       // Crear una actividad de "Recordatorio"
@@ -93,14 +101,14 @@ export class WorkflowsService {
           contactId: deal.contactId,
           type: 'TASK',
           subject: '⚠️ SEGUIMIENTO PENDIENTE',
-          content: `El deal "${deal.title}" lleva más de 48h sin actividad en etapa de Negociación. Por favor, contacta al cliente.`
-        }
+          content: `El deal "${deal.title}" lleva más de 48h sin actividad en etapa de Negociación. Por favor, contacta al cliente.`,
+        },
       });
 
       // Actualizar el deal para que no se repita la alerta inmediatamente (o marcarlo como alertado)
       await this.db.mysql.deal.update({
         where: { id: deal.id },
-        data: { updatedAt: new Date() } // "Tocar" el deal
+        data: { updatedAt: new Date() }, // "Tocar" el deal
       });
     }
 

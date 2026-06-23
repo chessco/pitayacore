@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Patch, Body, Post, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Body,
+  Post,
+  Headers,
+} from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 
@@ -27,8 +35,15 @@ export class ConversationsController {
   }
 
   @Patch(':id/assign')
-  async assign(@Param('id') id: string, @Body() body: { operatorId: string, userId?: string }) {
-    return this.conversationsService.assignToOperator(id, body.operatorId, body.userId);
+  async assign(
+    @Param('id') id: string,
+    @Body() body: { operatorId: string; userId?: string },
+  ) {
+    return this.conversationsService.assignToOperator(
+      id,
+      body.operatorId,
+      body.userId,
+    );
   }
 
   @Post(':id/reply')
@@ -37,7 +52,10 @@ export class ConversationsController {
   }
 
   @Post(':id/request-agent')
-  async requestAgent(@Param('id') id: string, @Headers('x-tenant-id') tenantId?: string) {
+  async requestAgent(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId?: string,
+  ) {
     const tid = tenantId || getTenantId();
     return this.conversationsService.autoAssignOperator(id, tid);
   }

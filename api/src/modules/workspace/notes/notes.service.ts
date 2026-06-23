@@ -17,7 +17,7 @@ export class NotesService {
 
     // TODO: Emit WorkspaceNoteCreated event
     // TODO: Trigger embeddings generation
-    
+
     return note;
   }
 

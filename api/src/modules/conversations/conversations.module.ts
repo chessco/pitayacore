@@ -10,6 +10,6 @@ import { ConversationsController } from './conversations.controller';
   imports: [DatabaseModule, AiModule, HttpModule],
   providers: [ConversationsService, ConversationsGateway],
   exports: [ConversationsService],
-  controllers: [ConversationsController]
+  controllers: [ConversationsController],
 })
 export class ConversationsModule {}

@@ -19,14 +19,20 @@ import { CampaignTrackingController } from './campaign-tracking.controller';
 
 @Module({
   imports: [DatabaseModule, AiModule, ConversationsModule, CrmModule],
-  controllers: [CapsulesController, CapsuleStudioController, AudiencesController, UploadsController, CampaignTrackingController],
+  controllers: [
+    CapsulesController,
+    CapsuleStudioController,
+    AudiencesController,
+    UploadsController,
+    CampaignTrackingController,
+  ],
   providers: [
-    CapsulesService, 
+    CapsulesService,
     CampaignService,
     AudiencesService,
     ApiKeyGuard,
     CombinedAuthGuard,
-    FeatureFlagGuard
+    FeatureFlagGuard,
   ],
   exports: [CapsulesService],
 })

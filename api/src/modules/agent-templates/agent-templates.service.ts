@@ -11,5 +11,3 @@ export class AgentTemplatesService {
 
   // Add more CRUD methods as needed
 }
-
-

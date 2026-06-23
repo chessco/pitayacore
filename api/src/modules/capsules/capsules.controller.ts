@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Query, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Headers,
+} from '@nestjs/common';
 import { CapsulesService } from './capsules.service';
 import { CreateCapsuleDto } from './dto/create-capsule.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -29,9 +37,12 @@ export class CapsulesController {
   @Get('journey/:conversationId')
   async getJourney(
     @Param('conversationId') conversationId: string,
-    @Headers('x-tenant-id') tenantId: string
+    @Headers('x-tenant-id') tenantId: string,
   ) {
-    return this.capsulesService.getLeadJourney(conversationId, tenantId || getTenantId());
+    return this.capsulesService.getLeadJourney(
+      conversationId,
+      tenantId || getTenantId(),
+    );
   }
 
   @Public()
@@ -42,10 +53,7 @@ export class CapsulesController {
 
   @Public()
   @Post(':slug/chat')
-  async chat(
-    @Param('slug') slug: string,
-    @Body() body: any,
-  ) {
+  async chat(@Param('slug') slug: string, @Body() body: any) {
     return this.capsulesService.chat(slug, body);
   }
 

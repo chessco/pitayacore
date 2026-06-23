@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Param, Body, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SystemSettingsService } from './system-settings.service';
 
 @Controller('system-settings')
@@ -15,7 +23,11 @@ export class SystemSettingsController {
   }
 
   @Patch(':key')
-  async updateSetting(@Param('key') key: string, @Body('value') value: string, @Req() req: any) {
+  async updateSetting(
+    @Param('key') key: string,
+    @Body('value') value: string,
+    @Req() req: any,
+  ) {
     if (req.user?.role !== 'SYSTEM' && req.user?.role !== 'ADMIN') {
       throw new UnauthorizedException('Requires SYSTEM or ADMIN role');
     }

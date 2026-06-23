@@ -36,7 +36,9 @@ describe('CapsulesService (Unit Tests)', () => {
   describe('remove', () => {
     it('debería lanzar NotFoundException si la cápsula no existe', async () => {
       db.mysql.capsule.findFirst.mockResolvedValue(null);
-      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('debería lanzar ConflictException si la cápsula está PUBLISHED', async () => {
@@ -46,7 +48,9 @@ describe('CapsulesService (Unit Tests)', () => {
         campaigns: [],
       });
 
-      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(ConflictException);
+      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('debería lanzar ConflictException si tiene campañas enviadas', async () => {
@@ -56,7 +60,9 @@ describe('CapsulesService (Unit Tests)', () => {
         campaigns: [{ sentAt: new Date() }],
       });
 
-      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(ConflictException);
+      await expect(service.remove('1', 'tenant-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('debería permitir el borrado si es DRAFT y no tiene campañas enviadas', async () => {

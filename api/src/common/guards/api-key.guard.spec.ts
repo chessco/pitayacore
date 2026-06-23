@@ -65,7 +65,7 @@ describe('ApiKeyGuard', () => {
       get: jest.fn(() => null),
     } as any;
     guard = new ApiKeyGuard(configService);
-    
+
     const context = {
       switchToHttp: () => ({
         getRequest: () => ({

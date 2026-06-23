@@ -26,7 +26,7 @@ export class VerticalsService {
       where: { tenantId },
       include: { vertical: true },
     });
-    return tenantVerticals.map(tv => tv.vertical);
+    return tenantVerticals.map((tv) => tv.vertical);
   }
 
   async assignVerticalToTenant(tenantId: string, verticalId: string) {
@@ -42,5 +42,3 @@ export class VerticalsService {
     });
   }
 }
-
-

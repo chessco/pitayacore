@@ -11,5 +11,3 @@ export class CreditsService {
 
   // Add more CRUD methods as needed
 }
-
-

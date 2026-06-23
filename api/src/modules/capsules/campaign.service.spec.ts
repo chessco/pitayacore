@@ -33,7 +33,9 @@ describe('CampaignService (Unit Tests)', () => {
   describe('removeCampaign', () => {
     it('debería lanzar NotFoundException si la campaña no existe', async () => {
       db.mysql.campaign.findFirst.mockResolvedValue(null);
-      await expect(service.removeCampaign('tenant-1', 'camp-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.removeCampaign('tenant-1', 'camp-1'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería lanzar ConflictException si la campaña ya fue enviada', async () => {
@@ -42,7 +44,9 @@ describe('CampaignService (Unit Tests)', () => {
         sentAt: new Date(),
       });
 
-      await expect(service.removeCampaign('tenant-1', 'camp-1')).rejects.toThrow(ConflictException);
+      await expect(
+        service.removeCampaign('tenant-1', 'camp-1'),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('debería borrar exitosamente si la campaña no ha sido enviada', async () => {

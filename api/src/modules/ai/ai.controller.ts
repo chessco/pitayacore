@@ -21,17 +21,18 @@ export class AiController {
   @Post('analyze-conversation')
   async analyze(
     @Headers('x-tenant-id') tenantId: string,
-    @Body() body: { messages: any[] }
+    @Body() body: { messages: any[] },
   ) {
     return this.predictiveService.analyzeConversation(body.messages);
   }
 
   @Public()
   @Post('vision/analyze')
-  async analyzeVision(
-    @Body() body: { imageUrl: string, prompt: string }
-  ) {
-    const response = await this.aiService.analyzeVision(body.imageUrl, body.prompt);
+  async analyzeVision(@Body() body: { imageUrl: string; prompt: string }) {
+    const response = await this.aiService.analyzeVision(
+      body.imageUrl,
+      body.prompt,
+    );
     return { analysis: response };
   }
 
@@ -44,7 +45,7 @@ export class AiController {
 
   @Public()
   @Post('generate-campaign-text')
-  async generateCampaignText(@Body() body: { capsule: any, tone?: string }) {
+  async generateCampaignText(@Body() body: { capsule: any; tone?: string }) {
     return this.aiService.generateCampaignText(body.capsule, body.tone);
   }
 

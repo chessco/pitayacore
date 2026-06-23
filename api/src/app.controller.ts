@@ -16,9 +16,10 @@ export class AppController {
       status: 'online',
       environment: process.env.NODE_ENV || 'development',
       flowApiUrl: process.env.FLOW_API_URL,
-      pitayacoreApiUrl: process.env.PITAYACORE_API_URL || 'http://localhost:3014',
+      pitayacoreApiUrl:
+        process.env.PITAYACORE_API_URL || 'http://localhost:3014',
       database: 'connected', // Simplification
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

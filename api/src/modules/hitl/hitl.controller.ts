@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, Param, Put, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Put,
+  Headers,
+} from '@nestjs/common';
 import { HitlService } from './hitl.service';
 
 @Controller('hitl')
@@ -11,23 +19,33 @@ export class HitlController {
   }
 
   @Post('intervene')
-  async intervene(@Body() body: { messageId: string, level?: string, comments?: string, content?: string }) {
-    return this.hitlService.createAction(body.messageId, body.level, body.comments, body.content);
+  async intervene(
+    @Body()
+    body: {
+      messageId: string;
+      level?: string;
+      comments?: string;
+      content?: string;
+    },
+  ) {
+    return this.hitlService.createAction(
+      body.messageId,
+      body.level,
+      body.comments,
+      body.content,
+    );
   }
 
   @Put(':id/approve')
   async approve(
     @Param('id') id: string,
-    @Body() body: { reviewerId: string, editedContent?: string }
+    @Body() body: { reviewerId: string; editedContent?: string },
   ) {
     return this.hitlService.approve(id, body.reviewerId, body.editedContent);
   }
 
   @Put(':id/reject')
-  async reject(
-    @Param('id') id: string,
-    @Body() body: { reviewerId: string }
-  ) {
+  async reject(@Param('id') id: string, @Body() body: { reviewerId: string }) {
     return this.hitlService.reject(id, body.reviewerId);
   }
 }

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Request,
+} from '@nestjs/common';
 import { IdeasService } from './ideas.service';
 import { CreateIdeaDto, UpdateIdeaDto } from './dto/ideas.dto';
 
@@ -34,7 +43,11 @@ export class IdeasController {
   }
 
   @Patch(':id')
-  update(@Request() req: any, @Param('id') id: string, @Body() updateIdeaDto: UpdateIdeaDto) {
+  update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() updateIdeaDto: UpdateIdeaDto,
+  ) {
     const tenantId = req.user.tenantId;
     return this.ideasService.update(tenantId, id, updateIdeaDto);
   }

@@ -19,15 +19,15 @@ import { SearchService } from './search/search.service';
     DocumentsController,
     IdeasController,
     AIController,
-    SearchController
+    SearchController,
   ],
   providers: [
     NotesService,
     DocumentsService,
     IdeasService,
     AIService,
-    SearchService
+    SearchService,
   ],
-  exports: [NotesService, DocumentsService, IdeasService]
+  exports: [NotesService, DocumentsService, IdeasService],
 })
 export class WorkspaceModule {}

@@ -12,11 +12,17 @@ import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
-    origin: ['https://pitayacore.pitayacode.io', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: [
+      'https://pitayacore.pitayacode.io',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
     credentials: true,
   },
 })
-export class ConversationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ConversationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -31,23 +37,34 @@ export class ConversationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   @SubscribeMessage('joinTenant')
-  handleJoinTenant(@ConnectedSocket() client: Socket, @MessageBody() tenantId: string) {
+  handleJoinTenant(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() tenantId: string,
+  ) {
     client.join(tenantId);
     this.logger.log(`Client ${client.id} joined room: ${tenantId}`);
     return { event: 'joined', data: tenantId };
   }
 
   @SubscribeMessage('leaveTenant')
-  handleLeaveTenant(@ConnectedSocket() client: Socket, @MessageBody() tenantId: string) {
+  handleLeaveTenant(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() tenantId: string,
+  ) {
     client.leave(tenantId);
     this.logger.log(`Client ${client.id} left room: ${tenantId}`);
     return { event: 'left', data: tenantId };
   }
 
   @SubscribeMessage('joinConversation')
-  handleJoinConversation(@ConnectedSocket() client: Socket, @MessageBody() conversationId: string) {
+  handleJoinConversation(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() conversationId: string,
+  ) {
     client.join(conversationId);
-    this.logger.log(`Client ${client.id} joined conversation room: ${conversationId}`);
+    this.logger.log(
+      `Client ${client.id} joined conversation room: ${conversationId}`,
+    );
     return { event: 'joined', data: conversationId };
   }
 
@@ -58,7 +75,7 @@ export class ConversationsGateway implements OnGatewayConnection, OnGatewayDisco
     // Para el cliente específico (solo en su conversación)
     this.server.to(message.conversationId).emit('newMessage', message);
   }
-  
+
   emitConversationUpdate(tenantId: string, conversation: any) {
     this.server.to(tenantId).emit('conversationUpdate', conversation);
   }

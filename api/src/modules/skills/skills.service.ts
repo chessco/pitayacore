@@ -69,7 +69,7 @@ export class SkillsService {
 
   async rollback(skillId: string, versionId: string) {
     const version = await this.db.mysql.promptVersion.findUnique({
-      where: { id: versionId }
+      where: { id: versionId },
     });
     if (!version) throw new Error('Version not found');
 
@@ -78,11 +78,16 @@ export class SkillsService {
       data: {
         prompt: version.content,
         version: version.version,
-      }
+      },
     });
   }
 
-  async create(data: { name: string; description: string; prompt: string; tenantId: string }) {
+  async create(data: {
+    name: string;
+    description: string;
+    prompt: string;
+    tenantId: string;
+  }) {
     return this.db.mysql.skill.create({
       data: {
         ...data,

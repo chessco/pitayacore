@@ -1,15 +1,15 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Request, 
-  UseInterceptors, 
-  UploadedFile, 
-  BadRequestException 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -34,7 +34,8 @@ export class DocumentsController {
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
@@ -44,9 +45,9 @@ export class DocumentsController {
     }),
   )
   create(
-    @Request() req: any, 
-    @UploadedFile() file: Express.Multer.File, 
-    @Body() createDocumentDto: CreateDocumentDto
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createDocumentDto: CreateDocumentDto,
   ) {
     if (!file) {
       throw new BadRequestException('No se ha proporcionado ningún archivo');
@@ -78,7 +79,11 @@ export class DocumentsController {
   }
 
   @Patch(':id')
-  update(@Request() req: any, @Param('id') id: string, @Body() updateDocumentDto: UpdateDocumentDto) {
+  update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() updateDocumentDto: UpdateDocumentDto,
+  ) {
     const tenantId = req.user.tenantId;
     return this.documentsService.update(tenantId, id, updateDocumentDto);
   }

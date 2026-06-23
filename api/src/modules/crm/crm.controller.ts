@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Body, Param, Headers, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Headers,
+  Query,
+} from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { WorkflowsService } from './workflows.service';
 
@@ -35,12 +44,18 @@ export class CrmController {
   }
 
   @Get('contacts/by-email')
-  async findByEmail(@Headers('x-tenant-id') tenantId: string, @Query('email') email: string) {
+  async findByEmail(
+    @Headers('x-tenant-id') tenantId: string,
+    @Query('email') email: string,
+  ) {
     return this.crmService.findByEmail(email, tenantId);
   }
 
   @Get('contacts/:id')
-  async findOne(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+  ) {
     return this.crmService.findContactById(id, tenantId);
   }
 
@@ -50,12 +65,19 @@ export class CrmController {
   }
 
   @Patch('contacts/:id')
-  async update(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async update(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateContact(id, tenantId, data);
   }
 
   @Post('activities')
-  async createActivity(@Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async createActivity(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.createActivity(tenantId, data);
   }
 
@@ -65,12 +87,19 @@ export class CrmController {
   }
 
   @Post('deals')
-  async createDeal(@Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async createDeal(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.createDeal(tenantId, data);
   }
 
   @Patch('deals/:id')
-  async updateDeal(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async updateDeal(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateDeal(id, tenantId, data);
   }
 
@@ -80,12 +109,19 @@ export class CrmController {
   }
 
   @Post('tasks')
-  async createTask(@Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async createTask(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.createTask(tenantId, data);
   }
 
   @Patch('tasks/:id')
-  async updateTask(@Param('id') id: string, @Headers('x-tenant-id') tenantId: string, @Body() data: any) {
+  async updateTask(
+    @Param('id') id: string,
+    @Headers('x-tenant-id') tenantId: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateTask(id, tenantId, data);
   }
 }

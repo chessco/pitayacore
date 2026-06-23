@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsObject, IsArray, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsObject,
+  IsArray,
+  IsEnum,
+} from 'class-validator';
 
 export enum CapsuleStatus {
   DRAFT = 'DRAFT',

@@ -7,17 +7,24 @@ import { DatabaseService } from '../database/database.service';
 export class MailService {
   constructor(
     private configService: ConfigService,
-    private db: DatabaseService
+    private db: DatabaseService,
   ) {}
 
   private async getActiveProvider(): Promise<string> {
     try {
       const setting = await this.db.mysql.systemSetting.findUnique({
-        where: { key: 'MAIL_PROVIDER' }
+        where: { key: 'MAIL_PROVIDER' },
       });
-      return setting?.value || this.configService.get<string>('MAIL_PROVIDER') || 'gmail';
+      return (
+        setting?.value ||
+        this.configService.get<string>('MAIL_PROVIDER') ||
+        'gmail'
+      );
     } catch (error) {
-      console.warn('Could not fetch MAIL_PROVIDER from DB, falling back to env', error);
+      console.warn(
+        'Could not fetch MAIL_PROVIDER from DB, falling back to env',
+        error,
+      );
       return this.configService.get<string>('MAIL_PROVIDER') || 'gmail';
     }
   }
@@ -26,7 +33,9 @@ export class MailService {
     if (provider === 'resend') {
       let apiKey = this.configService.get<string>('RESEND_API_KEY');
       try {
-        const setting = await this.db.mysql.systemSetting.findUnique({ where: { key: 'RESEND_API_KEY' } });
+        const setting = await this.db.mysql.systemSetting.findUnique({
+          where: { key: 'RESEND_API_KEY' },
+        });
         if (setting?.value) apiKey = setting.value;
       } catch (error) {
         console.warn('Could not fetch RESEND_API_KEY from DB', error);
@@ -57,8 +66,8 @@ export class MailService {
           pass,
         },
         tls: {
-          rejectUnauthorized: false
-        }
+          rejectUnauthorized: false,
+        },
       });
     }
   }
@@ -73,12 +82,16 @@ export class MailService {
       if (provider === 'resend') {
         fromEmail = 'onboarding@resend.dev'; // Default Resend test email
         try {
-          const setting = await this.db.mysql.systemSetting.findUnique({ where: { key: 'RESEND_FROM_EMAIL' } });
+          const setting = await this.db.mysql.systemSetting.findUnique({
+            where: { key: 'RESEND_FROM_EMAIL' },
+          });
           if (setting?.value) fromEmail = setting.value;
-          else if (this.configService.get('RESEND_FROM_EMAIL')) fromEmail = this.configService.get('RESEND_FROM_EMAIL');
+          else if (this.configService.get('RESEND_FROM_EMAIL'))
+            fromEmail = this.configService.get('RESEND_FROM_EMAIL');
         } catch (error) {
-           if (this.configService.get('RESEND_FROM_EMAIL')) fromEmail = this.configService.get('RESEND_FROM_EMAIL');
-           else console.warn('Could not fetch RESEND_FROM_EMAIL', error);
+          if (this.configService.get('RESEND_FROM_EMAIL'))
+            fromEmail = this.configService.get('RESEND_FROM_EMAIL');
+          else console.warn('Could not fetch RESEND_FROM_EMAIL', error);
         }
       }
 

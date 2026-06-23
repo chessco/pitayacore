@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Headers, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Headers,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 
@@ -10,7 +21,7 @@ export class UsersController {
   async findAll(
     @Headers('x-user-role') role: string,
     @Headers('x-tenant-id') tenantId: string,
-    @Query('tenantId') targetTenantId?: string
+    @Query('tenantId') targetTenantId?: string,
   ) {
     if (!role) throw new ForbiddenException('Rol no identificado');
     return this.usersService.findAll(role, tenantId, targetTenantId);
@@ -20,7 +31,7 @@ export class UsersController {
   async create(
     @Headers('x-user-role') role: string,
     @Headers('x-tenant-id') tenantId: string,
-    @Body() data: any
+    @Body() data: any,
   ) {
     return this.usersService.create(role, tenantId, data);
   }
@@ -30,7 +41,7 @@ export class UsersController {
     @Headers('x-user-role') role: string,
     @Headers('x-tenant-id') tenantId: string,
     @Param('id') id: string,
-    @Body() data: any
+    @Body() data: any,
   ) {
     return this.usersService.update(role, tenantId, id, data);
   }
@@ -39,7 +50,7 @@ export class UsersController {
   async remove(
     @Headers('x-user-role') role: string,
     @Headers('x-tenant-id') tenantId: string,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     return this.usersService.delete(role, tenantId, id);
   }

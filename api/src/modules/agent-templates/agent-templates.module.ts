@@ -9,4 +9,3 @@ import { DatabaseModule } from '../../common/database/database.module';
   providers: [AgentTemplatesService],
 })
 export class AgentTemplatesModule {}
-

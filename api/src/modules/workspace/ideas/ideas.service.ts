@@ -79,7 +79,7 @@ INSTRUCCIONES IMPORTANTES:
 `;
 
     const rawResponse = await this.aiService.generateRaw(systemPrompt);
-    
+
     try {
       // Intentar extraer el JSON si la IA devuelve texto alrededor
       const jsonMatch = rawResponse.match(/\[[\s\S]*\]/);
@@ -88,7 +88,9 @@ INSTRUCCIONES IMPORTANTES:
       return ideas;
     } catch (e) {
       console.error('Error parsing AI ideas:', e, 'Raw:', rawResponse);
-      throw new Error('No se pudieron generar las ideas en el formato correcto. Intenta de nuevo.');
+      throw new Error(
+        'No se pudieron generar las ideas en el formato correcto. Intenta de nuevo.',
+      );
     }
   }
 }

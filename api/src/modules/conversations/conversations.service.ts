@@ -18,17 +18,23 @@ export class ConversationsService {
     public gateway: ConversationsGateway,
   ) {}
 
-  async handleIncomingMessage(userId: string, content: string, tenantIdParam?: string, externalId?: string, skills?: any, agentSlug?: string, channel: string = 'whatsapp', metadata?: any) {
+  async handleIncomingMessage(
+    userId: string,
+    content: string,
+    tenantIdParam?: string,
+    externalId?: string,
+    skills?: any,
+    agentSlug?: string,
+    channel: string = 'whatsapp',
+    metadata?: any,
+  ) {
     const tenantId = tenantIdParam || getTenantId();
 
     // 1. Find or create conversation
     let conversation = await this.db.mysql.conversation.findFirst({
-      where: { 
+      where: {
         tenantId,
-        OR: [
-          { userId },
-          { externalId: userId }
-        ]
+        OR: [{ userId }, { externalId: userId }],
       },
     });
 
@@ -36,12 +42,12 @@ export class ConversationsService {
       const isCapsule = channel.toUpperCase() === 'CAPSULE';
       const isInternal = channel.toUpperCase() === 'INTERNAL';
       conversation = await this.db.mysql.conversation.create({
-        data: { 
-          userId: (isCapsule || isInternal) ? null : userId, 
-          tenantId, 
-          externalId: (isCapsule || isInternal) ? userId : externalId,
-          source: isCapsule ? 'CAPSULE' : (isInternal ? 'INTERNAL' : 'WHATSAPP'),
-          metadata: metadata || null
+        data: {
+          userId: isCapsule || isInternal ? null : userId,
+          tenantId,
+          externalId: isCapsule || isInternal ? userId : externalId,
+          source: isCapsule ? 'CAPSULE' : isInternal ? 'INTERNAL' : 'WHATSAPP',
+          metadata: metadata || null,
         },
       });
       // Notify about the new conversation structure
@@ -51,7 +57,7 @@ export class ConversationsService {
     // Unificación de Identidad: Sincronizar con CRM si es WhatsApp
     if (channel.toLowerCase() === 'whatsapp') {
       let contact = await this.db.mysql.contact.findFirst({
-        where: { tenantId, phone: userId }
+        where: { tenantId, phone: userId },
       });
 
       if (!contact) {
@@ -60,8 +66,8 @@ export class ConversationsService {
             tenantId,
             name: metadata?.name || userId,
             phone: userId,
-            status: 'LEAD'
-          }
+            status: 'LEAD',
+          },
         });
       }
 
@@ -75,8 +81,8 @@ export class ConversationsService {
           conversationId: conversation.id,
           contactId: contact.id,
           name: contact.name,
-          email: contact.email || ''
-        }
+          email: contact.email || '',
+        },
       });
 
       await this.db.mysql.activity.create({
@@ -85,8 +91,9 @@ export class ConversationsService {
           contactId: contact.id,
           type: 'WHATSAPP',
           subject: 'Mensaje Entrante',
-          content: content.length > 200 ? content.substring(0, 200) + '...' : content
-        }
+          content:
+            content.length > 200 ? content.substring(0, 200) + '...' : content,
+        },
       });
     }
 
@@ -99,7 +106,7 @@ export class ConversationsService {
         content,
       },
     });
-    
+
     // 2. Emit via Socket.io (Silent failure if gateway not ready)
     try {
       this.gateway.emitNewMessage(tenantId, savedUserMessage);
@@ -109,22 +116,35 @@ export class ConversationsService {
 
     // 3. Check if human is active (Intervened)
     const convMetadata = (conversation.metadata as any) || {};
-    const humanActiveUntil = convMetadata.humanActiveUntil ? new Date(convMetadata.humanActiveUntil) : null;
+    const humanActiveUntil = convMetadata.humanActiveUntil
+      ? new Date(convMetadata.humanActiveUntil)
+      : null;
     const isHumanInControl = humanActiveUntil && humanActiveUntil > new Date();
 
     if (isHumanInControl) {
-      this.logger.log(`Skipping AI response for conversation ${conversation.id}: Human is in control until ${humanActiveUntil.toISOString()}`);
+      this.logger.log(
+        `Skipping AI response for conversation ${conversation.id}: Human is in control until ${humanActiveUntil.toISOString()}`,
+      );
       return savedUserMessage;
     }
 
     // 4. Generate AI response via Router (Cost Optimized)
     let aiResult;
     try {
-      aiResult = await this.aiRouter.route(content, tenantId, skills, agentSlug, channel, metadata || conversation.metadata);
-      
+      aiResult = await this.aiRouter.route(
+        content,
+        tenantId,
+        skills,
+        agentSlug,
+        channel,
+        metadata || conversation.metadata,
+      );
+
       // Security Trim: Meta/WhatsApp limit is 4096. We clip at 4000 for safety.
       if (aiResult.content && aiResult.content.length > 4000) {
-        this.logger.warn(`AI response truncated from ${aiResult.content.length} to 4000 chars.`);
+        this.logger.warn(
+          `AI response truncated from ${aiResult.content.length} to 4000 chars.`,
+        );
         aiResult.content = aiResult.content.substring(0, 4000);
       }
     } catch (e) {
@@ -144,13 +164,15 @@ export class ConversationsService {
         classification: aiResult.decision, // Store routing decision
       },
     });
-    
+
     // Emit AI message to frontend
     this.gateway.emitNewMessage(tenantId, savedAiMessage);
 
     // 5. If flagged or routed to human, create HITL action
-    this.logger.log(`AI Decision: ${aiResult.decision} | isFlagged: ${aiResult.isFlagged}`);
-    
+    this.logger.log(
+      `AI Decision: ${aiResult.decision} | isFlagged: ${aiResult.isFlagged}`,
+    );
+
     if (aiResult.isFlagged || aiResult.decision === 'HUMAN') {
       this.logger.log(`Creating HITL action for message ${savedAiMessage.id}`);
       await this.db.mysql.hitlAction.create({
@@ -164,27 +186,34 @@ export class ConversationsService {
     } else if (channel.toLowerCase() === 'whatsapp') {
       // Send AI Response to Flow
       try {
-        const flowApiUrl = process.env.FLOW_API_URL || 'https://flow-api.pitayacode.io';
+        const flowApiUrl =
+          process.env.FLOW_API_URL || 'https://flow-api.pitayacode.io';
         const internalKey = process.env.INTERNAL_API_KEY;
-        
+
         if (!internalKey) {
           throw new Error('INTERNAL_API_KEY not defined in environment');
         }
-        
-        this.logger.log(`[Flow Forward] Sending response to ${userId} via Flow...`);
+
+        this.logger.log(
+          `[Flow Forward] Sending response to ${userId} via Flow...`,
+        );
         const response = await firstValueFrom(
           this.httpService.post(`${flowApiUrl}/whatsapp/internal/send`, {
             tenantId,
             to: userId,
             content: aiResult.content,
-            key: internalKey
-          })
+            key: internalKey,
+          }),
         );
-        this.logger.log(`Successfully sent AI response to Flow. Status: ${response.status}`);
+        this.logger.log(
+          `Successfully sent AI response to Flow. Status: ${response.status}`,
+        );
       } catch (error) {
         this.logger.error(`Failed to send response to Flow: ${error.message}`);
         if (error.response) {
-          this.logger.error(`Flow API responded with: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(
+            `Flow API responded with: ${JSON.stringify(error.response.data)}`,
+          );
         }
       }
     }
@@ -195,30 +224,27 @@ export class ConversationsService {
   async findConversationByPhone(phone: string) {
     const tenantId = getTenantId();
     return this.db.mysql.conversation.findFirst({
-      where: { 
+      where: {
         tenantId,
-        OR: [
-          { userId: phone },
-          { externalId: phone }
-        ]
+        OR: [{ userId: phone }, { externalId: phone }],
       },
       include: {
         messages: {
-          orderBy: { createdAt: 'asc' }
-        }
-      }
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
   }
 
   async getConversations() {
     const tenantId = getTenantId();
     const whereClause = tenantId === 'global' ? {} : { tenantId };
-    
+
     return this.db.mysql.conversation.findMany({
       where: whereClause,
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true, email: true }
+          select: { id: true, name: true, role: true, email: true },
         },
         messages: {
           orderBy: { createdAt: 'desc' },
@@ -235,7 +261,7 @@ export class ConversationsService {
     if (tenantId !== 'global') {
       whereClause.tenantId = tenantId;
     }
-    
+
     return this.db.mysql.message.findMany({
       where: whereClause,
       orderBy: { createdAt: 'asc' },
@@ -245,22 +271,26 @@ export class ConversationsService {
   async getOperators(tenantId?: string) {
     const tid = tenantId || getTenantId();
     return this.db.mysql.user.findMany({
-      where: { 
+      where: {
         tenantId: tid,
-        role: 'OPERATOR' 
+        role: 'OPERATOR',
       },
-      select: { id: true, name: true, role: true }
+      select: { id: true, name: true, role: true },
     });
   }
 
-  async assignToOperator(conversationId: string, operatorId: string, userId?: string) {
+  async assignToOperator(
+    conversationId: string,
+    operatorId: string,
+    userId?: string,
+  ) {
     const tenantId = getTenantId();
-    
+
     const updated = await this.db.mysql.conversation.upsert({
       where: { id: conversationId },
-      update: { 
+      update: {
         assignedToId: operatorId,
-        tenantId // Ensure tenantId is correct
+        tenantId, // Ensure tenantId is correct
       },
       create: {
         id: conversationId,
@@ -270,9 +300,9 @@ export class ConversationsService {
       },
       include: {
         assignedTo: {
-          select: { id: true, name: true, role: true }
-        }
-      }
+          select: { id: true, name: true, role: true },
+        },
+      },
     });
 
     // Notify via socket
@@ -283,40 +313,40 @@ export class ConversationsService {
 
   async setHumanActive(conversationId: string) {
     const conversation = await this.db.mysql.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
 
     if (conversation) {
       const currentMetadata = (conversation.metadata as any) || {};
       const updatedMetadata = {
         ...currentMetadata,
-        humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       };
 
       await this.db.mysql.conversation.update({
         where: { id: conversationId },
-        data: { metadata: updatedMetadata }
+        data: { metadata: updatedMetadata },
       });
     }
     return { success: true };
   }
-  
+
   async setAutopilotActive(conversationId: string) {
     const conversation = await this.db.mysql.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
 
     if (conversation) {
       const currentMetadata = (conversation.metadata as any) || {};
       const updatedMetadata = {
         ...currentMetadata,
-        humanActiveUntil: null // Clear human control timer
+        humanActiveUntil: null, // Clear human control timer
       };
 
       const updatedConv = await this.db.mysql.conversation.update({
         where: { id: conversationId },
         data: { metadata: updatedMetadata },
-        include: { assignedTo: true }
+        include: { assignedTo: true },
       });
 
       // Notify inbox via socket to update UI
@@ -328,10 +358,10 @@ export class ConversationsService {
   async autoAssignOperator(conversationId: string, tenantId: string) {
     // 1. Get all operators for this tenant
     const operators = await this.db.mysql.user.findMany({
-      where: { 
-        tenantId, 
-        role: 'OPERATOR', 
-        status: 'ACTIVE' 
+      where: {
+        tenantId,
+        role: 'OPERATOR',
+        status: 'ACTIVE',
       },
     });
 
@@ -343,7 +373,9 @@ export class ConversationsService {
       if (admins.length > 0) {
         operators.push(...admins);
       } else {
-        throw new NotFoundException('No hay operadores o administradores disponibles en este momento.');
+        throw new NotFoundException(
+          'No hay operadores o administradores disponibles en este momento.',
+        );
       }
     }
 
@@ -365,26 +397,26 @@ export class ConversationsService {
     const updatedConv = await this.db.mysql.conversation.update({
       where: { id: conversationId },
       data: { assignedToId: bestOperator.id },
-      include: { 
+      include: {
         assignedTo: {
-          select: { id: true, name: true, role: true, email: true }
+          select: { id: true, name: true, role: true, email: true },
         },
         messages: {
           orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     // 5. Notify via socket
     this.gateway.server.to(tenantId).emit('conversationUpdate', updatedConv);
-    
+
     // Emit specific notification for the operator
     this.gateway.server.to(tenantId).emit('newTicket', {
       operatorId: bestOperator.id,
       conversationId: updatedConv.id,
       userName: updatedConv.userId || updatedConv.externalId || 'Usuario',
-      message: 'Tienes un nuevo ticket asignado de una Cápsula'
+      message: 'Tienes un nuevo ticket asignado de una Cápsula',
     });
 
     return updatedConv;
@@ -392,7 +424,7 @@ export class ConversationsService {
 
   async saveOperatorMessage(conversationId: string, content: string) {
     const tenantId = getTenantId();
-    
+
     // 1. Save operator message
     const message = await this.db.mysql.message.create({
       data: {
@@ -405,20 +437,20 @@ export class ConversationsService {
 
     // 2. Mark human as active for 10 minutes
     const conversation = await this.db.mysql.conversation.findUnique({
-      where: { id: conversationId }
+      where: { id: conversationId },
     });
 
     if (conversation) {
       const currentMetadata = (conversation.metadata as any) || {};
       const updatedMetadata = {
         ...currentMetadata,
-        humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+        humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes from now
       };
 
       const updatedConv = await this.db.mysql.conversation.update({
         where: { id: conversationId },
         data: { metadata: updatedMetadata },
-        include: { assignedTo: true }
+        include: { assignedTo: true },
       });
 
       // Notify inbox
@@ -431,5 +463,3 @@ export class ConversationsService {
     return message;
   }
 }
-
-

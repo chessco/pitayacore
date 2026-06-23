@@ -10,7 +10,11 @@ import { AiController } from './ai.controller';
 import { CorrectionsController } from './corrections.controller';
 
 @Module({
-  imports: [DatabaseModule, forwardRef(() => KnowledgeBaseModule), AgentsModule],
+  imports: [
+    DatabaseModule,
+    forwardRef(() => KnowledgeBaseModule),
+    AgentsModule,
+  ],
   controllers: [AiController, CorrectionsController],
   providers: [AiService, AiRouterService, PredictiveService],
   exports: [AiService, AiRouterService, PredictiveService],

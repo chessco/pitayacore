@@ -36,8 +36,11 @@ describe('Smoke Test (Production Sanity)', () => {
       .set('x-tenant-id', 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718')
       .send({
         messages: [
-          { role: 'user', content: 'Hola, ¿cómo están los niveles de oxígeno?' }
-        ]
+          {
+            role: 'user',
+            content: 'Hola, ¿cómo están los niveles de oxígeno?',
+          },
+        ],
       });
 
     // Accept 201 or 200 depending on controller implementation
@@ -51,8 +54,9 @@ describe('Smoke Test (Production Sanity)', () => {
   }, 30000); // 30s timeout for AI calls
 
   it('/api/webhooks/flow/incoming (POST) - Bridge Authenticity Check', async () => {
-    const internalKey = process.env.INTERNAL_API_KEY || 'pitaya_internal_secret_2026';
-    
+    const internalKey =
+      process.env.INTERNAL_API_KEY || 'pitaya_internal_secret_2026';
+
     const response = await request(app.getHttpServer())
       .post('/api/webhooks/flow/incoming')
       .set('x-internal-key', internalKey)
@@ -60,7 +64,7 @@ describe('Smoke Test (Production Sanity)', () => {
       .send({
         userId: 'test-user',
         content: 'Test message for bridge connectivity',
-        externalId: 'test-wamid'
+        externalId: 'test-wamid',
       });
 
     // Webhook will 500 due to missing DB seed data (userId FK constraint).

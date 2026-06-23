@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ConflictException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 import { AiService } from '../ai/ai.service';
 import { CreateCapsuleDto } from './dto/create-capsule.dto';
@@ -34,18 +39,18 @@ export class CapsulesService {
   async findAll(tenantId?: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    
-    const where = (tenantId && !isSystem && !isGlobal) ? { tenantId } : {};
-    
+
+    const where = tenantId && !isSystem && !isGlobal ? { tenantId } : {};
+
     console.log('CAPSULES QUERY:', { tenantId, isSystem, isGlobal, where });
 
     const results = await this.db.mysql.capsule.findMany({
       where,
-      include: { 
+      include: {
         agent: true,
         _count: {
-          select: { leads: true, campaigns: true }
-        }
+          select: { leads: true, campaigns: true },
+        },
       },
     });
 
@@ -54,25 +59,33 @@ export class CapsulesService {
   }
 
   async findOne(id: string, tenantId: string, user?: any) {
-    console.log(`FIND_ONE: id="${id}" (length: ${id?.length}), tenantId=${tenantId}, userRole=${user?.role}`);
+    console.log(
+      `FIND_ONE: id="${id}" (length: ${id?.length}), tenantId=${tenantId}, userRole=${user?.role}`,
+    );
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    
-    const where = (isSystem || isGlobal) ? { id: id.trim() } : { id: id.trim(), tenantId };
+
+    const where =
+      isSystem || isGlobal ? { id: id.trim() } : { id: id.trim(), tenantId };
     console.log(`FIND_ONE WHERE: ${JSON.stringify(where)}`);
-    
+
     const capsule = await this.db.mysql.capsule.findFirst({
       where,
       include: { agent: true },
     });
-    
+
     if (!capsule) {
-        console.log('FIND_ONE NOT FOUND IN DB');
-        // Let's try to find it by ID only to be sure
-        const debugCapsule = await this.db.mysql.capsule.findUnique({ where: { id: id.trim() } });
-        console.log('DEBUG_FIND_BY_ID_ONLY:', debugCapsule ? 'FOUND' : 'NOT FOUND');
-        
-        throw new NotFoundException('Capsule not found');
+      console.log('FIND_ONE NOT FOUND IN DB');
+      // Let's try to find it by ID only to be sure
+      const debugCapsule = await this.db.mysql.capsule.findUnique({
+        where: { id: id.trim() },
+      });
+      console.log(
+        'DEBUG_FIND_BY_ID_ONLY:',
+        debugCapsule ? 'FOUND' : 'NOT FOUND',
+      );
+
+      throw new NotFoundException('Capsule not found');
     }
     return capsule;
   }
@@ -80,14 +93,16 @@ export class CapsulesService {
   async update(id: string, tenantId: string, dto: any, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
 
     this.logger.debug(`Updating capsule ${id}. Admin bypass: ${isSystem}`);
     return this.db.mysql.capsule.update({
       where,
       data: {
         ...dto,
-        contentBlocks: dto.contentBlocks ? (dto.contentBlocks as any) : undefined,
+        contentBlocks: dto.contentBlocks
+          ? (dto.contentBlocks as any)
+          : undefined,
         knowledgeIds: dto.knowledgeIds ? (dto.knowledgeIds as any) : undefined,
         promptConfig: dto.promptConfig ? (dto.promptConfig as any) : undefined,
         ctaConfig: dto.ctaConfig ? (dto.ctaConfig as any) : undefined,
@@ -100,8 +115,8 @@ export class CapsulesService {
     const isGlobal = tenantId === 'global' || tenantId === 'all';
 
     const capsule = await this.db.mysql.capsule.findFirst({
-      where: (isSystem || isGlobal) ? { id } : { id, tenantId },
-      include: { campaigns: true }
+      where: isSystem || isGlobal ? { id } : { id, tenantId },
+      include: { campaigns: true },
     });
 
     if (!capsule) throw new NotFoundException('Cápsula no encontrada');
@@ -109,13 +124,19 @@ export class CapsulesService {
     if (!isSystem) {
       // Regla: No borrar si ya está publicada
       if (capsule.status.toUpperCase() === 'PUBLISHED') {
-        throw new ConflictException('No se puede eliminar una cápsula que ya está publicada. Cámbiala a borrador primero.');
+        throw new ConflictException(
+          'No se puede eliminar una cápsula que ya está publicada. Cámbiala a borrador primero.',
+        );
       }
 
       // Regla: No borrar si tiene campañas enviadas
-      const hasSentCampaigns = capsule.campaigns.some((c: any) => c.sentAt !== null);
+      const hasSentCampaigns = capsule.campaigns.some(
+        (c: any) => c.sentAt !== null,
+      );
       if (hasSentCampaigns) {
-        throw new ConflictException('No se puede eliminar esta cápsula porque tiene campañas que ya fueron enviadas por correo.');
+        throw new ConflictException(
+          'No se puede eliminar esta cápsula porque tiene campañas que ya fueron enviadas por correo.',
+        );
       }
     }
 
@@ -124,7 +145,12 @@ export class CapsulesService {
     });
   }
 
-  async findBySlug(slug: string, tenantId?: string, includeDrafts = false, user?: any) {
+  async findBySlug(
+    slug: string,
+    tenantId?: string,
+    includeDrafts = false,
+    user?: any,
+  ) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
 
@@ -139,12 +165,16 @@ export class CapsulesService {
 
     // Si se especifica tenantId, validar pertenencia (excepto si es admin)
     if (tenantId && !(isSystem || isGlobal) && capsule.tenantId !== tenantId) {
-      throw new NotFoundException(`Capsule with slug ${slug} not found for this tenant`);
+      throw new NotFoundException(
+        `Capsule with slug ${slug} not found for this tenant`,
+      );
     }
 
     // Validar status si no se permiten borradores
     if (!includeDrafts && capsule.status.toUpperCase() !== 'PUBLISHED') {
-      throw new NotFoundException(`Esta cápsula no está disponible actualmente.`);
+      throw new NotFoundException(
+        `Esta cápsula no está disponible actualmente.`,
+      );
     }
 
     return capsule;
@@ -153,7 +183,7 @@ export class CapsulesService {
   async updateStatus(id: string, tenantId: string, status: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
 
     return this.db.mysql.capsule.update({
       where,
@@ -161,29 +191,31 @@ export class CapsulesService {
     });
   }
 
-  async createLead(dto: CreateLeadDto & { userId?: string, tenantId?: string }) {
+  async createLead(
+    dto: CreateLeadDto & { userId?: string; tenantId?: string },
+  ) {
     const { userId, ...leadData } = dto;
-    
+
     // Resolver tenantId si no viene (ej: desde el widget público)
     let tenantId = leadData.tenantId;
     if (!tenantId) {
       const capsule = await this.db.mysql.capsule.findUnique({
-        where: { id: leadData.capsuleId }
+        where: { id: leadData.capsuleId },
       });
       tenantId = capsule?.tenantId || 'DEFAULT';
     }
-    
+
     // Unificación de Identidad: Sincronizar con CRM
     let contact = null;
     if (leadData.email || leadData.phone) {
       contact = await this.db.mysql.contact.findFirst({
-        where: { 
-          tenantId, 
+        where: {
+          tenantId,
           OR: [
             ...(leadData.email ? [{ email: leadData.email }] : []),
-            ...(leadData.phone ? [{ phone: leadData.phone }] : [])
-          ]
-        }
+            ...(leadData.phone ? [{ phone: leadData.phone }] : []),
+          ],
+        },
       });
 
       if (!contact) {
@@ -193,8 +225,8 @@ export class CapsulesService {
             name: leadData.name,
             email: leadData.email,
             phone: leadData.phone,
-            status: 'LEAD'
-          }
+            status: 'LEAD',
+          },
         });
       } else {
         // Actualizar información si es necesario
@@ -203,8 +235,8 @@ export class CapsulesService {
           data: {
             name: leadData.name,
             email: leadData.email || contact.email,
-            phone: leadData.phone || contact.phone
-          }
+            phone: leadData.phone || contact.phone,
+          },
         });
       }
     }
@@ -220,7 +252,7 @@ export class CapsulesService {
         campaignId: leadData.campaignId,
         metadata: leadData.metadata,
         tenantId,
-        contactId: contact?.id
+        contactId: contact?.id,
       },
     });
 
@@ -232,8 +264,8 @@ export class CapsulesService {
           contactId: contact.id,
           type: 'NOTE',
           subject: 'Interacción con Cápsula',
-          content: `Registro de lead desde cápsula: ${leadData.name}.`
-        }
+          content: `Registro de lead desde cápsula: ${leadData.name}.`,
+        },
       });
     }
 
@@ -241,12 +273,9 @@ export class CapsulesService {
     if (userId) {
       const conversation = await this.db.mysql.conversation.findFirst({
         where: {
-          OR: [
-            { userId: userId },
-            { externalId: userId }
-          ]
+          OR: [{ userId: userId }, { externalId: userId }],
         },
-        include: { tenant: true }
+        include: { tenant: true },
       });
 
       if (conversation) {
@@ -256,15 +285,15 @@ export class CapsulesService {
           ...currentMetadata,
           userName: dto.name,
           userEmail: dto.email,
-          userPhone: dto.phone
+          userPhone: dto.phone,
         };
 
         const updatedConv = await this.db.mysql.conversation.update({
           where: { id: conversation.id },
           data: {
-            metadata: updatedMetadata
+            metadata: updatedMetadata,
           },
-          include: { assignedTo: true }
+          include: { assignedTo: true },
         });
 
         // Notify inbox to update display name
@@ -275,19 +304,30 @@ export class CapsulesService {
     }
 
     // Trigger de Bienvenida Automático (Workflow)
-    this.workflowsService.triggerWelcomeMessage(lead.id).catch(err => {
+    this.workflowsService.triggerWelcomeMessage(lead.id).catch((err) => {
       this.logger.error(`Error in welcome workflow: ${err.message}`);
     });
 
     // Recompensa de AcuaPoints por registro de lead
     if (contact) {
-      await this.crmService.addPoints(contact.id, tenantId || 'DEFAULT', 50, 'Registro inicial en cápsula');
+      await this.crmService.addPoints(
+        contact.id,
+        tenantId || 'DEFAULT',
+        50,
+        'Registro inicial en cápsula',
+      );
     }
 
     return lead;
   }
 
-  async chat(slug: string, body: any, tenantId?: string, includeDrafts = false, user?: any) {
+  async chat(
+    slug: string,
+    body: any,
+    tenantId?: string,
+    includeDrafts = false,
+    user?: any,
+  ) {
     const { message, userId, agentSlug } = body;
     // Buscamos la cápsula primero para obtener su tenantId real si no viene en el header
     const capsule = await this.findBySlug(slug, tenantId, includeDrafts, user);
@@ -306,18 +346,23 @@ export class CapsulesService {
       undefined, // skills
       targetAgentSlug,
       'capsule',
-      { capsuleId: capsule.id, capsuleTitle: capsule.title }
+      { capsuleId: capsule.id, capsuleTitle: capsule.title },
     );
 
     // Recompensa de AcuaPoints por interacción (si hay contacto vinculado)
     if (aiMessage.conversationId) {
       const conv = await this.db.mysql.conversation.findUnique({
         where: { id: aiMessage.conversationId },
-        include: { leads: { include: { contact: true } } }
+        include: { leads: { include: { contact: true } } },
       });
       const contact = conv?.leads[0]?.contact;
       if (contact) {
-        await this.crmService.addPoints(contact.id, resolvedTenantId, 5, 'Interacción con el asesor AI');
+        await this.crmService.addPoints(
+          contact.id,
+          resolvedTenantId,
+          5,
+          'Interacción con el asesor AI',
+        );
       }
     }
 
@@ -331,7 +376,7 @@ export class CapsulesService {
 
   async getAnalytics(tenantId?: string) {
     const filters = tenantId ? { tenantId } : {};
-    
+
     const [totalCapsules, totalLeads, recentLeads] = await Promise.all([
       this.db.mysql.capsule.count({ where: filters }),
       this.db.mysql.lead.count({ where: { capsule: filters } }),
@@ -347,7 +392,8 @@ export class CapsulesService {
       totalCapsules,
       totalLeads,
       recentLeads,
-      conversionRate: totalCapsules > 0 ? (totalLeads / (totalCapsules * 100)) : 0, // Mocked rate
+      conversionRate:
+        totalCapsules > 0 ? totalLeads / (totalCapsules * 100) : 0, // Mocked rate
     };
   }
 
@@ -368,20 +414,17 @@ export class CapsulesService {
 
   async getLeads(tenantId: string) {
     if (!tenantId) return [];
-    
+
     return this.db.mysql.lead.findMany({
-      where: { 
-        OR: [
-          { tenantId },
-          { capsule: { tenantId } }
-        ]
+      where: {
+        OR: [{ tenantId }, { capsule: { tenantId } }],
       },
       orderBy: { createdAt: 'desc' },
-      include: { 
+      include: {
         capsule: true,
         campaign: true,
         conversation: true,
-        contact: true
+        contact: true,
       },
     });
   }
@@ -390,11 +433,8 @@ export class CapsulesService {
     const lead = await this.db.mysql.lead.findFirst({
       where: {
         id,
-        OR: [
-          { tenantId },
-          { capsule: { tenantId } }
-        ]
-      }
+        OR: [{ tenantId }, { capsule: { tenantId } }],
+      },
     });
     if (!lead) throw new NotFoundException('Lead no encontrado');
     return this.db.mysql.lead.delete({
@@ -406,12 +446,9 @@ export class CapsulesService {
     const lead = await this.db.mysql.lead.findFirst({
       where: {
         id: leadId,
-        OR: [
-          { tenantId },
-          { capsule: { tenantId } }
-        ]
+        OR: [{ tenantId }, { capsule: { tenantId } }],
       },
-      include: { capsule: true }
+      include: { capsule: true },
     });
 
     if (!lead) {
@@ -424,9 +461,9 @@ export class CapsulesService {
         tenantId,
         OR: [
           ...(lead.email ? [{ email: lead.email }] : []),
-          ...(lead.phone ? [{ phone: lead.phone }] : [])
-        ]
-      }
+          ...(lead.phone ? [{ phone: lead.phone }] : []),
+        ],
+      },
     });
 
     if (!contact) {
@@ -438,8 +475,8 @@ export class CapsulesService {
           email: lead.email,
           phone: lead.phone,
           company: 'Cápsula: ' + (lead.capsule?.title || 'Lead'),
-          status: 'LEAD'
-        }
+          status: 'LEAD',
+        },
       });
     } else {
       // Actualizar el contacto existente para asegurar que tenga nombre y compañía
@@ -448,37 +485,43 @@ export class CapsulesService {
         data: {
           name: contact.name || lead.name,
           phone: contact.phone || lead.phone,
-          company: contact.company || 'Cápsula: ' + (lead.capsule?.title || 'Lead')
-        }
+          company:
+            contact.company || 'Cápsula: ' + (lead.capsule?.title || 'Lead'),
+        },
       });
     }
 
     // Vincular el lead con el contacto en la base de datos
     await this.db.mysql.lead.update({
       where: { id: leadId },
-      data: { contactId: contact.id }
+      data: { contactId: contact.id },
     });
 
     // Recompensa de AcuaPoints por sincronización exitosa
-    await this.crmService.addPoints(contact.id, tenantId, 10, 'Sincronización manual de lead a CRM');
+    await this.crmService.addPoints(
+      contact.id,
+      tenantId,
+      10,
+      'Sincronización manual de lead a CRM',
+    );
 
     return {
       success: true,
       contactId: contact.id,
-      contact
+      contact,
     };
   }
 
   async getLeadJourney(conversationId: string, tenantId: string) {
     const conversation = await this.db.mysql.conversation.findUnique({
       where: { id: conversationId },
-      include: { 
+      include: {
         leads: {
           include: {
-            campaign: true
-          }
-        }
-      }
+            campaign: true,
+          },
+        },
+      },
     });
 
     if (!conversation) throw new NotFoundException('Conversation not found');
@@ -494,7 +537,7 @@ export class CapsulesService {
         title: 'Lead Registrado',
         description: `El lead se registró a través de la cápsula: ${(lead.metadata as any)?.capsuleTitle || 'General'}`,
         timestamp: lead.createdAt,
-        metadata: lead.metadata
+        metadata: lead.metadata,
       });
 
       // Campaign Events
@@ -502,23 +545,24 @@ export class CapsulesService {
         const events = await this.db.mysql.campaignEvent.findMany({
           where: {
             campaignId: lead.campaignId,
-            email: lead.email
+            email: lead.email,
           },
-          orderBy: { createdAt: 'asc' }
+          orderBy: { createdAt: 'asc' },
         });
 
         events.forEach((event: any) => {
           timeline.push({
             type: event.type === 'OPEN' ? 'EMAIL_OPEN' : 'EMAIL_CLICK',
             title: event.type === 'OPEN' ? 'Email Abierto' : 'Clic en Enlace',
-            description: event.type === 'OPEN' 
-              ? `Abrió el correo de la campaña: ${lead.campaign?.name}`
-              : `Hizo clic en un enlace de la campaña: ${lead.campaign?.name}`,
+            description:
+              event.type === 'OPEN'
+                ? `Abrió el correo de la campaña: ${lead.campaign?.name}`
+                : `Hizo clic en un enlace de la campaña: ${lead.campaign?.name}`,
             timestamp: event.createdAt,
             metadata: {
               ip: event.ip,
-              userAgent: event.userAgent
-            }
+              userAgent: event.userAgent,
+            },
           });
         });
       }
@@ -529,10 +573,13 @@ export class CapsulesService {
       type: 'CHAT_STARTED',
       title: 'Chat Iniciado',
       description: 'El usuario inició una conversación con el agente AI.',
-      timestamp: conversation.createdAt
+      timestamp: conversation.createdAt,
     });
 
-    return timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return timeline.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
   }
 
   async generateOgHtml(slug: string) {
@@ -546,14 +593,16 @@ export class CapsulesService {
 
       // Extraer datos para OG
       const title = capsule.title || 'PitayaCore - Cápsula Interactiva';
-      const description = capsule.description || 'Descubre esta nueva experiencia interactiva impulsada por IA.';
+      const description =
+        capsule.description ||
+        'Descubre esta nueva experiencia interactiva impulsada por IA.';
       const url = `https://pitayacore.pitayacode.io/capsules/${slug}`;
-      
+
       // Buscar imagen (Hero o Logo del Tenant)
       let imageUrl = 'https://pitayacore.pitayacode.io/logo192.png';
       if (capsule.contentBlocks) {
         const blocks = capsule.contentBlocks as any[];
-        const heroBlock = blocks.find(b => b.type === 'hero');
+        const heroBlock = blocks.find((b) => b.type === 'hero');
         if (heroBlock?.data?.imageUrl) {
           imageUrl = heroBlock.data.imageUrl;
         }

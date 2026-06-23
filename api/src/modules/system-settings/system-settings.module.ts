@@ -8,6 +8,6 @@ import { DatabaseModule } from '../../common/database/database.module';
   imports: [DatabaseModule],
   controllers: [SystemSettingsController],
   providers: [SystemSettingsService],
-  exports: [SystemSettingsService]
+  exports: [SystemSettingsService],
 })
 export class SystemSettingsModule {}

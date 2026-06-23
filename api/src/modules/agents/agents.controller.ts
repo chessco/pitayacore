@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Req, Headers, Inject, forwardRef } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  Headers,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { AgentsService } from './agents.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
@@ -9,7 +21,7 @@ export class AgentsController {
   constructor(
     private readonly agentsService: AgentsService,
     @Inject(forwardRef(() => ConversationsService))
-    private readonly conversationsService: ConversationsService
+    private readonly conversationsService: ConversationsService,
   ) {}
 
   @Get()
@@ -35,7 +47,7 @@ export class AgentsController {
     @Param('slug') slug: string,
     @Body() body: any,
     @Headers('x-tenant-id') tenantId?: string,
-    @Headers('x-operator-email') operatorEmail?: string
+    @Headers('x-operator-email') operatorEmail?: string,
   ) {
     const resolvedTenantId = tenantId || getTenantId();
     const userId = operatorEmail || 'internal-user';
@@ -51,7 +63,7 @@ export class AgentsController {
       undefined, // skills
       slug, // agentSlug
       'internal', // channel
-      { internalChat: true, operatorEmail }
+      { internalChat: true, operatorEmail },
     );
 
     return {
@@ -77,7 +89,10 @@ export class AgentsController {
   }
 
   @Post(':id/rollback/:versionId')
-  async rollback(@Param('id') id: string, @Param('versionId') versionId: string) {
+  async rollback(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
     return this.agentsService.rollback(id, versionId);
   }
 }

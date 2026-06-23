@@ -9,4 +9,3 @@ import { DatabaseModule } from '../../common/database/database.module';
   providers: [VerticalsService],
 })
 export class VerticalsModule {}
-

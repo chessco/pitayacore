@@ -16,34 +16,38 @@ export class TenantsService {
 
   async findAll() {
     const tenants = await this.db.mysql.tenant.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const tenantsWithConsumption = await Promise.all(tenants.map(async (tenant) => {
-      const consumption = await this.db.mysql.aiCostLog.aggregate({
-        where: {
-          tenantId: tenant.id,
-          createdAt: { gte: firstDayOfMonth }
-        },
-        _sum: {
-          tokensIn: true,
-          tokensOut: true,
-          costUsd: true
-        }
-      });
+    const tenantsWithConsumption = await Promise.all(
+      tenants.map(async (tenant) => {
+        const consumption = await this.db.mysql.aiCostLog.aggregate({
+          where: {
+            tenantId: tenant.id,
+            createdAt: { gte: firstDayOfMonth },
+          },
+          _sum: {
+            tokensIn: true,
+            tokensOut: true,
+            costUsd: true,
+          },
+        });
 
-      return {
-        ...tenant,
-        consumption: {
-          totalTokens: (consumption._sum.tokensIn || 0) + (consumption._sum.tokensOut || 0),
-          totalCost: consumption._sum.costUsd || 0,
-          period: firstDayOfMonth.toISOString()
-        }
-      };
-    }));
+        return {
+          ...tenant,
+          consumption: {
+            totalTokens:
+              (consumption._sum.tokensIn || 0) +
+              (consumption._sum.tokensOut || 0),
+            totalCost: consumption._sum.costUsd || 0,
+            period: firstDayOfMonth.toISOString(),
+          },
+        };
+      }),
+    );
 
     return tenantsWithConsumption;
   }
@@ -56,13 +60,13 @@ export class TenantsService {
       by: ['model'],
       where: {
         tenantId: id,
-        createdAt: { gte: firstDayOfMonth }
+        createdAt: { gte: firstDayOfMonth },
       },
       _sum: {
         tokensIn: true,
         tokensOut: true,
-        costUsd: true
-      }
+        costUsd: true,
+      },
     });
 
     return breakdown;
@@ -87,41 +91,51 @@ export class TenantsService {
       where: { id },
       data: {
         name: data.name,
-        plan: data.plan?.toUpperCase() === 'ENTERPRISE' ? 'ENTERPRISE' : 
-              data.plan?.toUpperCase() === 'SCALE' ? 'PRO' : 
-              data.plan?.toUpperCase() === 'STARTER' ? 'FREE' : 
-              data.plan?.toUpperCase(),
-        status: data.status?.toLowerCase() === 'active' || data.status?.toLowerCase() === 'activo' ? 'ACTIVE' : 
-                data.status?.toLowerCase() === 'suspended' || data.status?.toLowerCase() === 'suspendido' ? 'SUSPENDED' : 
-                'ACTIVE',
+        plan:
+          data.plan?.toUpperCase() === 'ENTERPRISE'
+            ? 'ENTERPRISE'
+            : data.plan?.toUpperCase() === 'SCALE'
+              ? 'PRO'
+              : data.plan?.toUpperCase() === 'STARTER'
+                ? 'FREE'
+                : data.plan?.toUpperCase(),
+        status:
+          data.status?.toLowerCase() === 'active' ||
+          data.status?.toLowerCase() === 'activo'
+            ? 'ACTIVE'
+            : data.status?.toLowerCase() === 'suspended' ||
+                data.status?.toLowerCase() === 'suspendido'
+              ? 'SUSPENDED'
+              : 'ACTIVE',
         isDefault: data.isDefault,
         enabledModules: data.enabledModules,
-        brandingConfig: data.brandingConfig
+        brandingConfig: data.brandingConfig,
       },
     });
   }
 
   async getGlobalAnalytics() {
-    const [tenantCount, capsuleCount, leadCount, campaignStats] = await Promise.all([
-      this.db.mysql.tenant.count(),
-      this.db.mysql.capsule.count(),
-      this.db.mysql.lead.count(),
-      this.db.mysql.campaign.aggregate({
-        _sum: {
-          opensCount: true,
-          clicksCount: true,
-        },
-      }),
-    ]);
+    const [tenantCount, capsuleCount, leadCount, campaignStats] =
+      await Promise.all([
+        this.db.mysql.tenant.count(),
+        this.db.mysql.capsule.count(),
+        this.db.mysql.lead.count(),
+        this.db.mysql.campaign.aggregate({
+          _sum: {
+            opensCount: true,
+            clicksCount: true,
+          },
+        }),
+      ]);
 
     const topTenants = await this.db.mysql.tenant.findMany({
       take: 5,
       include: {
         _count: {
-          select: { capsules: true, users: true }
-        }
+          select: { capsules: true, users: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     const recentEvents = await this.db.mysql.campaignEvent.findMany({
@@ -129,9 +143,9 @@ export class TenantsService {
       orderBy: { createdAt: 'desc' },
       include: {
         campaign: {
-          select: { name: true }
-        }
-      }
+          select: { name: true },
+        },
+      },
     });
 
     return {
@@ -143,7 +157,7 @@ export class TenantsService {
         clicks: campaignStats._sum.clicksCount || 0,
       },
       topTenants,
-      recentEvents
+      recentEvents,
     };
   }
 }

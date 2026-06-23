@@ -20,9 +20,7 @@ describe('Authentication (e2e)', () => {
 
   describe('ApiKeyGuard Protection', () => {
     it('should reject requests without x-api-key header (401)', () => {
-      return request(app.getHttpServer())
-        .get('/api/hitl/pending')
-        .expect(401);
+      return request(app.getHttpServer()).get('/api/hitl/pending').expect(401);
     });
 
     it('should reject requests with invalid x-api-key (401)', () => {
@@ -38,7 +36,7 @@ describe('Authentication (e2e)', () => {
         .get('/api/hitl/pending')
         .set('x-api-key', INTERNAL_API_KEY)
         .set('x-tenant-id', 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718');
-      
+
       expect(response.status).not.toBe(401);
       expect(response.status).not.toBe(403);
     });
@@ -56,7 +54,7 @@ describe('Authentication (e2e)', () => {
         .set('x-api-key', INTERNAL_API_KEY)
         .set('x-tenant-id', 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718')
         .send({ messages: [] });
-      
+
       expect(response.status).not.toBe(401);
     });
   });

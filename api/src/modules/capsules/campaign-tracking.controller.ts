@@ -27,7 +27,10 @@ export class CampaignTrackingController {
       'base64',
     );
     res.set('Content-Type', 'image/png');
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate',
+    );
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     res.send(pixel);
@@ -52,7 +55,7 @@ export class CampaignTrackingController {
     if (redirect) {
       return res.redirect(redirect);
     }
-    
+
     // Fallback if no redirect is provided
     return res.redirect('/');
   }
@@ -68,11 +71,15 @@ export class CampaignTrackingController {
   ) {
     // Register the WhatsApp click engagement in CRM
     try {
-      await this.campaignService.recordWhatsAppEvent(id, email || 'unknown@whatsapp', {
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-        channel: 'WHATSAPP',
-      });
+      await this.campaignService.recordWhatsAppEvent(
+        id,
+        email || 'unknown@whatsapp',
+        {
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+          channel: 'WHATSAPP',
+        },
+      );
     } catch (err) {
       // Don't block redirect on tracking error
       console.warn('[WA Tracking] Event recording failed:', err?.message);
@@ -94,7 +101,7 @@ export class CampaignTrackingController {
     if (email) {
       await this.campaignService.unsubscribeEmail(id, email);
     }
-    
+
     // Return a simple HTML response
     res.send(`
       <!DOCTYPE html>

@@ -7,7 +7,7 @@ export class SystemSettingsService {
 
   async getSetting(key: string): Promise<string | null> {
     const setting = await this.db.mysql.systemSetting.findUnique({
-      where: { key }
+      where: { key },
     });
     return setting?.value || null;
   }
@@ -16,7 +16,7 @@ export class SystemSettingsService {
     await this.db.mysql.systemSetting.upsert({
       where: { key },
       update: { value },
-      create: { key, value }
+      create: { key, value },
     });
   }
 }

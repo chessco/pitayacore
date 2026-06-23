@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Logger,
+} from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 
@@ -18,7 +28,9 @@ export class CorrectionsController {
   }
 
   @Post()
-  async create(@Body() data: { trigger: string, response: string, tenantId?: string }) {
+  async create(
+    @Body() data: { trigger: string; response: string; tenantId?: string },
+  ) {
     const tenantId = data.tenantId || getTenantId();
     return this.db.mysql.humanCorrection.create({
       data: {
@@ -30,7 +42,10 @@ export class CorrectionsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() data: { trigger?: string, response?: string, isActive?: boolean }) {
+  async update(
+    @Param('id') id: string,
+    @Body() data: { trigger?: string; response?: string; isActive?: boolean },
+  ) {
     return this.db.mysql.humanCorrection.update({
       where: { id },
       data,

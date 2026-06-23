@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Delete, Param, Body, HttpCode, HttpStatus, UseInterceptors, UploadedFile, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  Patch,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../common/database/database.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
@@ -8,7 +20,7 @@ import { getTenantId } from '../../common/tenant/tenant.middleware';
 export class KnowledgeBaseController {
   constructor(
     private db: DatabaseService,
-    private kbService: KnowledgeBaseService
+    private kbService: KnowledgeBaseService,
   ) {}
 
   @Get()
@@ -16,22 +28,19 @@ export class KnowledgeBaseController {
     const tenantId = getTenantId();
     return this.db.mysql.knowledgeBase.findMany({
       where: {
-        OR: [
-          { tenantId },
-          { tenantId: null }
-        ]
+        OR: [{ tenantId }, { tenantId: null }],
       },
       include: {
         _count: {
-          select: { chunks: true }
-        }
+          select: { chunks: true },
+        },
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
     });
   }
 
   @Post()
-  async create(@Body() body: { title: string, content: string }) {
+  async create(@Body() body: { title: string; content: string }) {
     return this.kbService.addEntry(body.content, body.title);
   }
 
@@ -44,7 +53,7 @@ export class KnowledgeBaseController {
   }
 
   @Post('generate')
-  async generateContent(@Body() body: { title: string, isCopilot?: boolean }) {
+  async generateContent(@Body() body: { title: string; isCopilot?: boolean }) {
     let prompt = `Actúa como un experto en acuicultura. Genera un documento técnico detallado en formato Markdown sobre: "${body.title}". 
     Incluye secciones como: Introducción, Procedimientos Estándar (SOP), Parámetros Críticos y Conclusión. 
     Usa un tono profesional y técnico.`;
@@ -59,7 +68,7 @@ export class KnowledgeBaseController {
       4. Estructura: Resumen Ejecutivo, Marco Normativo, Ejecución Técnica, Mitigación de Riesgos y Control de Calidad.
       Usa un lenguaje extremadamente técnico y profesional.`;
     }
-    
+
     const content = await this.kbService.generateWithAi(prompt);
     return { content };
   }
@@ -82,16 +91,13 @@ export class KnowledgeBaseController {
     const doc = await this.db.mysql.knowledgeBase.findFirst({
       where: {
         id,
-        OR: [
-          { tenantId },
-          { tenantId: null }
-        ]
+        OR: [{ tenantId }, { tenantId: null }],
       },
       include: {
         chunks: {
-          orderBy: { sequence: 'asc' }
-        }
-      }
+          orderBy: { sequence: 'asc' },
+        },
+      },
     });
 
     if (!doc) return null;
@@ -100,17 +106,17 @@ export class KnowledgeBaseController {
     const vectors: any[] = await this.db.postgres.$queryRawUnsafe(
       `SELECT "id", "content", CAST("embedding" AS TEXT) as "embedding" 
        FROM "VectorRecord" 
-       WHERE "refId" = '${id}'`
+       WHERE "refId" = '${id}'`,
     );
 
     console.log(`Fetched ${vectors.length} vectors for doc ${id}`);
 
     return {
       ...doc,
-      vectors: vectors.map(v => ({
+      vectors: vectors.map((v) => ({
         ...v,
-        embedding: v.embedding || 'Vector no disponible'
-      }))
+        embedding: v.embedding || 'Vector no disponible',
+      })),
     };
   }
 

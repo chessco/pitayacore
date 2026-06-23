@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Body, Param, Headers, Res, InternalServerErrorException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Headers,
+  Res,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as express from 'express';
 import { EcommerceService } from './ecommerce.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
@@ -13,7 +23,10 @@ export class EcommerceController {
   }
 
   @Post('products/generate-description')
-  generateDescription(@Body('imageUrl') imageUrl: string, @Body('sector') sector: string) {
+  generateDescription(
+    @Body('imageUrl') imageUrl: string,
+    @Body('sector') sector: string,
+  ) {
     return this.ecommerceService.generateProductDescription(imageUrl, sector);
   }
 
@@ -23,17 +36,35 @@ export class EcommerceController {
   }
 
   @Patch('products/:id')
-  updateProduct(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string, @Body() data: any) {
+  updateProduct(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.ecommerceService.updateProduct(id, tenantId, data);
   }
 
   @Post('products/:id/stock-adjust')
-  adjustStock(@Headers('x-tenant-id') tenantId: string, @Param('id') id: string, @Body() data: any) {
-    return this.ecommerceService.adjustStock(tenantId, id, data.quantity, data.type, data.reason, data.userId);
+  adjustStock(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.ecommerceService.adjustStock(
+      tenantId,
+      id,
+      data.quantity,
+      data.type,
+      data.reason,
+      data.userId,
+    );
   }
 
   @Get('movements')
-  getMovements(@Headers('x-tenant-id') tenantId: string, @Param('productId') productId?: string) {
+  getMovements(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('productId') productId?: string,
+  ) {
     return this.ecommerceService.getMovements(tenantId, productId);
   }
 
@@ -48,7 +79,10 @@ export class EcommerceController {
   }
 
   @Post('categories')
-  createCategory(@Headers('x-tenant-id') tenantId: string, @Body('name') name: string) {
+  createCategory(
+    @Headers('x-tenant-id') tenantId: string,
+    @Body('name') name: string,
+  ) {
     return this.ecommerceService.createCategory(tenantId, name);
   }
 

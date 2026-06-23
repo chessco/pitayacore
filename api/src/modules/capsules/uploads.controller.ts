@@ -1,10 +1,10 @@
-import { 
-  Controller, 
-  Post, 
-  UseInterceptors, 
-  UploadedFile, 
-  UseGuards, 
-  BadRequestException 
+import {
+  Controller,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+  UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -27,13 +27,19 @@ export class UploadsController {
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|webp|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten imágenes (jpg, png, webp, gif)'), false);
+          return cb(
+            new BadRequestException(
+              'Solo se permiten imágenes (jpg, png, webp, gif)',
+            ),
+            false,
+          );
         }
         cb(null, true);
       },
@@ -46,12 +52,12 @@ export class UploadsController {
     if (!file) {
       throw new BadRequestException('No se ha proporcionado ningún archivo');
     }
-    
+
     // Devolvemos la URL pública del archivo
     // Asumimos que el server corre en localhost:3014 en dev
     // Pero devolvemos una ruta relativa para mayor flexibilidad
     const url = `/static/uploads/${file.filename}`;
-    
+
     return {
       url,
       filename: file.filename,

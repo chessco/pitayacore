@@ -6,19 +6,21 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Security Headers
   app.use(helmet());
-  
+
   // Global Error Handling
   app.useGlobalFilters(new AllExceptionsFilter());
-  
+
   // Input Validation & Sanitization
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // CORS dinámico para producción
   app.enableCors({
@@ -29,7 +31,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
-  
+
   // Aumentar el límite de tamaño para recibir payloads de Flow (ej. base64 o skills grandes)
   const { json, urlencoded } = require('express');
   app.use(json({ limit: '10mb' }));

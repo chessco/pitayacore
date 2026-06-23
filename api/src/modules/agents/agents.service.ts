@@ -13,14 +13,19 @@ export class AgentsService {
         slug,
         OR: [
           { tenantId },
-          { tenantId: 'GLOBAL' } // Soporte para agentes globales del sistema
+          { tenantId: 'GLOBAL' }, // Soporte para agentes globales del sistema
         ],
         isActive: true,
       },
     });
   }
 
-  async create(data: { name: string; slug: string; prompt: string; tenantId: string }) {
+  async create(data: {
+    name: string;
+    slug: string;
+    prompt: string;
+    tenantId: string;
+  }) {
     return this.db.mysql.agent.create({
       data: {
         ...data,
@@ -31,20 +36,30 @@ export class AgentsService {
 
   async findAll(tenantId: string) {
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = isGlobal ? {} : {
-      OR: [{ tenantId }, { tenantId: 'GLOBAL' }]
-    };
-    
+    const where = isGlobal
+      ? {}
+      : {
+          OR: [{ tenantId }, { tenantId: 'GLOBAL' }],
+        };
+
     return this.db.mysql.agent.findMany({ where });
   }
 
-  async update(id: string, data: Partial<{ name: string; prompt: string; description: string; config: any }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      prompt: string;
+      description: string;
+      config: any;
+    }>,
+  ) {
     const updated = await this.db.mysql.agent.update({
       where: { id },
       data: {
         ...data,
-        status: 'PRE_PRODUCTION' // Reset to draft when modified
-      }
+        status: 'PRE_PRODUCTION', // Reset to draft when modified
+      },
     });
 
     if (data.prompt) {
@@ -53,8 +68,8 @@ export class AgentsService {
           agentId: id,
           prompt: data.prompt,
           version: updated.version,
-          status: 'PRE_PRODUCTION'
-        }
+          status: 'PRE_PRODUCTION',
+        },
       });
     }
 
@@ -65,7 +80,7 @@ export class AgentsService {
     const agent = await this.db.mysql.agent.findUnique({ where: { id } });
     if (!agent) throw new Error('Agent not found');
     let version = agent.version;
-    
+
     // Si se pasa a producción, subimos la versión menor
     if (status === 'PRODUCTION') {
       const v = parseFloat(version);
@@ -74,7 +89,7 @@ export class AgentsService {
 
     const updated = await this.db.mysql.agent.update({
       where: { id },
-      data: { status, version }
+      data: { status, version },
     });
 
     // Save as a production version
@@ -83,8 +98,8 @@ export class AgentsService {
         agentId: id,
         prompt: updated.prompt,
         version: updated.version,
-        status: status
-      }
+        status: status,
+      },
     });
 
     return updated;
@@ -93,18 +108,20 @@ export class AgentsService {
   async findVersions(agentId: string) {
     return this.db.mysql.agentVersion.findMany({
       where: { agentId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async rollback(agentId: string, versionId: string) {
     const versionRecord = await this.db.mysql.agentVersion.findUnique({
-      where: { id: versionId }
+      where: { id: versionId },
     });
-    
+
     if (!versionRecord) throw new Error('Version not found');
 
-    const agent = await this.db.mysql.agent.findUnique({ where: { id: agentId } });
+    const agent = await this.db.mysql.agent.findUnique({
+      where: { id: agentId },
+    });
     if (!agent) throw new Error('Agent not found');
 
     // Al revertir, incrementamos la versión para que quede claro que es un nuevo estado
@@ -116,8 +133,8 @@ export class AgentsService {
       data: {
         prompt: versionRecord.prompt,
         version: newVersion,
-        status: 'PRODUCTION' // Al revertir solemos quererlo en producción de inmediato
-      }
+        status: 'PRODUCTION', // Al revertir solemos quererlo en producción de inmediato
+      },
     });
 
     // Save the rollback as a new version entry
@@ -126,8 +143,8 @@ export class AgentsService {
         agentId,
         prompt: updated.prompt,
         version: updated.version,
-        status: 'PRODUCTION'
-      }
+        status: 'PRODUCTION',
+      },
     });
 
     return updated;

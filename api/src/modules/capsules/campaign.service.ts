@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 import { MailService } from '../../common/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
@@ -24,7 +28,7 @@ export class CampaignService {
   async updateCampaign(tenantId: string, id: string, data: any, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
 
     const campaign = await this.db.mysql.campaign.findFirst({ where });
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
@@ -38,19 +42,19 @@ export class CampaignService {
   async getCampaigns(tenantId: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? {} : { tenantId };
+    const where = isSystem || isGlobal ? {} : { tenantId };
 
     return this.db.mysql.campaign.findMany({
       where,
-      include: { 
+      include: {
         capsule: true,
         audienceList: {
           include: {
             _count: {
-              select: { members: { where: { status: 'SUBSCRIBED' } } }
-            }
-          }
-        }
+              select: { members: { where: { status: 'SUBSCRIBED' } } },
+            },
+          },
+        },
       },
     });
   }
@@ -58,7 +62,7 @@ export class CampaignService {
   async getCampaign(tenantId: string, id: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
 
     return this.db.mysql.campaign.findFirst({
       where,
@@ -69,9 +73,10 @@ export class CampaignService {
   async getWhatsAppCampaigns(tenantId: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal)
-      ? { channel: 'WHATSAPP' as any }
-      : { tenantId, channel: 'WHATSAPP' as any };
+    const where =
+      isSystem || isGlobal
+        ? { channel: 'WHATSAPP' as any }
+        : { tenantId, channel: 'WHATSAPP' as any };
 
     return this.db.mysql.campaign.findMany({
       where,
@@ -80,10 +85,10 @@ export class CampaignService {
         audienceList: {
           include: {
             _count: {
-              select: { members: { where: { status: 'SUBSCRIBED' } } }
-            }
-          }
-        }
+              select: { members: { where: { status: 'SUBSCRIBED' } } },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -92,29 +97,31 @@ export class CampaignService {
   async sendCampaign(tenantId: string, id: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
 
     const campaign = await this.db.mysql.campaign.findFirst({
       where,
-      include: { 
+      include: {
         capsule: true,
-        tenant: true 
+        tenant: true,
       },
     });
     if (!campaign) throw new Error('Campaign not found');
 
     const tenantBranding = (campaign.tenant?.brandingConfig as any) || {};
     const campaignConfig = (campaign.templateConfig as any) || {};
-    
+
     // Merge: campaign config overrides tenant branding
     const config = { ...tenantBranding, ...campaignConfig };
-    
+
     const primaryColor = config.primaryColor || '#001A41';
     const accentColor = config.accentColor || '#2563eb';
     const logoUrl = config.logoUrl || 'https://pitayacore.io/logo-white.png';
     const ctaText = config.ctaText || 'Explorar Cápsula Interactiva';
-    const footerText = config.footerText || '© 2026 Acuaequipos Capsulas Acuicolas. Todos los derechos reservados.';
-    
+    const footerText =
+      config.footerText ||
+      '© 2026 Acuaequipos Capsulas Acuicolas. Todos los derechos reservados.';
+
     const emailBlocks = campaignConfig.blocks || [];
     const emailImageBlock = emailBlocks.find((b: any) => b.type === 'image');
     const emailHeroImage = emailImageBlock?.content?.url;
@@ -123,58 +130,67 @@ export class CampaignService {
 
     // Extract hero image: priority 1: email block image, priority 2: branding config, priority 3: capsule hero block, priority 4: null
     const capsuleBlocks = (campaign.capsule?.contentBlocks as any[]) || [];
-    const heroBlock = capsuleBlocks.find(b => b.type === 'hero');
-    const capsuleHeroImage = heroBlock?.data?.image || heroBlock?.data?.imageUrl;
-    const heroImage = emailHeroImage || config.heroImage || capsuleHeroImage || null;
+    const heroBlock = capsuleBlocks.find((b) => b.type === 'hero');
+    const capsuleHeroImage =
+      heroBlock?.data?.image || heroBlock?.data?.imageUrl;
+    const heroImage =
+      emailHeroImage || config.heroImage || capsuleHeroImage || null;
 
-    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     const apiUrl = this.configService.get('API_URL') || 'http://localhost:3014';
 
     // Helper to download external images and serve them locally
     const ensureLocalImage = async (url: string) => {
       if (!url) return url;
       if (url.startsWith(apiUrl) || url.startsWith('/')) {
-        return url.startsWith('http') ? url : `${apiUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+        return url.startsWith('http')
+          ? url
+          : `${apiUrl}${url.startsWith('/') ? '' : '/'}${url}`;
       }
-      
+
       try {
         const crypto = require('crypto');
         const fs = require('fs');
         const path = require('path');
-        
+
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
+
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        
+
         let ext = '.png';
-        try { ext = path.extname(new URL(url).pathname) || '.png'; } catch (e) {}
-        
+        try {
+          ext = path.extname(new URL(url).pathname) || '.png';
+        } catch (e) {}
+
         const hash = crypto.createHash('md5').update(url).digest('hex');
         const filename = `proxy_${hash}${ext}`;
-        
+
         const uploadPath = path.join(process.cwd(), 'public', 'uploads');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }
-        
+
         const filePath = path.join(uploadPath, filename);
         if (!fs.existsSync(filePath)) {
           fs.writeFileSync(filePath, buffer);
         }
-        
+
         return `${apiUrl}/static/uploads/${filename}`;
       } catch (err) {
         console.warn(`Failed to proxy image ${url}:`, err.message);
-        return url; 
+        return url;
       }
     };
 
     const finalLogoUrl = await ensureLocalImage(logoUrl);
     const finalHeroImage = await ensureLocalImage(heroImage);
 
-    console.log(`[CampaignService] Sending email. Logo: ${finalLogoUrl}, Hero: ${finalHeroImage}`);
+    console.log(
+      `[CampaignService] Sending email. Logo: ${finalLogoUrl}, Hero: ${finalHeroImage}`,
+    );
 
     // Parse Markdown content to HTML
     const formattedContent = marked.parse(campaign.content || '');
@@ -188,19 +204,23 @@ export class CampaignService {
 
     if (campaign.audienceId) {
       const members = await this.db.mysql.audienceMember.findMany({
-        where: { 
-          audienceId: campaign.audienceId, 
-          status: { in: ['SUBSCRIBED', 'WA_INVALID'] } 
+        where: {
+          audienceId: campaign.audienceId,
+          status: { in: ['SUBSCRIBED', 'WA_INVALID'] },
         },
-        select: { email: true }
+        select: { email: true },
       });
-      emails = members.map(m => m.email);
+      emails = members.map((m) => m.email);
     } else if (campaign.audience) {
-      emails = campaign.audience.split(/[,|\n]/).filter((e: string) => e.trim());
+      emails = campaign.audience
+        .split(/[,|\n]/)
+        .filter((e: string) => e.trim());
     }
 
     if (emails.length > 0) {
-      console.log(`Sending campaign "${campaign.name}" to ${emails.length} recipients: ${emails.join(', ')}`);
+      console.log(
+        `Sending campaign "${campaign.name}" to ${emails.length} recipients: ${emails.join(', ')}`,
+      );
       for (const email of emails) {
         const recipientEmail = email.trim();
         const trackingPixelWithEmail = `${trackingPixelUrl}?e=${encodeURIComponent(recipientEmail)}`;
@@ -234,13 +254,17 @@ export class CampaignService {
                     </tr>
 
                     <!-- Optional Hero Image -->
-                    ${finalHeroImage ? `
+                    ${
+                      finalHeroImage
+                        ? `
                     <tr>
                         <td style="padding: 0;">
                             <img src="${finalHeroImage}" alt="Hero" width="600" style="width: 100%; display: block; height: auto;">
                         </td>
                     </tr>
-                    ` : ''}
+                    `
+                        : ''
+                    }
 
                     <!-- Body Content -->
                     <tr>
@@ -333,7 +357,7 @@ export class CampaignService {
     </table>
 </body>
 </html>
-          `
+          `,
         );
       }
     }
@@ -346,7 +370,12 @@ export class CampaignService {
     });
   }
 
-  async recordEvent(campaignId: string, type: 'OPEN' | 'CLICK', email: string, metadata?: any) {
+  async recordEvent(
+    campaignId: string,
+    type: 'OPEN' | 'CLICK',
+    email: string,
+    metadata?: any,
+  ) {
     // 1. Create the event record
     const event = await this.db.mysql.campaignEvent.create({
       data: {
@@ -371,18 +400,36 @@ export class CampaignService {
     // 2.5 Ensure a Lead record exists for this email
     if (email) {
       const existingLead = await this.db.mysql.lead.findFirst({
-        where: { email, tenantId: campaign.tenantId }
+        where: { email, tenantId: campaign.tenantId },
       });
 
       // Parse user agent for telemetry
       const ua = metadata?.userAgent || '';
-      const device = /mobile/i.test(ua) ? 'Móvil' : /tablet/i.test(ua) ? 'Tablet' : 'Desktop';
-      const browser = /chrome|crios/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : /firefox/i.test(ua) ? 'Firefox' : 'Desconocido';
-      const os = /iphone|ipad|ipod/i.test(ua) ? 'iOS' : /android/i.test(ua) ? 'Android' : /windows/i.test(ua) ? 'Windows' : /mac/i.test(ua) ? 'macOS' : 'Linux';
+      const device = /mobile/i.test(ua)
+        ? 'Móvil'
+        : /tablet/i.test(ua)
+          ? 'Tablet'
+          : 'Desktop';
+      const browser = /chrome|crios/i.test(ua)
+        ? 'Chrome'
+        : /safari/i.test(ua)
+          ? 'Safari'
+          : /firefox/i.test(ua)
+            ? 'Firefox'
+            : 'Desconocido';
+      const os = /iphone|ipad|ipod/i.test(ua)
+        ? 'iOS'
+        : /android/i.test(ua)
+          ? 'Android'
+          : /windows/i.test(ua)
+            ? 'Windows'
+            : /mac/i.test(ua)
+              ? 'macOS'
+              : 'Linux';
 
       // 2.6 SYNC WITH CRM CONTACTS
       const existingContact = await this.db.mysql.contact.findFirst({
-        where: { email, tenantId: campaign.tenantId }
+        where: { email, tenantId: campaign.tenantId },
       });
 
       if (!existingContact) {
@@ -395,9 +442,9 @@ export class CampaignService {
             metadata: {
               source: 'EMAIL_CAMPAIGN',
               campaignName: campaign.name,
-              firstInteraction: type
-            }
-          }
+              firstInteraction: type,
+            },
+          },
         });
 
         // AUTO-DEAL on CLICK for new contacts
@@ -410,8 +457,11 @@ export class CampaignService {
               status: 'OPEN',
               contactId: contact.id,
               tenantId: campaign.tenantId,
-              metadata: { source: 'CAMPAIGN_AUTO_GEN', campaignId: campaign.id }
-            } as any
+              metadata: {
+                source: 'CAMPAIGN_AUTO_GEN',
+                campaignId: campaign.id,
+              },
+            } as any,
           });
         }
       } else {
@@ -423,17 +473,17 @@ export class CampaignService {
             type: 'CAMPAIGN',
             subject: `Interacción con Campaña: ${campaign.name}`,
             content: `El usuario realizó un ${type} desde un dispositivo ${device} (${os}).`,
-          } as any
+          } as any,
         });
 
         // AUTO-DEAL on CLICK for existing contacts (if no open deal for this campaign exists)
         if (type === 'CLICK') {
           const existingDeal = await this.db.mysql.deal.findFirst({
-            where: { 
-              contactId: existingContact.id, 
+            where: {
+              contactId: existingContact.id,
               status: 'OPEN',
-              metadata: { path: '$.campaignId', equals: campaign.id } as any
-            }
+              metadata: { path: '$.campaignId', equals: campaign.id } as any,
+            },
           });
 
           if (!existingDeal) {
@@ -445,15 +495,20 @@ export class CampaignService {
                 status: 'OPEN',
                 contactId: existingContact.id,
                 tenantId: campaign.tenantId,
-                metadata: { source: 'CAMPAIGN_AUTO_GEN', campaignId: campaign.id }
-              } as any
+                metadata: {
+                  source: 'CAMPAIGN_AUTO_GEN',
+                  campaignId: campaign.id,
+                },
+              } as any,
             });
           }
         }
       }
 
       if (!existingLead) {
-        console.log(`[CampaignService] Creating new lead with telemetry: ${email} (${device}/${os})`);
+        console.log(
+          `[CampaignService] Creating new lead with telemetry: ${email} (${device}/${os})`,
+        );
         await this.db.mysql.lead.create({
           data: {
             email,
@@ -461,16 +516,16 @@ export class CampaignService {
             campaignId,
             capsuleId: campaign.capsuleId,
             tenantId: campaign.tenantId,
-            metadata: { 
-              source: 'CAMPAIGN_EVENT', 
+            metadata: {
+              source: 'CAMPAIGN_EVENT',
               lastEvent: type,
               device,
               browser,
               os,
               ip: metadata?.ip,
-              userAgent: ua
-            }
-          }
+              userAgent: ua,
+            },
+          },
         });
       } else {
         // Update telemetry on existing lead
@@ -483,9 +538,9 @@ export class CampaignService {
               device,
               browser,
               os,
-              updatedAt: new Date().toISOString()
-            }
-          }
+              updatedAt: new Date().toISOString(),
+            },
+          },
         });
       }
     }
@@ -493,17 +548,19 @@ export class CampaignService {
     // 3. Smart Follow-up Logic (Improvement #2)
     if (type === 'OPEN') {
       const openCount = await this.db.mysql.campaignEvent.count({
-        where: { campaignId, email, type: 'OPEN' }
+        where: { campaignId, email, type: 'OPEN' },
       });
 
       // If they open 3 times and haven't clicked yet, trigger AI Follow-up
       if (openCount === 3) {
         const hasClicked = await this.db.mysql.campaignEvent.findFirst({
-          where: { campaignId, email, type: 'CLICK' }
+          where: { campaignId, email, type: 'CLICK' },
         });
 
         if (!hasClicked) {
-          console.log(`[AI Trigger] Lead ${email} is very interested (3 opens). Sending automated follow-up...`);
+          console.log(
+            `[AI Trigger] Lead ${email} is very interested (3 opens). Sending automated follow-up...`,
+          );
           await this.triggerAutoFollowUp(campaignId, email);
         }
       }
@@ -516,13 +573,15 @@ export class CampaignService {
     try {
       const campaign = await this.db.mysql.campaign.findUnique({
         where: { id: campaignId },
-        include: { capsule: true }
+        include: { capsule: true },
       });
 
       if (!campaign) return;
 
-      console.log(`[AI] Generating high-conversion follow-up for ${email} regarding ${campaign.name}`);
-      
+      console.log(
+        `[AI] Generating high-conversion follow-up for ${email} regarding ${campaign.name}`,
+      );
+
       // Record the system action in the event log
       await this.db.mysql.campaignEvent.create({
         data: {
@@ -541,21 +600,21 @@ export class CampaignService {
 
   async unsubscribeEmail(campaignId: string, email: string) {
     const campaign = await this.db.mysql.campaign.findUnique({
-      where: { id: campaignId }
+      where: { id: campaignId },
     });
     if (!campaign || !campaign.audienceId) return;
 
     await this.db.mysql.audienceMember.updateMany({
       where: { audienceId: campaign.audienceId, email },
-      data: { status: 'UNSUBSCRIBED' }
+      data: { status: 'UNSUBSCRIBED' },
     });
   }
 
   async removeCampaign(tenantId: string, id: string, user?: any) {
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = (isSystem || isGlobal) ? { id } : { id, tenantId };
-    
+    const where = isSystem || isGlobal ? { id } : { id, tenantId };
+
     const campaign = await this.db.mysql.campaign.findFirst({
       where,
     });
@@ -563,7 +622,9 @@ export class CampaignService {
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
     if (campaign.sentAt && user?.role !== 'SYSTEM') {
-      throw new ConflictException('No se puede eliminar una campaña que ya ha sido enviada por correo.');
+      throw new ConflictException(
+        'No se puede eliminar una campaña que ya ha sido enviada por correo.',
+      );
     }
 
     return this.db.mysql.campaign.delete({
@@ -573,28 +634,45 @@ export class CampaignService {
 
   // ─── WhatsApp Channel Methods ───────────────────────────────────────────────
 
-  async generateWhatsAppMessage(tenantId: string, campaignId: string): Promise<{ message: string }> {
+  async generateWhatsAppMessage(
+    tenantId: string,
+    campaignId: string,
+  ): Promise<{ message: string }> {
     const campaign = await this.db.mysql.campaign.findFirst({
       where: { id: campaignId, tenantId },
       include: { capsule: true },
     });
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
-    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     const capsuleUrl = `${frontendUrl}/capsules/${campaign.capsule?.slug || campaign.capsuleId}`;
 
     // Build a compact WhatsApp message from the capsule title and description
     const title = campaign.capsule?.title || campaign.name;
-    const description = (campaign.capsule?.description || campaign.content || '').slice(0, 220);
+    const description = (
+      campaign.capsule?.description ||
+      campaign.content ||
+      ''
+    ).slice(0, 220);
 
     // Emoji mapping by common aquaculture topics
     const topicEmojiMap: Record<string, string> = {
-      ostión: '\u{1F9AA}', camarón: '\u{1F990}', tilapia: '\u{1F41F}', salmón: '\u{1F420}', pesca: '\u{1F3A3}',
-      microalgas: '\u{1F33F}', productividad: '\u{1F4C8}', nutrición: '\u{1F9EA}', bioseguridad: '\u{1F6E1}\u{FE0F}',
+      ostión: '\u{1F9AA}',
+      camarón: '\u{1F990}',
+      tilapia: '\u{1F41F}',
+      salmón: '\u{1F420}',
+      pesca: '\u{1F3A3}',
+      microalgas: '\u{1F33F}',
+      productividad: '\u{1F4C8}',
+      nutrición: '\u{1F9EA}',
+      bioseguridad: '\u{1F6E1}\u{FE0F}',
       default: '\u{1F41A}',
     };
     const topic = (campaign.capsule?.topic || '').toLowerCase();
-    const emoji = Object.entries(topicEmojiMap).find(([key]) => topic.includes(key))?.[1] || topicEmojiMap.default;
+    const emoji =
+      Object.entries(topicEmojiMap).find(([key]) => topic.includes(key))?.[1] ||
+      topicEmojiMap.default;
 
     const trackingUrl = `${this.configService.get('API_URL') || 'http://localhost:3014'}/api/campaign-tracking/wa/${campaign.id}/{{contactId}}`;
 
@@ -605,7 +683,9 @@ export class CampaignService {
       '',
       `\u{1F449} Ver cápsula:`,
       capsuleUrl,
-    ].join('\n').slice(0, 500);
+    ]
+      .join('\n')
+      .slice(0, 500);
 
     // Persist the generated message in the campaign
     await this.db.mysql.campaign.update({
@@ -624,26 +704,29 @@ export class CampaignService {
     if (!campaign) throw new NotFoundException('Campaña no encontrada');
 
     const apiUrl = this.configService.get('API_URL') || 'http://localhost:3014';
-    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     const capsuleUrl = `${frontendUrl}/capsules/${campaign.capsule?.slug || campaign.capsuleId}`;
 
     // Use the stored whatsappMessage or generate a default
-    const baseMessage = campaign.whatsappMessage || [
-      `\u{1F41A} *${campaign.capsule?.title || campaign.name}*`,
-      '',
-      (campaign.capsule?.description || '').slice(0, 220),
-      '',
-      `\u{1F449} Ver cápsula:`,
-      capsuleUrl,
-    ].join('\n');
+    const baseMessage =
+      campaign.whatsappMessage ||
+      [
+        `\u{1F41A} *${campaign.capsule?.title || campaign.name}*`,
+        '',
+        (campaign.capsule?.description || '').slice(0, 220),
+        '',
+        `\u{1F449} Ver cápsula:`,
+        capsuleUrl,
+      ].join('\n');
 
     // Fetch audience members with phone numbers
     let members: any[] = [];
     if (campaign.audienceId) {
       members = await this.db.mysql.audienceMember.findMany({
-        where: { 
-          audienceId: campaign.audienceId, 
-          status: { in: ['SUBSCRIBED', 'EMAIL_BOUNCED'] } 
+        where: {
+          audienceId: campaign.audienceId,
+          status: { in: ['SUBSCRIBED', 'EMAIL_BOUNCED'] },
         },
       });
     }
@@ -651,16 +734,23 @@ export class CampaignService {
     const links = members.map((member) => {
       // Build the tracking URL for this member (uses email as identifier)
       const trackingRedirect = encodeURIComponent(
-        `${frontendUrl}/capsules/${campaign.capsule?.slug || campaign.capsuleId}?campaignId=${campaign.id}&channel=whatsapp`
+        `${frontendUrl}/capsules/${campaign.capsule?.slug || campaign.capsuleId}?campaignId=${campaign.id}&channel=whatsapp`,
       );
       const trackingUrl = `${apiUrl}/api/campaign-tracking/wa/${campaign.id}?e=${encodeURIComponent(member.email)}&redirect=${trackingRedirect}`;
 
       // Replace {{capsuleUrl}} placeholder with the tracking URL
-      const personalizedMessage = baseMessage.replace(/\{\{capsuleUrl\}\}/g, trackingUrl);
+      const personalizedMessage = baseMessage.replace(
+        /\{\{capsuleUrl\}\}/g,
+        trackingUrl,
+      );
 
       // Clean phone number (remove spaces, dashes, parens)
       const rawPhone = (member.phone || '').replace(/[^\d+]/g, '');
-      const phone = rawPhone.startsWith('+') ? rawPhone : rawPhone ? `+52${rawPhone}` : null;
+      const phone = rawPhone.startsWith('+')
+        ? rawPhone
+        : rawPhone
+          ? `+52${rawPhone}`
+          : null;
 
       const encodedMsg = encodeURIComponent(personalizedMessage);
       const waUrl = phone
@@ -669,7 +759,9 @@ export class CampaignService {
 
       return {
         memberId: member.id,
-        name: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.email,
+        name:
+          `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+          member.email,
         email: member.email,
         phone: phone || 'Sin teléfono',
         hasPhone: !!phone,
@@ -689,7 +781,7 @@ export class CampaignService {
       campaignId,
       campaignName: campaign.name,
       totalLinks: links.length,
-      linksWithPhone: links.filter(l => l.hasPhone).length,
+      linksWithPhone: links.filter((l) => l.hasPhone).length,
       links,
     };
   }

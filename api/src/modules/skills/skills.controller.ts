@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Body, Param, Headers, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Headers,
+  UseGuards,
+} from '@nestjs/common';
 import { SkillsService } from './skills.service';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 
@@ -20,7 +29,7 @@ export class SkillsController {
   @Post()
   async create(
     @Headers('x-tenant-id') tenantId: string,
-    @Body() data: { name: string; description: string; prompt: string }
+    @Body() data: { name: string; description: string; prompt: string },
   ) {
     return this.skillsService.create({ ...data, tenantId });
   }
@@ -29,7 +38,7 @@ export class SkillsController {
   async updatePrompt(
     @Param('id') id: string,
     @Headers('x-tenant-id') tenantId: string,
-    @Body('prompt') prompt: string
+    @Body('prompt') prompt: string,
   ) {
     return this.skillsService.updatePrompt(id, prompt, tenantId);
   }
@@ -40,7 +49,10 @@ export class SkillsController {
   }
 
   @Post(':id/rollback/:versionId')
-  async rollback(@Param('id') id: string, @Param('versionId') versionId: string) {
+  async rollback(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
     return this.skillsService.rollback(id, versionId);
   }
 

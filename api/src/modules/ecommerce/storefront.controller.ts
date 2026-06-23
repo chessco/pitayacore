@@ -26,7 +26,10 @@ export class StorefrontController {
   }
 
   @Post(':slug/payment-intent')
-  async createPaymentIntent(@Param('slug') slug: string, @Body('amount') amount: number) {
+  async createPaymentIntent(
+    @Param('slug') slug: string,
+    @Body('amount') amount: number,
+  ) {
     return this.ecommerceService.createPaymentIntent(slug, amount);
   }
 }

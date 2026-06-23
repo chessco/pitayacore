@@ -9,4 +9,3 @@ import { DatabaseModule } from '../../common/database/database.module';
   providers: [CreditsService],
 })
 export class CreditsModule {}
-

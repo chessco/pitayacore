@@ -4,6 +4,6 @@ import { ConversationsModule } from '../conversations/conversations.module';
 
 @Module({
   imports: [ConversationsModule],
-  controllers: [WebhooksController]
+  controllers: [WebhooksController],
 })
 export class WebhooksModule {}

@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 async function main() {
   const prisma = new PrismaClient();
   console.log('--- Iniciando Corrección de Inquilino ---');
-  
+
   try {
     const tenant = await prisma.tenant.findFirst({
-      where: { name: { contains: 'Acuaequipos' } }
+      where: { name: { contains: 'Acuaequipos' } },
     });
 
     if (!tenant) {
@@ -18,7 +18,7 @@ async function main() {
 
     const result = await prisma.user.update({
       where: { email: 'admin@pitayacode.io' },
-      data: { tenantId: tenant.id }
+      data: { tenantId: tenant.id },
     });
 
     console.log(`EXITO: Usuario ${result.email} vinculado correctamente.`);

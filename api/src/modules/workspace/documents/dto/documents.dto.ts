@@ -21,7 +21,6 @@ export class CreateDocumentDto {
   tags?: any;
 }
 
-
 export class UpdateDocumentDto {
   @IsString()
   @IsOptional()
@@ -34,4 +33,3 @@ export class UpdateDocumentDto {
   @IsOptional()
   tags?: any;
 }
-

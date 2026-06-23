@@ -38,11 +38,11 @@ export class KnowledgeBaseService {
 
     // 3. Generate and save embedding in PostgreSQL
     const embedding = await this.aiService.getEmbedding(content);
-    
+
     // Using raw query for pgvector since Prisma Support is limited for Vector type
     await this.db.postgres.$executeRawUnsafe(
       `INSERT INTO "VectorRecord" ("id", "tenantId", "content", "embedding", "refId", "refType") 
-       VALUES (gen_random_uuid(), '${tenantId}', '${content.replace(/'/g, "''")}', '[${embedding.join(',')}]', '${entry.id}', 'KB')`
+       VALUES (gen_random_uuid(), '${tenantId}', '${content.replace(/'/g, "''")}', '[${embedding.join(',')}]', '${entry.id}', 'KB')`,
     );
 
     return entry;
@@ -50,14 +50,11 @@ export class KnowledgeBaseService {
 
   async search(query: string, limit: number = 5, filterIds?: string[]) {
     const tenantId = getTenantId();
-    
+
     // 1. Get active KB IDs from MySQL first
-    const where: any = { 
-      OR: [
-        { tenantId },
-        { tenantId: null }
-      ],
-      status: 'ACTIVE' 
+    const where: any = {
+      OR: [{ tenantId }, { tenantId: null }],
+      status: 'ACTIVE',
     };
 
     if (filterIds && filterIds.length > 0) {
@@ -67,14 +64,14 @@ export class KnowledgeBaseService {
 
     const activeKbs = await this.db.mysql.knowledgeBase.findMany({
       where,
-      select: { id: true }
+      select: { id: true },
     });
-    const activeIds = activeKbs.map(k => k.id);
+    const activeIds = activeKbs.map((k) => k.id);
 
     if (activeIds.length === 0) return [];
 
     const queryEmbedding = await this.aiService.getEmbedding(query);
-    const idsString = activeIds.map(id => `'${id}'`).join(',');
+    const idsString = activeIds.map((id) => `'${id}'`).join(',');
 
     // 2. Vector similarity search using pgvector, filtering by active IDs
     const results = await this.db.postgres.$queryRawUnsafe(
@@ -83,7 +80,7 @@ export class KnowledgeBaseService {
        WHERE ("tenantId" = '${tenantId}' OR "tenantId" IS NULL)
        AND "refId" IN (${idsString})
        ORDER BY distance ASC 
-       LIMIT ${limit}`
+       LIMIT ${limit}`,
     );
 
     return results;
@@ -91,27 +88,24 @@ export class KnowledgeBaseService {
 
   async toggleStatus(id: string) {
     const tid = getTenantId();
-    
+
     // Find the document ensuring it belongs to the tenant or is global
     const kb = await this.db.mysql.knowledgeBase.findFirst({
-      where: { 
+      where: {
         id,
-        OR: tid ? [
-          { tenantId: tid },
-          { tenantId: null }
-        ] : [
-          { tenantId: null }
-        ]
-      }
+        OR: tid
+          ? [{ tenantId: tid }, { tenantId: null }]
+          : [{ tenantId: null }],
+      },
     });
 
     if (!kb) throw new Error(`Document ${id} not found for tenant ${tid}`);
 
     const newStatus = kb.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    
+
     return this.db.mysql.knowledgeBase.update({
       where: { id: kb.id },
-      data: { status: newStatus }
+      data: { status: newStatus },
     });
   }
 
@@ -126,31 +120,31 @@ export class KnowledgeBaseService {
 
   async deleteDocument(id: string) {
     const tenantId = getTenantId();
-    
+
     // 1. Delete from MySQL (Cascades to chunks)
     await this.db.mysql.knowledgeBase.delete({
-      where: { id, tenantId }
+      where: { id, tenantId },
     });
 
     // 2. Delete from Vector Store
     await this.db.postgres.$executeRawUnsafe(
-      `DELETE FROM "VectorRecord" WHERE "refId" = '${id}' AND "tenantId" = '${tenantId}'`
+      `DELETE FROM "VectorRecord" WHERE "refId" = '${id}' AND "tenantId" = '${tenantId}'`,
     );
   }
 
   async reindexDocument(id: string) {
     const tenantId = getTenantId();
-    
+
     const doc = await this.db.mysql.knowledgeBase.findFirst({
       where: { id, tenantId },
-      include: { chunks: true }
+      include: { chunks: true },
     });
 
     if (!doc) throw new Error('Document not found');
 
     // 1. Clear existing vectors
     await this.db.postgres.$executeRawUnsafe(
-      `DELETE FROM "VectorRecord" WHERE "refId" = '${id}' AND "tenantId" = '${tenantId}'`
+      `DELETE FROM "VectorRecord" WHERE "refId" = '${id}' AND "tenantId" = '${tenantId}'`,
     );
 
     // 2. Re-generate embeddings for all chunks
@@ -158,7 +152,7 @@ export class KnowledgeBaseService {
       const embedding = await this.aiService.getEmbedding(chunk.content);
       await this.db.postgres.$executeRawUnsafe(
         `INSERT INTO "VectorRecord" ("id", "tenantId", "content", "embedding", "refId", "refType") 
-         VALUES (gen_random_uuid(), '${tenantId}', '${chunk.content.replace(/'/g, "''")}', '[${embedding.join(',')}]', '${id}', 'KB')`
+         VALUES (gen_random_uuid(), '${tenantId}', '${chunk.content.replace(/'/g, "''")}', '[${embedding.join(',')}]', '${id}', 'KB')`,
       );
     }
   }

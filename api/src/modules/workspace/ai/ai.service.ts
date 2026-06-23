@@ -19,7 +19,8 @@ export class AIService {
       },
     });
 
-    const basePrompt = agent?.prompt || 
+    const basePrompt =
+      agent?.prompt ||
       'Eres el Asistente de Workspace de PitayaCore AI. Tu función es analizar notas, documentos e ideas del Workspace para responder preguntas, resumir información y extraer conocimiento clave de forma proactiva. Responde siempre en español y mantén un tono profesional.';
 
     // 2. Fetch workspace items
@@ -30,11 +31,22 @@ export class AIService {
       }),
       this.db.mysql.workspaceDocument.findMany({
         where: { tenantId, deletedAt: null },
-        select: { title: true, description: true, filePath: true, fileType: true },
+        select: {
+          title: true,
+          description: true,
+          filePath: true,
+          fileType: true,
+        },
       }),
       this.db.mysql.workspaceIdea.findMany({
         where: { tenantId, deletedAt: null },
-        select: { title: true, description: true, status: true, priority: true, category: true },
+        select: {
+          title: true,
+          description: true,
+          status: true,
+          priority: true,
+          category: true,
+        },
       }),
     ]);
 
@@ -63,7 +75,8 @@ export class AIService {
     }
 
     if (notes.length === 0 && documents.length === 0 && ideas.length === 0) {
-      context += '\nEl workspace está actualmente vacío. No hay notas, documentos ni ideas guardadas por el usuario.';
+      context +=
+        '\nEl workspace está actualmente vacío. No hay notas, documentos ni ideas guardadas por el usuario.';
     }
 
     const fullInstruction = `${basePrompt}\n${context}`;
@@ -75,34 +88,40 @@ export class AIService {
         [], // history
         undefined, // default model
         fullInstruction,
-        'web' // channel
+        'web', // channel
       );
 
       return {
         answer: response.content,
         sources: [
-          ...notes.map(n => ({ type: 'note', title: n.title })),
-          ...documents.map(d => ({ type: 'document', title: d.title })),
+          ...notes.map((n) => ({ type: 'note', title: n.title })),
+          ...documents.map((d) => ({ type: 'document', title: d.title })),
         ],
       };
     } catch (error) {
       console.error('Error generating AI response in Workspace:', error);
       return {
-        answer: 'Lo siento, en este momento no puedo procesar tu solicitud debido a una falla técnica de conexión.',
+        answer:
+          'Lo siento, en este momento no puedo procesar tu solicitud debido a una falla técnica de conexión.',
         sources: [],
       };
     }
   }
 
-  async generateEmbeddings(tenantId: string, content: string, refId: string, refType: string) {
+  async generateEmbeddings(
+    tenantId: string,
+    content: string,
+    refId: string,
+    refType: string,
+  ) {
     // Save to VectorRecord in Postgres using raw queries or Prisma extension
     try {
       const embedding = await this.aiService.getEmbedding(content);
-      
+
       // VectorRecord model represents standard pgvector record
       // We can insert this using PGVector or SQL query in postgres connection
       const embeddingString = `[${embedding.join(',')}]`;
-      
+
       await this.db.postgres.$executeRawUnsafe(
         `INSERT INTO "VectorRecord" ("id", "tenantId", "content", "embedding", "refId", "refType", "createdAt", "updatedAt") 
          VALUES ($1, $2, $3, $4::vector, $5, $6, NOW(), NOW())
@@ -112,10 +131,13 @@ export class AIService {
         content,
         embeddingString,
         refId,
-        refType
+        refType,
       );
     } catch (e) {
-      console.error('Failed to generate and save embeddings to pgvector:', e.message);
+      console.error(
+        'Failed to generate and save embeddings to pgvector:',
+        e.message,
+      );
     }
   }
 }

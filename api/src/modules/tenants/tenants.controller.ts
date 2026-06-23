@@ -6,7 +6,13 @@ export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   @Post()
-  create(@Body() createTenantDto: { name: string; plan?: 'FREE' | 'PRO' | 'ENTERPRISE' }) {
+  create(
+    @Body()
+    createTenantDto: {
+      name: string;
+      plan?: 'FREE' | 'PRO' | 'ENTERPRISE';
+    },
+  ) {
     return this.tenantsService.create(createTenantDto);
   }
 
