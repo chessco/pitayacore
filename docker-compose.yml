@@ -4,8 +4,10 @@ services:
     container_name: pitayacore-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: acuacore_pass
-      MYSQL_DATABASE: pitayacore_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    env_file:
+      - ./api/.env.pitayacore
     ports:
       - "3306:3306"
     volumes:
@@ -14,13 +16,15 @@ services:
       - pitaya_net
 
   postgres:
-    image: ankane/pgvector:latest
+    image: pgvector/pgvector:pg16
     container_name: pitayacore-pgvector
     restart: always
     environment:
-      POSTGRES_USER: acuacore_user
-      POSTGRES_PASSWORD: acuacore_pass
-      POSTGRES_DB: pitayacore_vector
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - ./api/.env.pitayacore
     ports:
       - "5434:5432"
     volumes:
@@ -37,8 +41,8 @@ services:
     env_file:
       - ./api/.env.pitayacore
     environment:
-      DATABASE_URL: "mysql://root:acuacore_pass@pitayacore-mysql:3306/pitayacore_db"
-      VECTOR_DATABASE_URL: "postgresql://acuacore_user:acuacore_pass@pitayacore-pgvector:5432/pitayacore_vector"
+      DATABASE_URL: ${DATABASE_URL}
+      VECTOR_DATABASE_URL: ${VECTOR_DATABASE_URL}
       PORT: 3015
     ports:
       - "3015:3015"

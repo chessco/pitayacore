@@ -84,3 +84,14 @@ web/public/nano-*.png
 *.temp
 *.temp.*
 *.sql
+
+# Data / Scripts with Secrets
+api/create_*.ts
+api/create_*.js
+api/create_*.cjs
+api/seed-*.js
+api/seed-*.ts
+api/fix_*.js
+api/fix_*.cjs
+api/fix_*.ts
+
