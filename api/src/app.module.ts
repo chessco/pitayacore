@@ -1,4 +1,9 @@
-import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import {
+  Module,
+  NestModule,
+  MiddlewareConsumer,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -34,13 +39,18 @@ import { CharactersModule } from './modules/characters/characters.module';
 import { AgentTemplatesModule } from './modules/agent-templates/agent-templates.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { VisionModule } from './modules/vision/vision.module';
+import { ChatSessionsModule } from './modules/chat-sessions/chat-sessions.module';
+import { BrandsModule } from './modules/brands/brands.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
       serveRoot: '/static',
@@ -69,6 +79,8 @@ import { VisionModule } from './modules/vision/vision.module';
     AgentTemplatesModule,
     CreditsModule,
     VisionModule,
+    ChatSessionsModule,
+    BrandsModule,
   ],
   controllers: [AppController],
   providers: [

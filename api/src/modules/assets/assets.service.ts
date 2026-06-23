@@ -1,15 +1,32 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 
 @Injectable()
 export class AssetsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  async findAll() {
-    return this.prisma.mysql.asset.findMany();
+  async findAll(tenantId: string) {
+    const assets = await this.db.mysql.asset.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return assets.map((a) => {
+      const meta: any = a.metadata ? JSON.parse(a.metadata as string) : {};
+      return {
+        id: a.id,
+        type: a.type,
+        title: a.name,
+        url: a.storagePath,
+        dimensions: meta.dimensions || '1024x1024',
+        createdAt: a.createdAt,
+      };
+    });
   }
 
-  // Add more CRUD methods as needed
+  async delete(tenantId: string, id: string) {
+    return this.db.mysql.asset.delete({
+      where: { id, tenantId },
+    });
+  }
 }
-
-

@@ -1,0 +1,17 @@
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { BrandsService } from './brands.service';
+
+@Controller('api/tenants/:tenantId/brand')
+export class BrandsController {
+  constructor(private readonly brandsService: BrandsService) {}
+
+  @Get()
+  getBrandConfig(@Param('tenantId') tenantId: string) {
+    return this.brandsService.getBrandConfig(tenantId);
+  }
+
+  @Post()
+  updateBrandConfig(@Param('tenantId') tenantId: string, @Body() data: any) {
+    return this.brandsService.updateBrandConfig(tenantId, data);
+  }
+}

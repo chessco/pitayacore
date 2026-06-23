@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AssetsService } from './assets.service';
 import { AssetsController } from './assets.controller';
+import { AssetsService } from './assets.service';
 import { DatabaseModule } from '../../common/database/database.module';
 
 @Module({
@@ -9,4 +9,3 @@ import { DatabaseModule } from '../../common/database/database.module';
   providers: [AssetsService],
 })
 export class AssetsModule {}
-
