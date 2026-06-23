@@ -43,6 +43,7 @@ import { ChatSessionsModule } from './modules/chat-sessions/chat-sessions.module
 import { BrandsModule } from './modules/brands/brands.module';
 import { VisionCampaignsModule } from './modules/vision-campaigns/vision-campaigns.module';
 import { VectorSearchModule } from './modules/vector-search/vector-search.module';
+import { VisionDashboardModule } from './modules/vision-dashboard/vision-dashboard.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { VectorSearchModule } from './modules/vector-search/vector-search.module
     BrandsModule,
     VisionCampaignsModule,
     VectorSearchModule,
+    VisionDashboardModule,
   ],
   controllers: [AppController],
   providers: [

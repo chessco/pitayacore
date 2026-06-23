@@ -8,22 +8,24 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ChatSessionsService } from './chat-sessions.service';
+import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
-@Controller('api/chat-sessions')
+@Controller('api/tenants/:tenantId/chat-sessions')
+@UseGuards(TenantOwnershipGuard)
 export class ChatSessionsController {
   constructor(private readonly chatSessionsService: ChatSessionsService) {}
 
+
   @Get()
-  async getSessions(@Req() req: any) {
-    // Para simplificar, obtenemos tenantId de los headers o request temporal
-    // En producción usaríamos un decorador de Auth/Tenant
-    const tenantId = req.headers['x-tenant-id'] || 'vision-tenant';
+  async getSessions(@Param('tenantId') tenantId: string) {
     return this.chatSessionsService.getSessions(tenantId);
   }
 
   @Post()
-  async createSession(@Req() req: any, @Body('title') title: string) {
-    const tenantId = req.headers['x-tenant-id'] || 'vision-tenant';
+  async createSession(
+    @Param('tenantId') tenantId: string,
+    @Body('title') title: string,
+  ) {
     return this.chatSessionsService.createSession(
       tenantId,
       title || 'Nuevo Chat Creativo',

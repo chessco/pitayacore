@@ -7,11 +7,14 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CharactersService } from './characters.service';
+import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
 @Controller('api/tenants/:tenantId/characters')
+@UseGuards(TenantOwnershipGuard)
 export class CharactersController {
   constructor(private readonly charactersService: CharactersService) {}
 

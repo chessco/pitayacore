@@ -1,7 +1,9 @@
-import { Controller, Get, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
 import { VisionCampaignsService } from './vision-campaigns.service';
+import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
 @Controller('api/tenants/:tenantId/campaigns')
+@UseGuards(TenantOwnershipGuard)
 export class VisionCampaignsController {
   constructor(
     private readonly visionCampaignsService: VisionCampaignsService,

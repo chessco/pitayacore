@@ -1,7 +1,9 @@
-import { Controller, Get, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Delete, Param, UseGuards } from '@nestjs/common';
 import { AssetsService } from './assets.service';
+import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 
 @Controller('api/tenants/:tenantId/assets')
+@UseGuards(TenantOwnershipGuard)
 export class AssetsController {
   constructor(private readonly assetsService: AssetsService) {}
 
