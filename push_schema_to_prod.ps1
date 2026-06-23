@@ -7,15 +7,17 @@ $SSH_KEY = "$env:USERPROFILE\.ssh\id_citaia"
 
 Write-Host "--- Actualizando ESQUEMA de Producción (Sin tocar datos) ---" -ForegroundColor Yellow
 
-# 1. Subir el archivo de esquema actual a una zona temporal
-Write-Host "Step 1: Subiendo mysql.prisma local..." -ForegroundColor Cyan
-scp -i $SSH_KEY api/prisma/mysql.prisma root@${SERVER_IP}:/opt/pitaya/acuacore/api/prisma/mysql.prisma
+# 1. Subir los archivos de esquema actuales a una zona temporal
+Write-Host "Step 1: Subiendo esquemas locales..." -ForegroundColor Cyan
+scp -i $SSH_KEY api/prisma/mysql.prisma root@${SERVER_IP}:/opt/pitaya/pitayacore/api/prisma/mysql.prisma
+scp -i $SSH_KEY api/prisma/postgres.prisma root@${SERVER_IP}:/opt/pitaya/pitayacore/api/prisma/postgres.prisma
 
 if ($LASTEXITCODE -ne 0) { Write-Host "❌ Error al subir el esquema." -ForegroundColor Red; exit }
 
 # 2. Ejecutar db push en el contenedor remoto
 Write-Host "Step 2: Aplicando cambios estructurales en Producción..." -ForegroundColor Cyan
-ssh -i $SSH_KEY root@$SERVER_IP "docker exec acua-core-api npx prisma db push --schema=prisma/mysql.prisma --accept-data-loss=false"
+ssh -i $SSH_KEY root@$SERVER_IP "docker exec pitayacore-api-prod npx prisma db push --schema=prisma/mysql.prisma --accept-data-loss=false"
+ssh -i $SSH_KEY root@$SERVER_IP "docker exec pitayacore-api-prod npx prisma db push --schema=prisma/postgres.prisma --accept-data-loss=false"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Esquema actualizado correctamente. Los datos de producción se han preservado." -ForegroundColor Green

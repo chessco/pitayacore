@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: acuacore_pass
       POSTGRES_DB: pitayacore_vector
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

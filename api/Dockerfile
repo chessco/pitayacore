@@ -22,6 +22,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/create-system-user.js ./
+COPY --from=builder /app/seed-*.ts ./
 
 EXPOSE 3000
 

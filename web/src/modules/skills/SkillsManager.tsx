@@ -35,14 +35,20 @@ export function SkillsManager() {
     setIsLoading(true)
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3014') + '';
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${apiUrl}/api/skills`, {
         headers: { 
+          'Authorization': `Bearer ${token}`,
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey
         }
       })
       const data = await response.json()
-      setSkills(data)
+      if (Array.isArray(data)) {
+        setSkills(data)
+      } else {
+        setSkills([])
+      }
     } catch (error) {
       console.error('Error fetching skills:', error)
     } finally {
@@ -53,14 +59,20 @@ export function SkillsManager() {
   const fetchVersions = async (skillId: string) => {
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3014') + '';
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${apiUrl}/api/skills/${skillId}/versions`, {
         headers: { 
+          'Authorization': `Bearer ${token}`,
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey
         }
       })
       const data = await response.json()
-      setVersions(data)
+      if (Array.isArray(data)) {
+        setVersions(data)
+      } else {
+        setVersions([])
+      }
     } catch (error) {
       console.error('Error fetching versions:', error)
     }
@@ -71,9 +83,11 @@ export function SkillsManager() {
     setIsSaving(true)
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3014') + '';
     try {
+      const token = localStorage.getItem('token');
       await fetch(`${apiUrl}/api/skills/${editingSkill.id}/prompt`, {
         method: 'PATCH',
         headers: { 
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey
@@ -95,9 +109,11 @@ export function SkillsManager() {
     setIsSaving(true)
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3014') + '';
     try {
+      const token = localStorage.getItem('token');
       await fetch(`${apiUrl}/api/skills/${editingSkill.id}/rollback/${versionId}`, {
         method: 'POST',
         headers: { 
+          'Authorization': `Bearer ${token}`,
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey
         }
@@ -114,9 +130,11 @@ export function SkillsManager() {
   const handleUpdateStatus = async (id: string, status: string) => {
     const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3014') + '';
     try {
+      const token = localStorage.getItem('token');
       await fetch(`${apiUrl}/api/skills/${id}/status`, {
         method: 'PATCH',
         headers: { 
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey

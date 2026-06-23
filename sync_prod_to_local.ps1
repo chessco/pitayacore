@@ -1,7 +1,7 @@
 # Script para sincronizar Producción -> Local (Docker)
 # Uso: .\sync_prod_to_local.ps1
 
-$DB_NAME = "acuacore_db"
+$DB_NAME = "pitayacore_db"
 $REMOTE_HOST = "46.224.155.43"
 $SSH_KEY = "$env:USERPROFILE\.ssh\id_citaia"
 
@@ -9,7 +9,7 @@ Write-Host "--- Sincronizando: Producción >> Local ---" -ForegroundColor Yellow
 
 # 1. Exportar en Producción
 Write-Host "Step 1: Creando backup en el servidor remoto..." -ForegroundColor Cyan
-ssh -i $SSH_KEY "root@${REMOTE_HOST}" "docker exec luxury-mysql-prod mysqldump -u root -pacuacore_pass --databases $DB_NAME > ~/prod_dump.sql"
+ssh -i $SSH_KEY "root@${REMOTE_HOST}" "docker exec luxury-mysql-prod mysqldump -u root -pluxury_pass --databases $DB_NAME > ~/prod_dump.sql"
 
 # 2. Descargar a Local
 Write-Host "Step 2: Descargando backup a tu computadora..." -ForegroundColor Cyan

@@ -28,7 +28,12 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-
+import { VerticalsModule } from './modules/verticals/verticals.module';
+import { AssetsModule } from './modules/assets/assets.module';
+import { CharactersModule } from './modules/characters/characters.module';
+import { AgentTemplatesModule } from './modules/agent-templates/agent-templates.module';
+import { CreditsModule } from './modules/credits/credits.module';
+import { VisionModule } from './modules/vision/vision.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -58,6 +63,12 @@ import { join } from 'path';
     MailModule,
     SystemSettingsModule,
     WorkspaceModule,
+    VerticalsModule,
+    AssetsModule,
+    CharactersModule,
+    AgentTemplatesModule,
+    CreditsModule,
+    VisionModule,
   ],
   controllers: [AppController],
   providers: [

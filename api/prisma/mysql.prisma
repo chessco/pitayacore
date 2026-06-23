@@ -9,39 +9,43 @@ datasource db {
 }
 
 model Tenant {
-  id             String            @id @default(uuid())
-  name           String
-  slug           String?           @unique
-  stripeApiKey   String?
-  plan           Plan              @default(FREE)
-  status         Status            @default(ACTIVE)
-  sector         String?           @default("retail")
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  brandingConfig Json?
-  enabledModules Json?
-  isDefault      Boolean           @default(false)
-  agents         Agent[]
-  costLogs       AiCostLog[]
-  campaigns      Campaign[]
-  capsules       Capsule[]
-  conversations  Conversation[]
-  corrections    HumanCorrection[]
-  knowledge      KnowledgeBase[]
-  skills         Skill[]
-  tenantFeatures TenantFeature[]
-  users          User[]
-  leads          Lead[]
-  products       Product[]
-  categories     Category[]
-  orders         Order[]
-  stockMovements StockMovement[]
-  contacts       Contact[]
-  audiences      Audience[]
+  id                 String              @id @default(uuid())
+  name               String
+  slug               String?             @unique
+  stripeApiKey       String?
+  plan               Plan                @default(FREE)
+  status             Status              @default(ACTIVE)
+  sector             String?             @default("retail")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  brandingConfig     Json?
+  enabledModules     Json?
+  isDefault          Boolean             @default(false)
+  agents             Agent[]
+  costLogs           AiCostLog[]
+  campaigns          Campaign[]
+  capsules           Capsule[]
+  conversations      Conversation[]
+  corrections        HumanCorrection[]
+  knowledge          KnowledgeBase[]
+  skills             Skill[]
+  tenantFeatures     TenantFeature[]
+  users              User[]
+  leads              Lead[]
+  products           Product[]
+  categories         Category[]
+  orders             Order[]
+  stockMovements     StockMovement[]
+  contacts           Contact[]
+  audiences          Audience[]
   workspaceNotes     WorkspaceNote[]
   workspaceDocuments WorkspaceDocument[]
   workspaceIdeas     WorkspaceIdea[]
   workspaceRelations WorkspaceRelation[]
+  verticals          TenantVertical[]
+  characters         Character[]
+  assets             Asset[]
+  wallet             CreditWallet?
 }
 
 model HumanCorrection {
@@ -126,20 +130,31 @@ model HitlAction {
 }
 
 model Skill {
-  id             String          @id @default(uuid())
-  tenantId       String
-  name           String
-  description    String?
-  prompt         String          @db.Text
-  version        String          @default("1.0")
-  config         Json?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  status         SkillStatus     @default(PRE_PRODUCTION)
-  promptVersions PromptVersion[]
-  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  id          String      @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  prompt      String?     @db.Text
+  version     String      @default("1.0")
+  config      Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  status      SkillStatus @default(PRE_PRODUCTION)
+  suiteId     String?
+  slug        String?     @unique
+  category    String?
+
+  promptVersions      PromptVersion[]
+  agents              AgentSkill[]
+  actions             SkillAction[]
+  providers           SkillProvider[]
+  permissions         SkillPermission[]
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  suite               Suite?               @relation(fields: [suiteId], references: [id])
+  agentTemplateSkills AgentTemplateSkill[]
 
   @@index([tenantId], map: "Skill_tenantId_fkey")
+  @@index([suiteId])
 }
 
 model KnowledgeBase {
@@ -196,21 +211,26 @@ model PromptVersion {
 }
 
 model Agent {
-  id          String         @id @default(uuid())
-  tenantId    String
-  name        String
-  slug        String         @unique
-  description String?
-  prompt      String         @db.Text
-  isActive    Boolean        @default(true)
-  config      Json?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  status      String         @default("PRE_PRODUCTION")
-  version     String         @default("1.0")
-  tenant      Tenant         @relation(fields: [tenantId], references: [id])
-  versions    AgentVersion[]
-  capsules    Capsule[]
+  id            String              @id @default(uuid())
+  tenantId      String
+  name          String
+  slug          String              @unique
+  description   String?
+  prompt        String              @db.Text
+  isActive      Boolean             @default(true)
+  config        Json?
+  avatar        String?
+  category      String?
+  defaultModel  String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  status        String              @default("PRE_PRODUCTION")
+  version       String              @default("1.0")
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  versions      AgentVersion[]
+  capsules      Capsule[]
+  skills        AgentSkill[]
+  configuration AgentConfiguration?
 
   @@index([tenantId], map: "Agent_tenantId_fkey")
 }
@@ -264,22 +284,22 @@ model Capsule {
 }
 
 model Lead {
-  id             String        @id @default(uuid())
-  tenantId       String?
-  capsuleId      String
-  campaignId     String?
-  conversationId String?
-  name           String
-  email          String
-  phone          String?
-  metadata       Json?
-  createdAt      DateTime      @default(now())
-  capsule        Capsule       @relation(fields: [capsuleId], references: [id])
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
-  campaign       Campaign?     @relation(fields: [campaignId], references: [id])
-  tenant         Tenant?       @relation(fields: [tenantId], references: [id])
-  contactId      String?
-  contact        Contact?      @relation(fields: [contactId], references: [id])
+  id                 String              @id @default(uuid())
+  tenantId           String?
+  capsuleId          String
+  campaignId         String?
+  conversationId     String?
+  name               String
+  email              String
+  phone              String?
+  metadata           Json?
+  createdAt          DateTime            @default(now())
+  capsule            Capsule             @relation(fields: [capsuleId], references: [id])
+  conversation       Conversation?       @relation(fields: [conversationId], references: [id])
+  campaign           Campaign?           @relation(fields: [campaignId], references: [id])
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  contactId          String?
+  contact            Contact?            @relation(fields: [contactId], references: [id])
   workspaceRelations WorkspaceRelation[]
 
   @@index([capsuleId], map: "Lead_capsuleId_fkey")
@@ -309,29 +329,29 @@ model TenantFeature {
 }
 
 model Campaign {
-  id                  String          @id @default(uuid())
-  tenantId            String
-  capsuleId           String
-  audienceId          String?
-  name                String
-  audience            String?         @db.Text
-  subject             String
-  content             String          @db.Text
-  channel             CampaignChannel @default(EMAIL)
-  whatsappMessage     String?         @db.Text
-  whatsappLinksCount  Int             @default(0)
-  scheduledAt         DateTime?
-  sentAt              DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  templateConfig      Json?
-  opensCount          Int             @default(0)
-  clicksCount         Int             @default(0)
-  capsule             Capsule         @relation(fields: [capsuleId], references: [id])
-  audienceList        Audience?       @relation(fields: [audienceId], references: [id])
-  tenant              Tenant          @relation(fields: [tenantId], references: [id])
-  leads               Lead[]
-  events              CampaignEvent[]
+  id                 String          @id @default(uuid())
+  tenantId           String
+  capsuleId          String
+  audienceId         String?
+  name               String
+  audience           String?         @db.Text
+  subject            String
+  content            String          @db.Text
+  channel            CampaignChannel @default(EMAIL)
+  whatsappMessage    String?         @db.Text
+  whatsappLinksCount Int             @default(0)
+  scheduledAt        DateTime?
+  sentAt             DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  templateConfig     Json?
+  opensCount         Int             @default(0)
+  clicksCount        Int             @default(0)
+  capsule            Capsule         @relation(fields: [capsuleId], references: [id])
+  audienceList       Audience?       @relation(fields: [audienceId], references: [id])
+  tenant             Tenant          @relation(fields: [tenantId], references: [id])
+  leads              Lead[]
+  events             CampaignEvent[]
 
   @@index([capsuleId], map: "Campaign_capsuleId_fkey")
   @@index([tenantId], map: "Campaign_tenantId_fkey")
@@ -386,26 +406,26 @@ enum User_role {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  tenantId    String
-  categoryId  String?
-  name        String
-  description String?     @db.Text
-  price       Float       @default(0)
-  cost        Float       @default(0)
-  sku         String?
-  stock       Int         @default(0)
-  minStock    Int         @default(5)  // Reorder point
-  currency    String      @default("USD") // base currency
-  imageUrl    String?     @db.Text
-  isActive    Boolean     @default(true)
+  id           String          @id @default(uuid())
+  tenantId     String
+  categoryId   String?
+  name         String
+  description  String?         @db.Text
+  price        Float           @default(0)
+  cost         Float           @default(0)
+  sku          String?
+  stock        Int             @default(0)
+  minStock     Int             @default(5) // Reorder point
+  currency     String          @default("USD") // base currency
+  imageUrl     String?         @db.Text
+  isActive     Boolean         @default(true)
   customFields Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  category    Category?   @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
-  movements   StockMovement[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  tenant       Tenant          @relation(fields: [tenantId], references: [id])
+  category     Category?       @relation(fields: [categoryId], references: [id])
+  orderItems   OrderItem[]
+  movements    StockMovement[]
 
   @@index([tenantId])
   @@index([categoryId])
@@ -415,45 +435,45 @@ model StockMovement {
   id        String   @id @default(uuid())
   productId String
   tenantId  String
-  type      String   // IN, OUT, ADJUSTMENT, SALE
+  type      String // IN, OUT, ADJUSTMENT, SALE
   quantity  Int
   reason    String?
-  userId    String?  // Who made the movement
+  userId    String? // Who made the movement
   createdAt DateTime @default(now())
 
-  product   Product  @relation(fields: [productId], references: [id])
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
 
   @@index([productId])
   @@index([tenantId])
 }
 
 model Category {
-  id        String    @id @default(uuid())
-  tenantId  String
-  name      String
-  products  Product[]
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  id       String    @id @default(uuid())
+  tenantId String
+  name     String
+  products Product[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  tenantId    String
-  capsuleId   String?
+  id           String      @id @default(uuid())
+  tenantId     String
+  capsuleId    String?
   customerName String
-  email       String?
-  phone       String?
-  total       Float
-  status      OrderStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  items       OrderItem[]
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  capsule     Capsule?    @relation(fields: [capsuleId], references: [id])
-  contactId   String?
-  contact     Contact?    @relation(fields: [contactId], references: [id])
+  email        String?
+  phone        String?
+  total        Float
+  status       OrderStatus @default(PENDING)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  capsule      Capsule?    @relation(fields: [capsuleId], references: [id])
+  contactId    String?
+  contact      Contact?    @relation(fields: [contactId], references: [id])
 
   @@index([tenantId])
   @@index([capsuleId])
@@ -483,25 +503,25 @@ enum OrderStatus {
 }
 
 model Contact {
-  id             String      @id @default(uuid())
-  tenantId       String
-  name           String
-  email          String?
-  phone          String?
-  company        String?
-  avatarUrl      String?
-  status         ContactStatus @default(LEAD)
-  type           ContactType   @default(INDIVIDUAL)
-  notes          String?     @db.Text
-  metadata       Json?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  tenant         Tenant      @relation(fields: [tenantId], references: [id])
-  activities     Activity[]
-  orders         Order[]
-  leads          Lead[]
-  deals          Deal[]
-  tasks          Task[]
+  id                 String              @id @default(uuid())
+  tenantId           String
+  name               String
+  email              String?
+  phone              String?
+  company            String?
+  avatarUrl          String?
+  status             ContactStatus       @default(LEAD)
+  type               ContactType         @default(INDIVIDUAL)
+  notes              String?             @db.Text
+  metadata           Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  activities         Activity[]
+  orders             Order[]
+  leads              Lead[]
+  deals              Deal[]
+  tasks              Task[]
   workspaceRelations WorkspaceRelation[]
 
   @@unique([tenantId, email])
@@ -510,32 +530,32 @@ model Contact {
 }
 
 model Activity {
-  id          String   @id @default(uuid())
-  tenantId    String
-  contactId   String
-  type        String   // EMAIL, WHATSAPP, CALL, NOTE, ORDER
-  subject     String
-  content     String?  @db.Text
-  createdAt   DateTime @default(now())
-  contact     Contact  @relation(fields: [contactId], references: [id])
+  id        String   @id @default(uuid())
+  tenantId  String
+  contactId String
+  type      String // EMAIL, WHATSAPP, CALL, NOTE, ORDER
+  subject   String
+  content   String?  @db.Text
+  createdAt DateTime @default(now())
+  contact   Contact  @relation(fields: [contactId], references: [id])
 
   @@index([contactId])
   @@index([tenantId])
 }
 
 model Deal {
-  id          String     @id @default(uuid())
-  tenantId    String
-  contactId   String
-  title       String
-  value       Float      @default(0)
-  stage       DealStage  @default(NEW)
-  status      DealStatus @default(OPEN)
+  id                String     @id @default(uuid())
+  tenantId          String
+  contactId         String
+  title             String
+  value             Float      @default(0)
+  stage             DealStage  @default(NEW)
+  status            DealStatus @default(OPEN)
   expectedCloseDate DateTime?
-  metadata    Json?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  contact     Contact    @relation(fields: [contactId], references: [id])
+  metadata          Json?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  contact           Contact    @relation(fields: [contactId], references: [id])
 
   @@index([contactId])
   @@index([tenantId])
@@ -591,15 +611,15 @@ model SystemSetting {
 }
 
 model Audience {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   tenantId    String
   name        String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   members     AudienceMember[]
   campaigns   Campaign[]
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
 }
@@ -611,7 +631,7 @@ model AudienceMember {
   firstName  String?
   lastName   String?
   phone      String?
-  metadata   Json?    // Stores generic columns from Google Sheets
+  metadata   Json? // Stores generic columns from Google Sheets
   status     String   @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED, BOUNCED
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -622,57 +642,57 @@ model AudienceMember {
 }
 
 model WorkspaceNote {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   tenantId  String
   title     String
-  content   String   @db.Text
-  summary   String?  @db.Text
+  content   String    @db.Text
+  summary   String?   @db.Text
   tags      Json?
   createdBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
   relations WorkspaceRelation[] @relation("NoteRelations")
 
   @@index([tenantId])
 }
 
 model WorkspaceDocument {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   tenantId    String
   title       String
-  description String?  @db.Text
+  description String?   @db.Text
   filePath    String
   fileType    String
   tags        Json?
   createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  relations   WorkspaceRelation[] @relation("DocumentRelations")
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  relations WorkspaceRelation[] @relation("DocumentRelations")
 
   @@index([tenantId])
 }
 
 model WorkspaceIdea {
-  id          String   @id @default(uuid())
+  id          String              @id @default(uuid())
   tenantId    String
   title       String
-  description String?  @db.Text
+  description String?             @db.Text
   status      WorkspaceIdeaStatus @default(DRAFT)
   priority    String?
   category    String?
   createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   deletedAt   DateTime?
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  relations   WorkspaceRelation[] @relation("IdeaRelations")
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  relations WorkspaceRelation[] @relation("IdeaRelations")
 
   @@index([tenantId])
 }
@@ -686,31 +706,31 @@ enum WorkspaceIdeaStatus {
 }
 
 model WorkspaceRelation {
-  id                String   @id @default(uuid())
-  tenantId          String
-  
-  noteId            String?
-  documentId        String?
-  ideaId            String?
+  id       String @id @default(uuid())
+  tenantId String
 
-  leadId            String?
-  companyId         String?
-  contactId         String?
-  opportunityId     String?
-  externalEntityId  String?
+  noteId     String?
+  documentId String?
+  ideaId     String?
+
+  leadId             String?
+  companyId          String?
+  contactId          String?
+  opportunityId      String?
+  externalEntityId   String?
   externalEntityType String?
-  knowledgeId       String?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  knowledgeId        String?
 
-  tenant            Tenant             @relation(fields: [tenantId], references: [id])
-  note              WorkspaceNote?     @relation("NoteRelations", fields: [noteId], references: [id])
-  document          WorkspaceDocument? @relation("DocumentRelations", fields: [documentId], references: [id])
-  idea              WorkspaceIdea?     @relation("IdeaRelations", fields: [ideaId], references: [id])
-  
-  lead              Lead?              @relation(fields: [leadId], references: [id])
-  contact           Contact?           @relation(fields: [contactId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id])
+  note     WorkspaceNote?     @relation("NoteRelations", fields: [noteId], references: [id])
+  document WorkspaceDocument? @relation("DocumentRelations", fields: [documentId], references: [id])
+  idea     WorkspaceIdea?     @relation("IdeaRelations", fields: [ideaId], references: [id])
+
+  lead    Lead?    @relation(fields: [leadId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
 
   @@index([tenantId])
   @@index([noteId])
@@ -720,3 +740,220 @@ model WorkspaceRelation {
   @@index([contactId])
 }
 
+model AgentSkill {
+  id        String   @id @default(uuid())
+  agentId   String
+  skillId   String
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, skillId])
+  @@index([agentId])
+  @@index([skillId])
+}
+
+model Suite {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  skills      Skill[]
+}
+
+model SkillAction {
+  id          String   @id @default(uuid())
+  skillId     String
+  action      String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, action])
+  @@index([skillId])
+}
+
+model SkillProvider {
+  id            String   @id @default(uuid())
+  skillId       String
+  provider      String
+  configuration Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  skill         Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, provider])
+  @@index([skillId])
+}
+
+model SkillPermission {
+  id            String   @id @default(uuid())
+  skillId       String
+  permissionKey String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  skill         Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, permissionKey])
+  @@index([skillId])
+}
+
+// FASE 2: VERTICAL REGISTRY
+model Vertical {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenants    TenantVertical[]
+  characters Character[]
+  assets     Asset[]
+}
+
+model TenantVertical {
+  id         String   @id @default(uuid())
+  tenantId   String
+  verticalId String
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vertical Vertical @relation(fields: [verticalId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, verticalId])
+  @@index([tenantId])
+  @@index([verticalId])
+}
+
+// FASE 4: AGENT REGISTRY (Catalog)
+model AgentTemplate {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String?  @db.Text
+  avatar       String?
+  category     String?
+  defaultModel String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  skills AgentTemplateSkill[]
+}
+
+model AgentTemplateSkill {
+  id              String   @id @default(uuid())
+  agentTemplateId String
+  skillId         String
+  createdAt       DateTime @default(now())
+
+  agentTemplate AgentTemplate @relation(fields: [agentTemplateId], references: [id], onDelete: Cascade)
+  skill         Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([agentTemplateId, skillId])
+  @@index([agentTemplateId])
+  @@index([skillId])
+}
+
+// FASE 5: CHARACTER REGISTRY
+model Character {
+  id           String   @id @default(uuid())
+  tenantId     String
+  verticalId   String?
+  name         String
+  slug         String   @unique
+  description  String?  @db.Text
+  avatar       String?
+  systemPrompt String?  @db.Text
+  defaultModel String?
+  voiceId      String?
+  loraId       String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vertical Vertical? @relation(fields: [verticalId], references: [id])
+
+  @@index([tenantId])
+  @@index([verticalId])
+}
+
+// FASE 6: ASSET REGISTRY
+model Asset {
+  id              String   @id @default(uuid())
+  tenantId        String
+  verticalId      String?
+  name            String
+  type            String // IMAGE, VIDEO, LORA, CHARACTER, BRAND_ASSET, CAMPAIGN_ASSET, DOCUMENT
+  storageProvider String
+  storagePath     String   @db.Text
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vertical Vertical? @relation(fields: [verticalId], references: [id])
+
+  @@index([tenantId])
+  @@index([verticalId])
+}
+
+// FASE 7: CREDIT ENGINE
+model CreditWallet {
+  id        String   @id @default(uuid())
+  tenantId  String   @unique
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions CreditTransaction[]
+
+  @@index([tenantId])
+}
+
+model CreditTransaction {
+  id        String   @id @default(uuid())
+  walletId  String
+  type      String // CREDIT, DEBIT
+  amount    Float
+  reason    String?  @db.Text
+  createdAt DateTime @default(now())
+
+  wallet CreditWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+}
+
+// FASE 8: RBAC Y FEATURE FLAGS
+model RolePermission {
+  id            String   @id @default(uuid())
+  role          String // e.g., OWNER, ADMIN, EXPERT
+  permissionKey String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([role, permissionKey])
+  @@index([role])
+}
+
+model AgentConfiguration {
+  id          String @id @default(uuid())
+  agentId     String @unique
+  temperature Float  @default(0.7)
+  maxTokens   Int    @default(2000)
+  provider    String @default("openai")
+  model       String @default("gpt-5.5")
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
