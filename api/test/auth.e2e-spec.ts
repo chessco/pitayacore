@@ -16,7 +16,7 @@ describe('Authentication (e2e)', () => {
     await app.init();
   });
 
-  const INTERNAL_API_KEY = 'pitaya_internal_secret_2026';
+  const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'test-key';
 
   describe('ApiKeyGuard Protection', () => {
     it('should reject requests without x-api-key header (401)', () => {

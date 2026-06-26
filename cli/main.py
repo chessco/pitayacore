@@ -4,7 +4,7 @@ import argparse
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
-from api_client import AcuaCoreAPI
+from api_client import PitayaCoreAPI
 
 console = Console()
 
@@ -88,7 +88,7 @@ def _render_items_table(items, title="Resultados", columns=["Título", "Fecha"])
     except ValueError:
         console.print("[red]Selección inválida.[/]")
 
-def list_notes(api: AcuaCoreAPI):
+def list_notes(api: PitayaCoreAPI):
     with console.status("[bold cyan]Obteniendo notas..."):
         notes = api.fetch_notes()
     if not notes:
@@ -96,7 +96,7 @@ def list_notes(api: AcuaCoreAPI):
         return
     _render_items_table(notes, "Todas Tus Notas")
 
-def list_ideas(api: AcuaCoreAPI):
+def list_ideas(api: PitayaCoreAPI):
     with console.status("[bold cyan]Obteniendo ideas..."):
         ideas = api.fetch_ideas()
     if not ideas:
@@ -104,7 +104,7 @@ def list_ideas(api: AcuaCoreAPI):
         return
     _render_items_table(ideas, "Tus Ideas")
 
-def list_documents(api: AcuaCoreAPI):
+def list_documents(api: PitayaCoreAPI):
     with console.status("[bold cyan]Obteniendo documentos..."):
         docs = api.fetch_documents()
     if not docs:
@@ -122,7 +122,7 @@ def list_documents(api: AcuaCoreAPI):
     console.print(table)
     ask_with_esc("\n[dim]Presiona Enter o ESC para regresar al menú...[/]")
 
-def ai_assistant(api: AcuaCoreAPI):
+def ai_assistant(api: PitayaCoreAPI):
     console.print("\n[bold cyan]--- AI Assistant ---[/]")
     console.print("[dim]Escribe tus preguntas. Presiona ESC en cualquier momento para volver al menú principal.[/]")
     while True:
@@ -137,7 +137,7 @@ def ai_assistant(api: AcuaCoreAPI):
         console.print("\n")
         console.print(Panel(answer, title="[bold magenta]AI Assistant[/]", border_style="magenta"))
 
-def global_search(api: AcuaCoreAPI):
+def global_search(api: PitayaCoreAPI):
     query = ask_with_esc("\n[bold yellow]Ingresa el texto a buscar en todo el Workspace (ESC para cancelar): [/]")
     if query == "ESC" or not query.strip():
         return
@@ -151,7 +151,7 @@ def global_search(api: AcuaCoreAPI):
         
     _render_items_table(results, f"Resultados de Búsqueda para '{query}'")
 
-def create_note(api: AcuaCoreAPI):
+def create_note(api: PitayaCoreAPI):
     console.print("\n[bold cyan]--- Nueva Nota ---[/]")
     title = ask_with_esc("[bold yellow]Título (o ESC para cancelar): [/]")
     if title == "ESC" or not title:
@@ -171,7 +171,7 @@ def create_note(api: AcuaCoreAPI):
             
     content = "\n".join(lines).strip()
     
-    with console.status("[bold cyan]Guardando nota en AcuaCore..."):
+    with console.status("[bold cyan]Guardando nota en PitayaCore..."):
         result = api.create_note(title, content)
         
     if result:
@@ -197,7 +197,7 @@ def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f)
 
-def select_workspace(api: AcuaCoreAPI):
+def select_workspace(api: PitayaCoreAPI):
     with console.status("[bold cyan]Buscando Workspaces disponibles..."):
         tenants = api.fetch_tenants()
         
@@ -235,7 +235,7 @@ def select_workspace(api: AcuaCoreAPI):
 
 def main():
     print_banner()
-    api = AcuaCoreAPI()
+    api = PitayaCoreAPI()
     
     config = load_config()
     if 'tenant_id' in config:

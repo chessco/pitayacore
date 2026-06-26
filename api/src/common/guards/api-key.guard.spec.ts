@@ -70,7 +70,7 @@ describe('ApiKeyGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers: {
-            'x-api-key': 'pitaya_internal_secret_2026',
+            'x-api-key': process.env.INTERNAL_API_KEY || 'test-key',
           },
         }),
       }),

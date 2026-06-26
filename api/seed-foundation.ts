@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 const verticalsData = [
   { slug: 'vision', name: 'Vision', description: 'SaaS creativo impulsado por IA' },
-  { slug: 'aquaculture', name: 'Aquaculture', description: 'AcuaCore SaaS' },
+  { slug: 'aquaculture', name: 'Aquaculture', description: 'PitayaCore SaaS' },
   { slug: 'political', name: 'Political', description: 'Mando SaaS' },
   { slug: 'jewelry', name: 'Jewelry', description: 'LuxuryOS SaaS' },
   { slug: 'legal', name: 'Legal', description: 'LegalAI SaaS' },

@@ -22,14 +22,14 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/acuacore\.pitayacode\.io\/api\//,
+            urlPattern: /^https:\/\/pitayacore\.pitayacode\.io\/api\//,
             handler: 'NetworkOnly',
           }
         ]
       },
       manifest: {
-        name: 'AcuaCore AI - Operaciones',
-        short_name: 'AcuaCore',
+        name: 'PitayaCore AI - Operaciones',
+        short_name: 'PitayaCore',
         description: 'Plataforma de IA para la Gestión Acuícola',
         theme_color: '#003B71',
         background_color: '#ffffff',
@@ -66,11 +66,11 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:3014',
+        target: 'http://localhost:2014',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:3014',
+        target: 'http://localhost:2014',
         ws: true,
       },
     },

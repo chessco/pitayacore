@@ -20,7 +20,10 @@ export class TenantOwnershipGuard implements CanActivate {
         return true;
     }
 
-    if (paramsTenantId !== headerTenantId) {
+    const resolvedParams = paramsTenantId === 'default' ? 'DEFAULT_TENANT' : paramsTenantId;
+    const resolvedHeader = headerTenantId === 'default' ? 'DEFAULT_TENANT' : headerTenantId;
+
+    if (resolvedParams !== resolvedHeader) {
       throw new ForbiddenException('You do not have permission to access resources for this tenant.');
     }
 

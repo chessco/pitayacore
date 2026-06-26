@@ -1,6 +1,6 @@
 # 🛡️ Capsule Studio QA Testing Bed
 
-Esta suite de pruebas automatizada permite certificar la integridad técnica y funcional del módulo de Cápsulas en AcuaCore.
+Esta suite de pruebas automatizada permite certificar la integridad técnica y funcional del módulo de Cápsulas en PitayaCore.
 
 ## 🚀 Cómo Ejecutar los Tests
 

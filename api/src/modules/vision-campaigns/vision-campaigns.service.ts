@@ -5,10 +5,18 @@ import { DatabaseService } from '../../common/database/database.service';
 export class VisionCampaignsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private async resolveTenantId(tenantId: string): Promise<string> {
+    if (tenantId === 'DEFAULT_TENANT') {
+      const defaultTenant = await this.db.mysql.tenant.findFirst();
+      return defaultTenant?.id || tenantId;
+    }
+    return tenantId;
+  }
+
   async findAll(tenantId: string) {
-    // Fetch all creative chat conversations that have been approved (have a campaignId in metadata)
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     const conversations = await this.db.mysql.conversation.findMany({
-      where: { tenantId, source: 'CREATIVE_CHAT' },
+      where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
       include: {
         messages: {
@@ -26,7 +34,6 @@ export class VisionCampaignsService {
         ? JSON.parse(conv.metadata as string)
         : {};
 
-      // Only include conversations that have been approved (have a campaignId)
       if (!sessionMeta.campaignId) continue;
 
       const lastAiMsg = conv.messages[0];
@@ -34,9 +41,8 @@ export class VisionCampaignsService {
         ? JSON.parse(lastAiMsg.classification)
         : {};
 
-      // Fetch assets linked to this campaign
       const rawAssets = await this.db.mysql.asset.findMany({
-        where: { tenantId },
+        where: { tenantId: resolvedTenantId },
       });
 
       const assets = rawAssets
@@ -64,9 +70,9 @@ export class VisionCampaignsService {
   }
 
   async delete(tenantId: string, id: string) {
-    // Get conversation metadata to extract campaignId
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     const conv = await this.db.mysql.conversation.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId: resolvedTenantId },
     });
 
     if (!conv) return { deleted: false };
@@ -75,10 +81,9 @@ export class VisionCampaignsService {
       ? JSON.parse(conv.metadata as string)
       : {};
 
-    // Delete linked assets
     if (sessionMeta.campaignId) {
       const allAssets = await this.db.mysql.asset.findMany({
-        where: { tenantId },
+        where: { tenantId: resolvedTenantId },
       });
 
       const toDelete = allAssets.filter((a) => {
@@ -91,7 +96,6 @@ export class VisionCampaignsService {
       }
     }
 
-    // Delete messages then conversation
     await this.db.mysql.message.deleteMany({
       where: { conversationId: id },
     });

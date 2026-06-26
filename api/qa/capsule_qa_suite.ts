@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /**
- * ACUACORE CAPSULE STUDIO - QA TEST SUITE
+ * PITAYACORE CAPSULE STUDIO - QA TEST SUITE
  * Certifica la integridad técnica y funcional de las cápsulas.
  */
 
@@ -9,7 +9,7 @@ const CONFIG = {
   baseUrl: 'http://localhost:3014',
   tenantA: {
     id: 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718', // Acuaequipos
-    apiKey: 'pitaya_internal_secret_2026'
+    apiKey: process.env.INTERNAL_API_KEY || 'SET_IN_ENV'
   },
   tenantB: {
     id: 'another-tenant-id', // Para pruebas de aislamiento

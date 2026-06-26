@@ -5,14 +5,33 @@ import {
   IImageProvider,
   ImageGenerationResult,
 } from './image.provider.interface';
-import axios from 'axios';
+import { R2StorageProvider } from '../storage/r2-storage.provider';
+
+export interface VideoGenerationResult {
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  resolution?: string;
+  fileSize?: number;
+  prompt: string;
+}
 
 @Injectable()
 export class FalProvider implements IImageProvider {
   private readonly logger = new Logger(FalProvider.name);
 
-  constructor(private configService: ConfigService) {
-    // fal automatically reads FAL_KEY from process.env if available
+  constructor(
+    private configService: ConfigService,
+    private readonly storageProvider: R2StorageProvider,
+  ) {
+    const falKey = this.configService.get<string>('FAL_KEY');
+    if (falKey) {
+      process.env.FAL_KEY = falKey;
+      fal.config({ credentials: falKey });
+      this.logger.log(`Fal.ai configured (key: ${falKey.substring(0, 8)}...)`);
+    } else {
+      this.logger.error('FAL_KEY not found in config — Fal.ai calls will fail!');
+    }
   }
 
   async generateImage(
@@ -54,14 +73,27 @@ export class FalProvider implements IImageProvider {
 
       this.logger.log(`Image generated at Fal.ai: ${imageUrl}`);
 
-      // Fetch binary data to store it internally later
-      const imageResponse = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-      });
-      const buffer = Buffer.from(imageResponse.data, 'binary');
+      // Fetch binary data from fal.ai
+      const imageResponse = await fetch(imageUrl);
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Upload to R2 for permanent storage
+      let permanentUrl: string;
+      try {
+        permanentUrl = await this.storageProvider.uploadFile(
+          'campaign-banners',
+          buffer,
+          contentType,
+        );
+        this.logger.log(`Image uploaded to R2: ${permanentUrl}`);
+      } catch (uploadError) {
+        this.logger.warn('Failed to upload to R2, using fal.ai URL', uploadError);
+        permanentUrl = imageUrl;
+      }
 
       return {
-        imageUrl,
+        imageUrl: permanentUrl,
         buffer,
         contentType,
         width,
@@ -73,7 +105,7 @@ export class FalProvider implements IImageProvider {
 
       // Fallback for development if no FAL_KEY is present
       return {
-        imageUrl: 'http://localhost:3000/static/safe_streets_banner.png',
+        imageUrl: '/fallback.png',
         contentType: 'image/png',
         buffer: Buffer.from(''),
         width: 1920,
@@ -132,6 +164,110 @@ export class FalProvider implements IImageProvider {
         loraPath: `https://r2.pitayacode.io/loras/${options.triggerWord}.safetensors`,
         loraId: `lora-${options.triggerWord}-dev`,
       };
+    }
+  }
+
+  /**
+   * Generate video from an image using Fal.ai's video generation model
+   */
+  async generateVideo(
+    imageUrl: string,
+    prompt: string,
+    options?: {
+      resolution?: string;
+      duration?: string;
+      aspectRatio?: string;
+      generateAudio?: boolean;
+      bitrateMode?: string;
+    },
+  ): Promise<VideoGenerationResult> {
+    this.logger.log(`Calling Fal.ai for video generation with prompt: ${prompt}`);
+
+    try {
+      // Parse duration - handle 'auto' by using a default
+      let durationSeconds = 5; // default
+      if (options?.duration && options.duration !== 'auto') {
+        durationSeconds = parseInt(options.duration, 10) || 5;
+      }
+
+      // Build the request for Seedance model
+      const input: any = {
+        image_url: imageUrl,
+        prompt: prompt,
+      };
+
+      // Add optional parameters if provided
+      if (options?.resolution) {
+        // Map resolution to dimensions
+        if (options.resolution === '480p') {
+          input.resolution = '480p';
+        } else {
+          input.resolution = '720p';
+        }
+      }
+
+      if (durationSeconds) {
+        input.duration = durationSeconds;
+      }
+
+      if (options?.aspectRatio && options.aspectRatio !== 'auto') {
+        input.aspect_ratio = options.aspectRatio;
+      }
+
+      if (options?.generateAudio !== undefined) {
+        input.generate_audio = options.generateAudio;
+      }
+
+      const result: any = await fal.subscribe('bytedance/seedance-2.0/fast/image-to-video', {
+        input,
+        logs: true,
+        onQueueUpdate: (update) => {
+          if (update.status === 'IN_PROGRESS' && update.logs) {
+            this.logger.log(`Fal.ai video generation progress...`);
+          }
+        },
+      });
+
+      if (!result || !result.data || !result.data.video) {
+        throw new Error('No video returned from Fal.ai');
+      }
+
+      const videoUrl = result.data.video.url;
+      const thumbnailUrl = result.data.thumbnail?.url;
+      const videoDuration = result.data.video.duration || durationSeconds;
+
+      this.logger.log(`Video generated at Fal.ai: ${videoUrl}`);
+
+      // Fetch binary data from fal.ai
+      const videoResponse = await fetch(videoUrl);
+      const arrayBuffer = await videoResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Upload to R2 for permanent storage
+      let permanentUrl: string;
+      try {
+        permanentUrl = await this.storageProvider.uploadFile(
+          'generated-videos',
+          buffer,
+          'video/mp4',
+        );
+        this.logger.log(`Video uploaded to R2: ${permanentUrl}`);
+      } catch (uploadError) {
+        this.logger.warn('Failed to upload to R2, using fal.ai URL', uploadError);
+        permanentUrl = videoUrl;
+      }
+
+      return {
+        videoUrl: permanentUrl,
+        thumbnailUrl,
+        duration: videoDuration,
+        resolution: options?.resolution || '720p',
+        fileSize: buffer.length,
+        prompt,
+      };
+    } catch (error) {
+      this.logger.error('Error calling Fal.ai for video generation.', error);
+      throw error;
     }
   }
 }

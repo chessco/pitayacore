@@ -55,7 +55,7 @@ describe('Smoke Test (Production Sanity)', () => {
 
   it('/api/webhooks/flow/incoming (POST) - Bridge Authenticity Check', async () => {
     const internalKey =
-      process.env.INTERNAL_API_KEY || 'pitaya_internal_secret_2026';
+      process.env.INTERNAL_API_KEY || 'test-key';
 
     const response = await request(app.getHttpServer())
       .post('/api/webhooks/flow/incoming')

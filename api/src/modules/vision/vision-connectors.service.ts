@@ -22,9 +22,10 @@ export class VisionConnectorsService {
     }
     // Map verticalId to agent slug
     const agentMap: Record<string, string> = {
-      'acuacore': 'aquaculture-educator',
+      'pitayacore': 'aquaculture-educator',
       'mando': 'political-creative',
-      'luxuryos': 'luxury-modeler'
+      'luxuryos': 'luxury-modeler',
+      'vision': 'creative-director'
     };
 
     const agentSlug = agentMap[verticalId];
@@ -33,12 +34,22 @@ export class VisionConnectorsService {
     }
 
     // Get the agent from the database to get its system prompt
+    let systemPrompt = '';
     const agent = await this.db.mysql.agent.findUnique({
       where: { slug: agentSlug }
     });
 
-    if (!agent) {
-      throw new HttpException(`Agent ${agentSlug} not found in database. Seed required.`, HttpStatus.INTERNAL_SERVER_ERROR);
+    if (agent) {
+      systemPrompt = agent.prompt;
+    } else {
+      const agentTemplate = await this.db.mysql.agentTemplate.findUnique({
+        where: { slug: agentSlug }
+      });
+      if (agentTemplate && agentTemplate.systemPrompt) {
+        systemPrompt = agentTemplate.systemPrompt;
+      } else {
+        throw new HttpException(`Agent ${agentSlug} not found in database. Seed required.`, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }
 
     // Compose the prompt for Gemini
@@ -47,7 +58,7 @@ export class VisionConnectorsService {
     // 1. Generate visual prompt using Gemini
     let visualPrompt = '';
     try {
-      visualPrompt = await this.geminiProvider.generateText(userPrompt, agent.prompt);
+      visualPrompt = await this.geminiProvider.generateText(userPrompt, systemPrompt);
     } catch (error) {
       throw new HttpException('Error generating visual prompt with Gemini: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

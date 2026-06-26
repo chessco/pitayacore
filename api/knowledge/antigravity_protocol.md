@@ -1,6 +1,6 @@
 # Protocolo: Arquitectura de Agentes Antigravity
 
-Este documento describe la integración de la IA de Antigravity dentro del ecosistema AcuaCore para la gestión proactiva de inquilinos.
+Este documento describe la integración de la IA de Antigravity dentro del ecosistema PitayaCore para la gestión proactiva de inquilinos.
 
 ## Objetivos
 - Reducción del tiempo de respuesta (SLA) en un 40%.

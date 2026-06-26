@@ -1,34 +1,42 @@
+# ============================
 # Dependencies
+# ============================
 node_modules/
 .pnp
 .pnp.js
 
+# ============================
 # Testing
+# ============================
 coverage/
 
-# Production
+# ============================
+# Production builds
+# ============================
 build/
 dist/
 dist-ssr/
 *.local
 
+# ============================
 # Logs
+# ============================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment variables
+# ============================
+# Environment variables (ALL)
+# ============================
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-.env*
+.env.*
 !.env.example
 
+# ============================
 # Editor folders and files
+# ============================
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -39,53 +47,70 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
+# ============================
 # OS metadata
+# ============================
 Thumbs.db
 ehthumbs.db
 
-# Subdirectories specifics (if they have their own builds)
+# ============================
+# Subdirectories builds
+# ============================
 api/dist/
 api/node_modules/
 web/dist/
 web/node_modules/
 web/stats.html
 
+# ============================
 # Database
+# ============================
 prisma/dev.db
 prisma/dev.db-journal
+*.sql
+*.dump
 
+# ============================
 # Docker
+# ============================
 .docker/
 
-# Local Scratch and Tests
-api/scratch/
-api/test/smoke.e2e-spec.ts
-deploy_acuacore_api.tar.gz
-acuacore_web_deploy.tar.gz
-web_deploy.tar.gz
-
+# ============================
 # Ngrok
+# ============================
 api/ngrok.yml
 ngrok*
 
-# Local scratch
+# ============================
+# Scratch / temp / auxiliary
+# ============================
 scratch/
+api/scratch/
+api/test/smoke.e2e-spec.ts
 api/prisma/*.js
 api/prisma/seed.js.bak
 *.bak
+*.temp
+*.temp.*
 
-# Public assets (keep only necessary ones, exclude dynamic generations)
+# ============================
+# Deploy artifacts
+# ============================
+*.tar.gz
+deploy_pitayacore_api.tar.gz
+pitayacore_web_deploy.tar.gz
+web_deploy.tar.gz
+
+# ============================
+# Public assets (dynamic)
+# ============================
 api/public/
 web/public/hero-*.png
 web/public/nano-*.png
 
-# Temporary and local scripts
-*.tar.gz
-*.temp
-*.temp.*
-*.sql
-
-# Data / Scripts with Secrets
+# ============================
+# One-time migration / fix scripts
+# ============================
 api/create_*.ts
 api/create_*.js
 api/create_*.cjs
@@ -94,4 +119,61 @@ api/seed-*.ts
 api/fix_*.js
 api/fix_*.cjs
 api/fix_*.ts
+api/check_*.ts
+api/check_*.js
+api/check-*.ts
+api/list-*.ts
+api/list-*.js
+api/update-users*.js
+api/script.js
+api/script.ts
+api/verify_*.ts
+api/set_default_*.ts
+api/force-prod.js
+api/gen.bat
+api/generate-apis.js
+api/init-don-juan.js
+api/debug-msg.ts
+api/count-convs.ts
+api/src/fix-tenant.ts
+api/prisma/seed-capsule.js
+api/prisma/list-ids.js
+script.js
+diff.txt
 
+# ============================
+# Backups (contain DB dumps)
+# ============================
+backups/
+
+# ============================
+# Kilo / IDE worktrees
+# ============================
+.kilo/
+
+# ============================
+# Scripts folder (contains SSH keys refs, prod credentials)
+# ============================
+scripts/
+
+# ============================
+# Misc secrets
+# ============================
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# ============================
+# Python cache
+# ============================
+__pycache__/
+*.pyc
+*.pyo
+
+# ============================
+# CLI config (runtime-generated)
+# ============================
+cli/config.json

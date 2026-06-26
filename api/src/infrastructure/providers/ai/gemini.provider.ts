@@ -36,7 +36,7 @@ export class GeminiProvider implements IAiProvider {
       };
 
       const result = await this.ai.models.generateContent({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-flash',
         contents: [
           prompt,
           {
@@ -65,7 +65,7 @@ export class GeminiProvider implements IAiProvider {
   ): Promise<string> {
     const config: any = { systemInstruction };
     const result = await this.ai.models.generateContent({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config,
     });
@@ -84,7 +84,7 @@ export class GeminiProvider implements IAiProvider {
     };
 
     const result = await this.ai.models.generateContent({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config,
     });

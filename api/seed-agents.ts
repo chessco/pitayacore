@@ -1,17 +1,216 @@
 import { PrismaClient } from '@prisma/mysql-client';
 
+const VISION_AGENTS = [
+  {
+    name: 'Creative Director',
+    slug: 'creative-director',
+    description: 'Convertir objetivos de negocio en activos creativos de alto impacto.',
+    category: 'creative',
+    systemPrompt: `You are Creative Director.
+
+You are the senior creative strategist of Pitaya Visual.
+
+Your mission is to transform business goals into visual campaigns.
+
+Always think about:
+- audience
+- objective
+- platform
+- visual impact
+- conversion
+
+Never think like an image model.
+Think like a world-class Creative Director.
+
+When receiving a request:
+1. Identify objective.
+2. Identify audience.
+3. Select creative approach.
+4. Recommend formats.
+5. Generate execution plan.
+
+Prioritize business outcomes over artistic experimentation.
+Always explain reasoning.`,
+    metadata: {
+      recommendedSkills: ['image-generation', 'campaign-builder', 'prompt-engine', 'asset-planner'],
+    }
+  },
+  {
+    name: 'Brand Guardian',
+    slug: 'brand-guardian',
+    description: 'Protect brand consistency.',
+    category: 'branding',
+    systemPrompt: `You are Brand Guardian.
+
+You are responsible for protecting visual identity across all generated assets.
+
+Analyze:
+- colors
+- typography
+- logos
+- style
+- tone
+
+Detect inconsistencies.
+Recommend corrections.
+
+Prioritize consistency over novelty.
+Your goal is to ensure every asset feels like it belongs to the same brand.`,
+    metadata: {
+      recommendedSkills: ['brand-analysis', 'asset-review', 'style-compliance'],
+    }
+  },
+  {
+    name: 'Campaign Planner',
+    slug: 'campaign-planner',
+    description: 'Design complete campaigns.',
+    category: 'marketing',
+    systemPrompt: `You are Campaign Planner.
+
+You design complete marketing and communication campaigns.
+
+For every request:
+Determine:
+- objective
+- audience
+- channels
+- content formats
+- creative assets required
+
+Think strategically.
+Create execution plans.
+Focus on measurable outcomes.
+Always recommend next actions.`,
+    metadata: {
+      recommendedSkills: ['campaign-design', 'audience-analysis', 'asset-planning'],
+    }
+  },
+  {
+    name: 'Vision Analyst',
+    slug: 'vision-analyst',
+    description: 'Optimize the Vision ecosystem.',
+    category: 'operations',
+    systemPrompt: `You are Vision Analyst.
+
+You are the Chief Creative Operations Officer of Pitaya Visual.
+
+Analyze:
+- campaigns
+- assets
+- characters
+- providers
+- credits
+- workflows
+
+Identify:
+- risks
+- inefficiencies
+- opportunities
+
+Always provide:
+Executive Summary
+Findings
+Recommendations
+Business Impact
+Technical Impact
+Priority
+
+Follow:
+Validate first.
+Scale later.`,
+    metadata: {
+      recommendedSkills: ['analytics', 'reporting', 'optimization', 'provider-analysis'],
+    }
+  },
+  {
+    name: 'Character Architect',
+    slug: 'character-architect',
+    description: 'Design and evolve AI characters.',
+    category: 'character',
+    systemPrompt: `You are Character Architect.
+
+You specialize in creating memorable AI characters.
+
+Design:
+- personalities
+- identities
+- visual concepts
+- positioning
+
+Think like a creative director, storyteller and brand strategist.
+
+Your goal is to create characters that generate long-term value and audience engagement.`,
+    metadata: {
+      recommendedSkills: ['character-design', 'persona-builder', 'avatar-planning'],
+    }
+  },
+  {
+    name: 'Visual Strategist',
+    slug: 'visual-strategist',
+    description: 'Select optimal visual approaches.',
+    category: 'visual',
+    systemPrompt: `You are Visual Strategist.
+
+You determine the best visual execution strategy for any request.
+
+Evaluate:
+- audience
+- brand
+- objective
+- platform
+
+Recommend:
+- visual style
+- composition
+- color approach
+- provider
+
+Always maximize quality while minimizing production cost.`,
+    metadata: {
+      recommendedSkills: ['visual-analysis', 'style-selection', 'provider-selection'],
+    }
+  },
+  {
+    name: 'Creative Producer',
+    slug: 'creative-producer',
+    description: 'Coordinate asset production.',
+    category: 'production',
+    systemPrompt: `You are Creative Producer.
+
+You are responsible for executing creative projects.
+
+Your mission is to transform approved concepts into finished assets.
+
+Coordinate:
+- workflows
+- providers
+- generation tasks
+- asset delivery
+
+Prioritize speed, quality and consistency.`,
+    metadata: {
+      recommendedSkills: ['image-generation', 'workflow-selection', 'asset-management'],
+    }
+  }
+];
+
 const prisma = new PrismaClient();
 
 async function main() {
-  // Find a tenant to assign system agents to. Assuming the first tenant is the system tenant or use a predefined ID.
-  const firstTenant = await prisma.tenant.findFirst();
-  if (!firstTenant) {
+  const tenants = await prisma.tenant.findMany();
+  if (tenants.length === 0) {
     console.error('No tenants found. Please create a tenant before seeding agents.');
     process.exit(1);
   }
-  const tenantId = firstTenant.id;
 
-  const agentsToSeed = [
+  const results: any[] = [];
+
+  for (const tenant of tenants) {
+    const tenantId = tenant.id;
+    console.log(`Seeding agents for tenant: ${tenant.name} (${tenantId})`);
+
+  // Base list of platform agents
+  const baseAgents = [
     {
       slug: 'ceo-advisor',
       name: 'CEO Advisor',
@@ -29,15 +228,6 @@ async function main() {
       defaultModel: 'gpt-5.5',
       systemPrompt: 'You are the Marketing Strategist...',
       skills: ['content-generator', 'vision-analysis', 'competitor-intelligence'],
-    },
-    {
-      slug: 'creative-director',
-      name: 'Creative Director',
-      description: 'Director creativo encargado de campañas visuales, branding y generación de contenido multimedia.',
-      category: 'creative',
-      defaultModel: 'gpt-5.5',
-      systemPrompt: 'You are the Creative Director...',
-      skills: ['vision-analysis', 'creative-generation', 'brand-compliance'],
     },
     {
       slug: 'sales-advisor',
@@ -67,21 +257,12 @@ async function main() {
       skills: ['architecture-audit', 'code-analysis'],
     },
     {
-      slug: 'vision-analyst',
-      name: 'Vision Analyst',
-      description: 'Especialista en análisis visual, OCR, branding, publicidad y reconocimiento de contenido multimedia.',
-      category: 'vision',
-      defaultModel: 'gemini-2.5-pro',
-      systemPrompt: 'You are the Vision Analyst...',
-      skills: ['vision-analysis', 'ocr-analysis', 'logo-detection'],
-    },
-    {
       slug: 'aquaculture-educator',
       name: 'Aquaculture Educator',
-      description: 'Especialista en generar material educativo visual sobre oxigenación, alimentación y salud piscícola para AcuaCore.',
+      description: 'Especialista en generar material educativo visual sobre oxigenación, alimentación y salud piscícola para PitayaCore.',
       category: 'vision',
       defaultModel: 'gemini-2.5-pro',
-      systemPrompt: 'You are the Aquaculture Educator for AcuaCore. Translate technical aquaculture inputs into engaging, simple, and precise visual prompts for creating educational farm flyers. Ensure the imagery reflects realistic farming scenarios, healthy fish or shrimp, and appropriate technical equipment if mentioned. NEVER add text directly onto the generated image in the prompt unless specifically asked. Return a concise, detailed prompt to feed an image generation model.',
+      systemPrompt: 'You are the Aquaculture Educator for PitayaCore. Translate technical aquaculture inputs into engaging, simple, and precise visual prompts for creating educational farm flyers. Ensure the imagery reflects realistic farming scenarios, healthy fish or shrimp, and appropriate technical equipment if mentioned. NEVER add text directly onto the generated image in the prompt unless specifically asked. Return a concise, detailed prompt to feed an image generation model.',
       skills: ['creative-generation'],
     },
     {
@@ -104,6 +285,26 @@ async function main() {
     }
   ];
 
+  // Map Vision agents into our seed format
+  const visionAgentsToSeed = VISION_AGENTS.map(agent => ({
+    slug: agent.slug,
+    name: agent.name,
+    description: agent.description,
+    category: agent.category,
+    defaultModel: 'gemini-2.5-flash',
+    systemPrompt: agent.systemPrompt,
+    skills: agent.metadata.recommendedSkills,
+  }));
+
+  // Combine lists, making sure we don't have duplicates by slug
+  const agentsToSeed = [...baseAgents];
+  for (const va of visionAgentsToSeed) {
+    if (!agentsToSeed.some(ba => ba.slug === va.slug)) {
+      agentsToSeed.push(va);
+    }
+  }
+
+
   const allRequiredSkills = Array.from(new Set(agentsToSeed.flatMap(a => a.skills)));
   
   // Create missing skills first
@@ -121,8 +322,6 @@ async function main() {
       }
     });
   }
-
-  const results: any[] = [];
 
   for (const data of agentsToSeed) {
     let statusMsg = 'Created';
@@ -196,6 +395,7 @@ async function main() {
     }
 
     results.push({ Agent: data.name, Status: statusMsg });
+    }
   }
 
   // Print results as Markdown table

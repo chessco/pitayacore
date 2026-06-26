@@ -37,7 +37,7 @@
 
 ---
 
-## 🔗 Soluciones técnicas relacionadas (Acuacore AI)
+## 🔗 Soluciones técnicas relacionadas (PitayaCore AI)
 
 ### Calidad de agua
 

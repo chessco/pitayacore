@@ -1,11 +1,11 @@
 import httpx
 from typing import List, Dict, Any
 
-API_BASE_URL = "https://acuacore-api.pitayacode.io/api"
+API_BASE_URL = "https://pitayacore-api.pitayacode.io/api"
 DEFAULT_TENANT_ID = "edd1ac37-5ff9-4e46-bc7f-fff3c414d718"
 SYSTEM_ROLE = "SYSTEM"
 
-class AcuaCoreAPI:
+class PitayaCoreAPI:
     def __init__(self, tenant_id: str = DEFAULT_TENANT_ID):
         self.tenant_id = tenant_id
         self.headers = {

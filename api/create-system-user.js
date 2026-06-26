@@ -34,7 +34,7 @@ async function main() {
   if (!tenant) {
     console.log('⚠️ No hay tenants, creando uno de sistema...');
     tenant = await prisma.tenant.create({
-      data: { id: 'sys-tenant', name: 'Sistema AcuaCore' }
+      data: { id: 'sys-tenant', name: 'Sistema PitayaCore' }
     });
   }
 
@@ -72,7 +72,7 @@ async function main() {
         name: 'Asistente de Workspace',
         slug: 'workspace-assistant',
         description: 'Asistente que gestiona y analiza las notas, documentos e ideas del Workspace.',
-        prompt: 'Eres el Asistente de Workspace de AcuaCore AI. Tu función es analizar notas, documentos e ideas del Workspace para responder preguntas, resumir información y extraer conocimiento clave de forma proactiva.',
+        prompt: 'Eres el Asistente de Workspace de PitayaCore AI. Tu función es analizar notas, documentos e ideas del Workspace para responder preguntas, resumir información y extraer conocimiento clave de forma proactiva.',
         tenantId: resolvedTenantId,
         version: '1.0',
         status: 'PRODUCTION',

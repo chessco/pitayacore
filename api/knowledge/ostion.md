@@ -28,7 +28,7 @@
 
 ---
 
-## 🔗 Soluciones técnicas relacionadas (Acuacore AI)
+## 🔗 Soluciones técnicas relacionadas (PitayaCore AI)
 
 ### Nutrición natural
 

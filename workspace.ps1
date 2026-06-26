@@ -1,4 +1,4 @@
-# PitayaCode AcuaCore - Workspace CLI Runner
+# PitayaCode PitayaCore - Workspace CLI Runner
 # Uso: .\workspace.ps1
 
 $ErrorActionPreference = "Stop"

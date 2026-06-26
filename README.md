@@ -1,7 +1,7 @@
-# 🌊 AcuaCore AI — Obsidian Command Center
+# 🌊 PitayaCore AI — Obsidian Command Center
 
 <div align="center">
-  <img width="1200" height="475" alt="AcuaCore Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" height="475" alt="PitayaCore Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
   
   [![Status](https://img.shields.io/badge/status-active-success.svg)]()
   [![NestJS](https://img.shields.io/badge/backend-NestJS-red.svg)]()
@@ -10,7 +10,7 @@
   [![Docker](https://img.shields.io/badge/docker-up-blue.svg)]()
 </div>
 
-**AcuaCore AI** es una plataforma avanzada y multi-inquilino (multi-tenant) de agentes de Inteligencia Artificial que integra CRM, comercio electrónico, administración de conocimiento (RAG con base de datos vectorial), flujo de aprobación humana (HITL) y campañas automáticas. 
+**PitayaCore AI** es una plataforma avanzada y multi-inquilino (multi-tenant) de agentes de Inteligencia Artificial que integra CRM, comercio electrónico, administración de conocimiento (RAG con base de datos vectorial), flujo de aprobación humana (HITL) y campañas automáticas. 
 
 El repositorio contiene tanto la aplicación de administración interactiva (**Obsidian Command Center**) como los submódulos de la API del servidor, el portal web del usuario final y una interfaz de consola (CLI).
 
@@ -18,21 +18,21 @@ El repositorio contiene tanto la aplicación de administración interactiva (**O
 
 ## 🏛️ Arquitectura del Sistema
 
-El siguiente diagrama detalla cómo se comunican las distintas piezas de AcuaCore:
+El siguiente diagrama detalla cómo se comunican las distintas piezas de PitayaCore:
 
 ```mermaid
 graph TD
     subgraph Frontend
-        Web["AcuaCore Web (React PWA - Puerto 3000)"]
+        Web["PitayaCore Web (React PWA - Puerto 3000)"]
         RootApp["Obsidian Command Center (Vite + React - AI Studio App)"]
     end
 
     subgraph Administration
-        CLI["AcuaCore CLI (Python + Rich UI)"]
+        CLI["PitayaCore CLI (Python + Rich UI)"]
     end
 
     subgraph Backend
-        API["AcuaCore API (NestJS - Puerto 3014)"]
+        API["PitayaCore API (NestJS - Puerto 3014)"]
     end
 
     subgraph Storage
@@ -67,13 +67,13 @@ El proyecto está estructurado de manera modular para separar las distintas resp
 
 | Directorio / Archivo | Propósito | Tecnología |
 | :--- | :--- | :--- |
-| [`/src`](file:///G:/PITAYACODE/ACUACORE/src) | **Obsidian Command Center** (Root App): Frontend principal cargado e integrado dentro de Google AI Studio. | React + Vite + Tailwind CSS |
-| [`/api`](file:///G:/PITAYACODE/ACUACORE/api) | **AcuaCore API Backend**: Lógica central del sistema, endpoints, agentes, skills, base de datos vectorial e integraciones. | NestJS + Prisma + Socket.io |
-| [`/web`](file:///G:/PITAYACODE/ACUACORE/web) | **AcuaCore Web Frontend**: Panel y landing page para el usuario final. Permite gestionar catálogos, leads y configurar el Studio. | React + Vite + PWA |
-| [`/cli`](file:///G:/PITAYACODE/ACUACORE/cli) | **Terminal de Administración**: Consola interactiva para administración rápida, creación de notas/ideas y consultas directas a la IA. | Python + Rich + Httpx |
-| [`/docs`](file:///G:/PITAYACODE/ACUACORE/docs) | Documentación técnica adicional e información del proyecto. | Markdown |
-| [`dev.ps1`](file:///G:/PITAYACODE/ACUACORE/dev.ps1) | Script automatizado en PowerShell para arrancar todo el entorno de desarrollo local. | PowerShell |
-| [`DEPLOYMENT.md`](file:///G:/PITAYACODE/ACUACORE/DEPLOYMENT.md) | Guía detallada paso a paso para el despliegue a producción. | Markdown |
+| [`/src`](file:///G:/PITAYACODE/PITAYACORE/src) | **Obsidian Command Center** (Root App): Frontend principal cargado e integrado dentro de Google AI Studio. | React + Vite + Tailwind CSS |
+| [`/api`](file:///G:/PITAYACODE/PITAYACORE/api) | **PitayaCore API Backend**: Lógica central del sistema, endpoints, agentes, skills, base de datos vectorial e integraciones. | NestJS + Prisma + Socket.io |
+| [`/web`](file:///G:/PITAYACODE/PITAYACORE/web) | **PitayaCore Web Frontend**: Panel y landing page para el usuario final. Permite gestionar catálogos, leads y configurar el Studio. | React + Vite + PWA |
+| [`/cli`](file:///G:/PITAYACODE/PITAYACORE/cli) | **Terminal de Administración**: Consola interactiva para administración rápida, creación de notas/ideas y consultas directas a la IA. | Python + Rich + Httpx |
+| [`/docs`](file:///G:/PITAYACODE/PITAYACORE/docs) | Documentación técnica adicional e información del proyecto. | Markdown |
+| [`dev.ps1`](file:///G:/PITAYACODE/PITAYACORE/dev.ps1) | Script automatizado en PowerShell para arrancar todo el entorno de desarrollo local. | PowerShell |
+| [`DEPLOYMENT.md`](file:///G:/PITAYACODE/PITAYACORE/DEPLOYMENT.md) | Guía detallada paso a paso para el despliegue a producción. | Markdown |
 
 ---
 
@@ -99,7 +99,7 @@ Disponemos de un script unificado de PowerShell que verifica tus contenedores de
    ```
 
 El script se encargará de:
-* Levantar los contenedores de MySQL (`luxury-mysql-prod`) y Postgres Vector (`acua-core-postgres`).
+* Levantar los contenedores de MySQL (`pitaya-mysql-prod`) y Postgres Vector (`pitaya-postgres-prod`).
 * Inicializar las habilidades y conocimiento base ejecutando `init-skills-fixed.ts`.
 * Iniciar el backend de NestJS en una consola externa (`http://localhost:3014`).
 * Iniciar el frontend Web React de Vite en otra consola externa (`http://localhost:3000`).
@@ -154,7 +154,7 @@ docker compose up -d mysql postgres
 
 ## 💻 Uso de la Consola de Administración (CLI)
 
-El directorio [`/cli`](file:///c:/PITAYACODE/ACUACORE/cli) contiene una útil terminal interactiva en Python que se conecta a la API.
+El directorio [`/cli`](file:///c:/PITAYACODE/PITAYACORE/cli) contiene una útil terminal interactiva en Python que se conecta a la API.
 
 ### Configuración:
 1. Navega al directorio de la CLI:
@@ -173,7 +173,7 @@ El directorio [`/cli`](file:///c:/PITAYACODE/ACUACORE/cli) contiene una útil te
 ### Características del CLI:
 * **Gestión de Notas e Ideas:** Listar, visualizar detalladamente y crear notas/ideas de manera inmediata en el Workspace.
 * **Búsqueda Global:** Ejecución de queries de búsqueda en todo tu Workspace.
-* **Asistente de IA:** Chat interactivo directo con los agentes inteligentes de AcuaCore.
+* **Asistente de IA:** Chat interactivo directo con los agentes inteligentes de PitayaCore.
 * **Multi-workspace:** Opción para alternar entre diferentes inquilinos (Tenants) configurados en el backend.
 
 ---
@@ -184,7 +184,7 @@ El proyecto está diseñado para desplegarse mediante Docker y scripts automatiz
 * **API (Backend):** Alojada en **Hetzner** bajo contenedores Docker y administrada por scripts SSH.
 * **Web (Frontend):** Compilada como estática y subida a **Hostinger** configurando rutas SPA `.htaccess`.
 
-Para instrucciones detalladas sobre el despliegue, variables de producción y sincronización de datos vectoriales, consulta la **[Guía de Despliegue de Producción (DEPLOYMENT.md)](file:///G:/PITAYACODE/ACUACORE/DEPLOYMENT.md)**.
+Para instrucciones detalladas sobre el despliegue, variables de producción y sincronización de datos vectoriales, consulta la **[Guía de Despliegue de Producción (DEPLOYMENT.md)](file:///G:/PITAYACODE/PITAYACORE/DEPLOYMENT.md)**.
 
 ---
 *Mantenido y evolucionado con el soporte de Antigravity (Advanced Agentic Coding)*

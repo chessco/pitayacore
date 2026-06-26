@@ -25,6 +25,13 @@ export class CombinedAuthGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+
+    // Allow CORS preflight (OPTIONS) requests through without authentication
+    if (request.method === 'OPTIONS') {
+      return true;
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -33,7 +40,6 @@ export class CombinedAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
     const url = request.url;
 
     // 0. Special bypass for main admin via headers (highest priority)

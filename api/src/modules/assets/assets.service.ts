@@ -5,9 +5,18 @@ import { DatabaseService } from '../../common/database/database.service';
 export class AssetsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private async resolveTenantId(tenantId: string): Promise<string> {
+    if (tenantId === 'DEFAULT_TENANT') {
+      const defaultTenant = await this.db.mysql.tenant.findFirst();
+      return defaultTenant?.id || tenantId;
+    }
+    return tenantId;
+  }
+
   async findAll(tenantId: string) {
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     const assets = await this.db.mysql.asset.findMany({
-      where: { tenantId },
+      where: { tenantId: resolvedTenantId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -20,13 +29,15 @@ export class AssetsService {
         url: a.storagePath,
         dimensions: meta.dimensions || '1024x1024',
         createdAt: a.createdAt,
+        campaign: meta.campaignName || null,
       };
     });
   }
 
   async delete(tenantId: string, id: string) {
+    const resolvedTenantId = await this.resolveTenantId(tenantId);
     return this.db.mysql.asset.delete({
-      where: { id, tenantId },
+      where: { id, tenantId: resolvedTenantId },
     });
   }
 }

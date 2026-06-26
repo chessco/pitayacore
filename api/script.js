@@ -1,1 +1,0 @@
-const mysql = require('mysql2/promise'); async function main() { const conn = await mysql.createConnection(process.env.DATABASE_URL); const [rows] = await conn.execute('SELECT status, COUNT(*) as count FROM AudienceMember GROUP BY status'); console.log(rows); await conn.end(); } main();

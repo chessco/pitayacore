@@ -107,7 +107,7 @@ model Message {
   tenantId       String
   role           String
   content        String       @db.Text
-  classification String?
+  classification String?       @db.Text
   confidence     Float?
   isFlagged      Boolean      @default(false)
   createdAt      DateTime     @default(now())
@@ -403,6 +403,7 @@ enum User_role {
   DIRECTOR
   ADMIN
   OPERATOR
+  PRODUCER
   SYSTEM
 }
 
@@ -841,6 +842,8 @@ model AgentTemplate {
   name         String
   slug         String   @unique
   description  String?  @db.Text
+  systemPrompt String?  @db.Text
+  metadata     Json?
   avatar       String?
   category     String?
   defaultModel String?

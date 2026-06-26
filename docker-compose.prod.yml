@@ -1,20 +1,29 @@
 services:
+  mysql:
+    image: mysql:8
+    container_name: pitaya-mysql-prod
+    restart: always
+    env_file:
+      - ./api/.env.prod
+    ports:
+      - "3306:3306"
+    volumes:
+      - pitaya_mysql_data:/var/lib/mysql
+    networks:
+      - pitayacode_net
+
   postgres:
     image: ankane/pgvector:latest
-    container_name: pitayacore-pgvector
+    container_name: pitaya-postgres-prod
     restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
     env_file:
-      - ./api/.env.pitayacore
+      - ./api/.env.prod
     ports:
-      - "5435:5432"
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pitaya_postgres_data:/var/lib/postgresql/data
     networks:
-      - pitaya_net
+      - pitayacode_net
 
   api:
     build:
@@ -23,19 +32,21 @@ services:
     container_name: pitayacore-api
     restart: always
     env_file:
-      - ./api/.env.pitayacore
+      - ./api/.env.prod
     ports:
       - "3015:3015"
     networks:
-      - pitaya_net
+      - pitayacode_net
     volumes:
       - ./api/public/uploads:/app/public/uploads
     depends_on:
+      - mysql
       - postgres
 
 networks:
-  pitaya_net:
+  pitayacode_net:
     external: true
 
 volumes:
-  postgres_data:
+  pitaya_mysql_data:
+  pitaya_postgres_data:

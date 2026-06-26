@@ -1,2 +1,0 @@
-ALTER TABLE Tenant ADD COLUMN isDefault BOOLEAN DEFAULT FALSE;
-UPDATE Tenant SET isDefault = TRUE WHERE id = 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';

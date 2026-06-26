@@ -1,6 +1,6 @@
-# Manual de Operación: Human-In-The-Loop (HITL) en AcuaCore AI
+# Manual de Operación: Human-In-The-Loop (HITL) en PitayaCore AI
 
-Este manual describe el flujo de trabajo para la intervención humana en las conversaciones gestionadas por la IA de AcuaCore. El sistema HITL asegura que las dudas críticas o de baja confianza sean validadas por expertos antes o después de ser entregadas al cliente.
+Este manual describe el flujo de trabajo para la intervención humana en las conversaciones gestionadas por la IA de PitayaCore. El sistema HITL asegura que las dudas críticas o de baja confianza sean validadas por expertos antes o después de ser entregadas al cliente.
 
 ## 1. El Flujo de Trabajo (Workflow)
 
@@ -17,7 +17,7 @@ El ciclo de vida de una intervención HITL sigue estos pasos:
 
 ## 2. Niveles de Intervención
 
-AcuaCore maneja tres niveles de jerarquía para el escalado:
+PitayaCore maneja tres niveles de jerarquía para el escalado:
 
 | Nivel | Rol Responsable | Tipo de Consultas |
 | :--- | :--- | :--- |

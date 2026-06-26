@@ -60,6 +60,7 @@ export class ChatSessionsService {
         createdAt: m.createdAt,
         steps: meta.steps || [],
         suggestedCopy: meta.suggestedCopy || null,
+        imagePrompt: meta.imagePrompt || null,
         bannerTitle: meta.bannerTitle || null,
         bannerStyle: meta.bannerStyle || null,
         bannerUrl: meta.bannerUrl || null,
@@ -105,28 +106,51 @@ export class ChatSessionsService {
       },
     });
 
-    const aiMessageText = `He procesado tu solicitud: "${text}". Aquí está el resultado generado con FLUX.`;
-    const completedSteps = [
-      { label: 'Analizando guía de estilo y marca', status: 'done' },
-      {
-        label: 'Generando prompt optimizado con Gemini 1.5 Pro',
-        status: 'done',
-      },
-      {
-        label: 'Renderizando imagen de campaña con Fal.ai (FLUX)',
-        status: 'done',
-      },
+    // Steps will be populated after strategy generation with the actual imagePrompt used
+    const baseSteps = [
+      { label: 'Analizando solicitud con Director Creativo IA', status: 'done' },
+      { label: 'Generando estrategia completa de campaña con Gemini', status: 'done' },
+      { label: 'Optimizando prompt visual para FLUX', status: 'done' },
+      { label: 'Renderizando banner de campaña con Fal.ai (FLUX)', status: 'done' },
     ];
 
     try {
       this.logger.log(`Starting AI pipeline for request: ${text}`);
 
-      // 1. Generate Strategy with Gemini
-      const strategyPrompt = `Crea un concepto visual y un copy publicitario para: "${text}".
-Devuelve un JSON con:
-- imagePrompt: (prompt en inglés para generar la imagen)
-- copy: (texto sugerido para post)
-- title: (título corto)`;
+      // 1. Fetch Creative Director or Creative Producer prompt to act as the agent context
+      let systemInstruction = 'Eres un Director Creativo experto de Pitaya Visual.';
+      const dbAgent = await this.db.mysql.agent.findFirst({
+        where: { slug: 'creative-director', tenantId: session.tenantId },
+      }) || await this.db.mysql.agent.findFirst({
+        where: { slug: 'creative-producer', tenantId: session.tenantId },
+      });
+
+      if (dbAgent && dbAgent.prompt) {
+        systemInstruction = dbAgent.prompt;
+      }
+
+      const strategyPrompt = `Analiza la siguiente solicitud y diseña una campaña creativa completa en español.
+Solicitud: "${text}"
+
+Debes estructurar tu respuesta con las siguientes secciones:
+- Estrategia: Explicación de la estrategia de la campaña.
+- Oferta: La propuesta de valor u oferta comercial.
+- Segmentación: Público objetivo detallado.
+- Concepto Creativo: La idea central e identidad visual de la campaña.
+- Anuncios (Genera 3 anuncios): Copy y descripción visual para cada uno.
+- Publicaciones (Genera 5 publicaciones): Contenido para redes sociales.
+- Assets requeridos: Listado de recursos visuales y de copy.
+
+Además, define un prompt de imagen altamente optimizado (en inglés) para generar el banner visual de esta campaña, detallando estilo, iluminación, elementos y composición.
+
+Devuelve un JSON estrictamente estructurado con:
+{
+  "title": "Título corto y atractivo para la campaña",
+  "copy": "Texto detallado conteniendo la Estrategia, Oferta, Segmentación, Concepto Creativo, los 3 Anuncios, las 5 Publicaciones y los Assets requeridos. Usa saltos de línea y formato limpio en español.",
+  "imagePrompt": "Detailed English visual prompt for generating the main banner (including style, subjects, lighting, mood, camera details)"
+}
+
+Asegúrate de incluir absolutamente toda la información solicitada en el campo 'copy' de forma detallada.`;
 
       const schema = {
         type: 'OBJECT',
@@ -141,7 +165,7 @@ Devuelve un JSON con:
       const strategy = await this.geminiProvider.generateStructuredData<any>(
         strategyPrompt,
         schema,
-        'Eres un Director Creativo experto.',
+        systemInstruction,
       );
 
       // 2. Generate Image with Fal (inject Character LoRA if session has one)
@@ -167,13 +191,19 @@ Devuelve un JSON con:
         loraPath ? { loras: [{ path: loraPath, scale: 1.0 }] } : undefined,
       );
 
-      // 3. Save AI Message
+      // 3. Save AI Message — use strategy.copy as the main content displayed in chat
+      const completedSteps = [
+        ...baseSteps,
+        { label: `Prompt visual: ${strategy.imagePrompt?.substring(0, 80)}...`, status: 'done' },
+      ];
+
       const meta = {
         steps: completedSteps,
-        suggestedCopy: strategy.copy,
+        suggestedCopy: strategy.copy, // Campaign copy in Spanish
+        imagePrompt: strategy.imagePrompt, // English prompt used for image generation
         bannerTitle: strategy.title,
         bannerStyle: 'FLUX Schnell • Fal.ai',
-        bannerUrl: falResult.imageUrl, // Temporal. Luego lo subimos a R2
+        bannerUrl: falResult.imageUrl,
         technicalDetails: {
           dimensions: `${falResult.width || 1200} x ${falResult.height || 628} px`,
           format: falResult.contentType === 'image/jpeg' ? 'JPEG' : 'PNG',
@@ -181,13 +211,16 @@ Devuelve un JSON con:
         },
       };
 
+      // The main chat content IS the full campaign strategy generated by Gemini
+      const fullCampaignContent = strategy.copy || `Campaña generada para: "${text}"\n\n[Sin contenido generado]`;
+
       const aiMessage = await this.db.mysql.message.create({
         data: {
           conversationId: sessionId,
           tenantId: session.tenantId,
           role: 'ai',
-          content: aiMessageText,
-          classification: JSON.stringify(meta), // We use classification to store the JSON string of metadata since metadata is not in Message model
+          content: fullCampaignContent,
+          classification: JSON.stringify(meta),
         },
       });
 
@@ -281,6 +314,7 @@ Devuelve un JSON con:
         storagePath: meta.bannerUrl || '/safe_streets_banner.png',
         metadata: JSON.stringify({
           campaignId: campaign.id,
+          campaignName: campaignName,
           dimensions: meta.technicalDetails?.dimensions,
           sizeBytes: meta.technicalDetails?.sizeBytes,
           prompt: meta.bannerStyle,
