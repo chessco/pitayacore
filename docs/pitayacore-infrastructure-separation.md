@@ -20,7 +20,7 @@ Run these on the legacy source containers.
 ### MySQL audit
 
 ```powershell
-docker exec -i luxury-mysql-prod mysql -uroot -pluxury_pass -e "
+docker exec -i luxury-mysql-prod mysql -uroot -p<MYSQL_ROOT_PASSWORD> -e "
 SELECT table_schema AS db_name,
        COUNT(*) AS total_tables,
        ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
@@ -76,7 +76,7 @@ WHERE table_schema = 'public';
 ### MySQL backup
 
 ```powershell
-docker exec luxury-mysql-prod mysqldump -uroot -pluxury_pass `
+docker exec luxury-mysql-prod mysqldump -uroot -p<MYSQL_ROOT_PASSWORD> `
   --single-transaction --routines --triggers --events --hex-blob `
   --databases acuacore_db > acuacore_db.sql
 ```
@@ -84,10 +84,10 @@ docker exec luxury-mysql-prod mysqldump -uroot -pluxury_pass `
 ### MySQL restore
 
 ```powershell
-docker exec -i pitaya-mysql-prod mysql -uroot -pluxury_pass -e "
+docker exec -i pitaya-mysql-prod mysql -uroot -p<MYSQL_ROOT_PASSWORD> -e "
 CREATE DATABASE IF NOT EXISTS pitayacore_db CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 "
-docker exec -i pitaya-mysql-prod mysql -uroot -pluxury_pass pitayacore_db < acuacore_db.sql
+docker exec -i pitaya-mysql-prod mysql -uroot -p<MYSQL_ROOT_PASSWORD> pitayacore_db < acuacore_db.sql
 ```
 
 ## Phase 3: PostgreSQL Clone Plan

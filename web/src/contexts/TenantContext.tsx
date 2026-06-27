@@ -69,7 +69,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   });
 
   const [flowApiKey, setFlowApiKeyState] = useState<string>(() => {
-    return localStorage.getItem('flowApiKey') || 'pitaya_internal_secret_2026';
+    return localStorage.getItem('flowApiKey') || '';
   });
 
   const [role, setRoleState] = useState<'system' | 'admin' | 'tenant' | 'operator'>(() => {
