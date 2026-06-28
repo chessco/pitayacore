@@ -8,7 +8,7 @@ const verticalsData = [
   { slug: 'political', name: 'Political', description: 'Mando SaaS' },
   { slug: 'jewelry', name: 'Jewelry', description: 'LuxuryOS SaaS' },
   { slug: 'legal', name: 'Legal', description: 'LegalAI SaaS' },
-  { slug: 'education', name: 'Education', description: 'Legado SaaS' }
+  { slug: 'lumo', name: 'Lumo', description: 'Educación' }
 ];
 
 const featuresData = [
