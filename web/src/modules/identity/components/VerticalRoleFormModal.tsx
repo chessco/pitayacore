@@ -5,10 +5,11 @@ interface VerticalRoleFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: any) => Promise<void>;
+  initialData?: any;
   roles: any[];
 }
 
-export function VerticalRoleFormModal({ isOpen, onClose, onSave, roles }: VerticalRoleFormModalProps) {
+export function VerticalRoleFormModal({ isOpen, onClose, onSave, initialData, roles }: VerticalRoleFormModalProps) {
   const [verticalId, setVerticalId] = useState('');
   const [roleId, setRoleId] = useState('');
   const [loading, setLoading] = useState(false);
