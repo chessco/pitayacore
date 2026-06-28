@@ -47,6 +47,17 @@ model Tenant {
   assets             Asset[]
   wallet             CreditWallet?
   socialPosts        SocialPost[]
+  userRoles          UserRole[]
+  userContexts       UserContext[]
+  organizations      Organization?    @relation(fields: [organizationId], references: [id])
+  parentProfiles     ParentProfile[]
+  teacherProfiles    TeacherProfile[]
+  childProfiles      ChildProfile[]
+  schools            School[]
+  classrooms         Classroom[]
+  organizationId     String?
+
+  @@index([organizationId])
 }
 
 model HumanCorrection {
@@ -69,13 +80,23 @@ model User {
   name                  String
   role                  User_role
   status                Status         @default(ACTIVE)
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now())
   password              String?
   permissions           Json?
+  avatarUrl             String?
+  phone                 String?
+  lastLoginAt           DateTime?
+  emailVerified         Boolean        @default(false)
   assignedConversations Conversation[] @relation("AssignedTo")
   conversations         Conversation[] @relation("ConversationOwner")
   tenant                Tenant         @relation(fields: [tenantId], references: [id])
+  userRoles             UserRole[]
+  userContexts          UserContext[]
+  sessions              Session[]
+  parentProfile         ParentProfile?
+  teacherProfile        TeacherProfile?
+  childProfile          ChildProfile?
 
   @@index([tenantId], map: "User_tenantId_fkey")
 }
@@ -313,6 +334,9 @@ model Lead {
 model Feature {
   id             String          @id @default(uuid())
   name           String          @unique
+  slug           String?         @unique
+  description    String?         @db.Text
+  status         String          @default("ACTIVE")
   createdAt      DateTime        @default(now())
   tenantFeatures TenantFeature[]
 }
@@ -817,9 +841,11 @@ model Vertical {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenants    TenantVertical[]
-  characters Character[]
-  assets     Asset[]
+  tenants       TenantVertical[]
+  characters    Character[]
+  assets        Asset[]
+  verticalRoles VerticalRole[]
+  userContexts  UserContext[]
 }
 
 model TenantVertical {
@@ -939,16 +965,207 @@ model CreditTransaction {
   @@index([walletId])
 }
 
-// FASE 8: RBAC Y FEATURE FLAGS
+// RBAC SYSTEM
+model Role {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  description    String?         @db.Text
+  isSystem       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  permissions    RolePermission[]
+  userRoles      UserRole[]
+  verticalRoles  VerticalRole[]
+  userContexts   UserContext[]
+}
+
+model Permission {
+  id             String          @id @default(uuid())
+  key            String          @unique
+  resource       String
+  action         String
+  description    String?         @db.Text
+  createdAt      DateTime        @default(now())
+
+  rolePermissions RolePermission[]
+}
+
 model RolePermission {
   id            String   @id @default(uuid())
-  role          String // e.g., OWNER, ADMIN, EXPERT
-  permissionKey String
+  roleId        String
+  permissionId  String
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 
-  @@unique([role, permissionKey])
-  @@index([role])
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String
+  roleId     String
+  tenantId   String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, tenantId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([tenantId])
+}
+
+model VerticalRole {
+  id         String   @id @default(uuid())
+  verticalId String
+  roleId     String
+  createdAt  DateTime @default(now())
+
+  vertical Vertical @relation(fields: [verticalId], references: [id], onDelete: Cascade)
+  role     Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([verticalId, roleId])
+  @@index([verticalId])
+  @@index([roleId])
+}
+
+model UserContext {
+  id         String   @id @default(uuid())
+  userId     String
+  tenantId   String
+  verticalId String?
+  roleId     String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vertical Vertical? @relation(fields: [verticalId], references: [id])
+  role     Role      @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, tenantId, verticalId, roleId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([verticalId])
+  @@index([roleId])
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  token        String    @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String?  @unique
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenants Tenant[]
+}
+
+// LUMO DOMAIN PROFILES
+model ParentProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  tenantId    String
+  phone       String?
+  preferences Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model TeacherProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  tenantId       String
+  employeeCode   String?
+  specialization String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classrooms Classroom[]
+
+  @@index([tenantId])
+}
+
+model ChildProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  tenantId        String
+  birthDate       DateTime?
+  grade           String?
+  learningProfile Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model School {
+  id         String   @id @default(uuid())
+  tenantId   String
+  name       String
+  address    String?
+  status     Status   @default(ACTIVE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classrooms Classroom[]
+
+  @@index([tenantId])
+}
+
+model Classroom {
+  id        String   @id @default(uuid())
+  tenantId  String
+  schoolId  String?
+  teacherId String?
+  name      String
+  grade     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school   School?         @relation(fields: [schoolId], references: [id])
+  teacher  TeacherProfile? @relation(fields: [teacherId], references: [id])
+
+  @@index([tenantId])
+  @@index([schoolId])
+  @@index([teacherId])
 }
 
 model AgentConfiguration {

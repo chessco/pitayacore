@@ -45,6 +45,7 @@ import { VisionCampaignsModule } from './modules/vision-campaigns/vision-campaig
 import { VectorSearchModule } from './modules/vector-search/vector-search.module';
 import { VisionDashboardModule } from './modules/vision-dashboard/vision-dashboard.module';
 import { SocialPostsModule } from './modules/social-posts/social-posts.module';
+import { IdentityModule } from './modules/identity/identity.module';
 import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     VectorSearchModule,
     VisionDashboardModule,
     SocialPostsModule,
+    IdentityModule,
   ],
   controllers: [AppController],
   providers: [
