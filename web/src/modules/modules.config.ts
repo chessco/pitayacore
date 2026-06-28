@@ -49,7 +49,7 @@ import { DealsBoard } from './crm/DealsBoard';
 import { LeadScoring } from './crm/LeadScoring';
 import { CRMOverview } from './crm/CRMOverview';
 import { ModuleManager } from './system/ModuleManager';
-import { VerticalsManager } from './system/VerticalsManager';
+
 import { IdentityPlatform } from './identity/IdentityPlatform';
 
 export interface ModuleConfig {
@@ -324,14 +324,7 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     description: 'Activación dinámica de capacidades SaaS.',
     category: 'sistema'
   },
-  {
-    id: 'verticals',
-    label: 'Verticales',
-    icon: Layers,
-    component: VerticalsManager,
-    description: 'Visualización de soluciones y plataformas conectadas.',
-    category: 'sistema'
-  },
+
   {
     id: 'identity',
     label: 'Identidad',
