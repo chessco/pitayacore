@@ -63,7 +63,7 @@ export class DocumentsController {
       fileType: file.mimetype,
     };
 
-    return this.documentsService.create(tenantId, userId, finalDto as any);
+    return this.documentsService.create(tenantId, userId, finalDto);
   }
 
   @Get()

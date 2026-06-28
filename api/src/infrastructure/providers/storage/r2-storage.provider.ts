@@ -1,6 +1,10 @@
 import { IStorageProvider } from './storage.provider.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -12,7 +16,9 @@ export class R2StorageProvider implements IStorageProvider {
 
   constructor() {
     this.bucketName = process.env.R2_BUCKET_NAME || 'vision';
-    this.publicUrl = process.env.R2_PUBLIC_URL || 'https://pub-eae10fe69e894fbfbde5fcfdfdf73ed5.r2.dev';
+    this.publicUrl =
+      process.env.R2_PUBLIC_URL ||
+      'https://pub-eae10fe69e894fbfbde5fcfdfdf73ed5.r2.dev';
 
     this.s3Client = new S3Client({
       region: 'auto',

@@ -15,7 +15,6 @@ import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard
 export class ChatSessionsController {
   constructor(private readonly chatSessionsService: ChatSessionsService) {}
 
-
   @Get()
   async getSessions(@Param('tenantId') tenantId: string) {
     return this.chatSessionsService.getSessions(tenantId);

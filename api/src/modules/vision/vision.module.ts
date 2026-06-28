@@ -11,7 +11,17 @@ import { CreditsModule } from '../credits/credits.module';
 
 @Module({
   imports: [CreditsModule],
-  controllers: [VisionController, VisionConnectorsController, CreativeSuiteController],
-  providers: [VisionService, VisionConnectorsService, GeminiProvider, FalProvider, R2StorageProvider],
+  controllers: [
+    VisionController,
+    VisionConnectorsController,
+    CreativeSuiteController,
+  ],
+  providers: [
+    VisionService,
+    VisionConnectorsService,
+    GeminiProvider,
+    FalProvider,
+    R2StorageProvider,
+  ],
 })
 export class VisionModule {}

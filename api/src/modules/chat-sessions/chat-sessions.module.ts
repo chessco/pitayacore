@@ -10,6 +10,11 @@ import { R2StorageProvider } from '../../infrastructure/providers/storage/r2-sto
 @Module({
   imports: [DatabaseModule, AgentsModule],
   controllers: [ChatSessionsController],
-  providers: [ChatSessionsService, GeminiProvider, FalProvider, R2StorageProvider],
+  providers: [
+    ChatSessionsService,
+    GeminiProvider,
+    FalProvider,
+    R2StorageProvider,
+  ],
 })
 export class ChatSessionsModule {}

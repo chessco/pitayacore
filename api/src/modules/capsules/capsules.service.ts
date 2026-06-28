@@ -30,8 +30,8 @@ export class CapsulesService {
         ...dto,
         contentBlocks: dto.contentBlocks as any,
         knowledgeIds: dto.knowledgeIds as any,
-        promptConfig: dto.promptConfig as any,
-        ctaConfig: dto.ctaConfig as any,
+        promptConfig: dto.promptConfig,
+        ctaConfig: dto.ctaConfig,
       },
     });
   }
@@ -100,12 +100,10 @@ export class CapsulesService {
       where,
       data: {
         ...dto,
-        contentBlocks: dto.contentBlocks
-          ? (dto.contentBlocks as any)
-          : undefined,
-        knowledgeIds: dto.knowledgeIds ? (dto.knowledgeIds as any) : undefined,
-        promptConfig: dto.promptConfig ? (dto.promptConfig as any) : undefined,
-        ctaConfig: dto.ctaConfig ? (dto.ctaConfig as any) : undefined,
+        contentBlocks: dto.contentBlocks ? dto.contentBlocks : undefined,
+        knowledgeIds: dto.knowledgeIds ? dto.knowledgeIds : undefined,
+        promptConfig: dto.promptConfig ? dto.promptConfig : undefined,
+        ctaConfig: dto.ctaConfig ? dto.ctaConfig : undefined,
       },
     });
   }

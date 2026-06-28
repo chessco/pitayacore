@@ -39,7 +39,7 @@ export class SocialPostsService {
   async handleScheduledPosts() {
     this.logger.log('Checking for scheduled social posts...');
     const now = new Date();
-    
+
     try {
       const postsToPublish = await this.db.mysql.socialPost.findMany({
         where: {
@@ -56,9 +56,11 @@ export class SocialPostsService {
 
       for (const post of postsToPublish) {
         // SIMULATE API CALL TO FACEBOOK/INSTAGRAM
-        this.logger.log(`[SIMULATION] Publishing post ${post.id} to ${post.platform}`);
+        this.logger.log(
+          `[SIMULATION] Publishing post ${post.id} to ${post.platform}`,
+        );
         this.logger.log(`[SIMULATION] Content: ${post.content}`);
-        
+
         await this.db.mysql.socialPost.update({
           where: { id: post.id },
           data: {
@@ -66,7 +68,7 @@ export class SocialPostsService {
             publishedAt: new Date(),
           },
         });
-        
+
         this.logger.log(`Successfully published post ${post.id}`);
       }
     } catch (error) {

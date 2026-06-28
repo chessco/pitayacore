@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { SocialPostsService } from './social-posts.service';
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 

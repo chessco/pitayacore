@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Param, HttpCode, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  HttpCode,
+  UseGuards,
+} from '@nestjs/common';
 import { VectorSearchService } from './vector-search.service';
 import { TenantOwnershipGuard } from '../../common/guards/tenant-ownership.guard';
 

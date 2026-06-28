@@ -30,7 +30,9 @@ export class FalProvider implements IImageProvider {
       fal.config({ credentials: falKey });
       this.logger.log(`Fal.ai configured (key: ${falKey.substring(0, 8)}...)`);
     } else {
-      this.logger.error('FAL_KEY not found in config — Fal.ai calls will fail!');
+      this.logger.error(
+        'FAL_KEY not found in config — Fal.ai calls will fail!',
+      );
     }
   }
 
@@ -88,7 +90,10 @@ export class FalProvider implements IImageProvider {
         );
         this.logger.log(`Image uploaded to R2: ${permanentUrl}`);
       } catch (uploadError) {
-        this.logger.warn('Failed to upload to R2, using fal.ai URL', uploadError);
+        this.logger.warn(
+          'Failed to upload to R2, using fal.ai URL',
+          uploadError,
+        );
         permanentUrl = imageUrl;
       }
 
@@ -181,7 +186,9 @@ export class FalProvider implements IImageProvider {
       bitrateMode?: string;
     },
   ): Promise<VideoGenerationResult> {
-    this.logger.log(`Calling Fal.ai for video generation with prompt: ${prompt}`);
+    this.logger.log(
+      `Calling Fal.ai for video generation with prompt: ${prompt}`,
+    );
 
     try {
       // Parse duration - handle 'auto' by using a default
@@ -218,15 +225,18 @@ export class FalProvider implements IImageProvider {
         input.generate_audio = options.generateAudio;
       }
 
-      const result: any = await fal.subscribe('bytedance/seedance-2.0/fast/image-to-video', {
-        input,
-        logs: true,
-        onQueueUpdate: (update) => {
-          if (update.status === 'IN_PROGRESS' && update.logs) {
-            this.logger.log(`Fal.ai video generation progress...`);
-          }
+      const result: any = await fal.subscribe(
+        'bytedance/seedance-2.0/fast/image-to-video',
+        {
+          input,
+          logs: true,
+          onQueueUpdate: (update) => {
+            if (update.status === 'IN_PROGRESS' && update.logs) {
+              this.logger.log(`Fal.ai video generation progress...`);
+            }
+          },
         },
-      });
+      );
 
       if (!result || !result.data || !result.data.video) {
         throw new Error('No video returned from Fal.ai');
@@ -253,7 +263,10 @@ export class FalProvider implements IImageProvider {
         );
         this.logger.log(`Video uploaded to R2: ${permanentUrl}`);
       } catch (uploadError) {
-        this.logger.warn('Failed to upload to R2, using fal.ai URL', uploadError);
+        this.logger.warn(
+          'Failed to upload to R2, using fal.ai URL',
+          uploadError,
+        );
         permanentUrl = videoUrl;
       }
 

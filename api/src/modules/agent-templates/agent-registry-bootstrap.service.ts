@@ -10,7 +10,7 @@ export class AgentRegistryBootstrapService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     this.logger.log('Bootstrapping Vision Agents into Agent Registry...');
-    
+
     try {
       // 1. Ensure Feature flag exists
       await this.db.mysql.feature.upsert({
@@ -21,14 +21,13 @@ export class AgentRegistryBootstrapService implements OnApplicationBootstrap {
 
       // 2. Upsert each agent into the registry
       for (const agent of VISION_AGENTS) {
-        
         // Ensure skills are created in the system if they don't exist
         const skillIds: string[] = [];
         for (const skillSlug of agent.metadata.recommendedSkills) {
           const existingSkill = await this.db.mysql.skill.findUnique({
-            where: { slug: skillSlug }
+            where: { slug: skillSlug },
           });
-          
+
           if (existingSkill) {
             skillIds.push(existingSkill.id);
           }
@@ -62,18 +61,20 @@ export class AgentRegistryBootstrapService implements OnApplicationBootstrap {
               agentTemplateId_skillId: {
                 agentTemplateId: agentTemplate.id,
                 skillId: skillId,
-              }
+              },
             },
             update: {},
             create: {
               agentTemplateId: agentTemplate.id,
               skillId: skillId,
-            }
+            },
           });
         }
       }
 
-      this.logger.log(`Successfully bootstrapped ${VISION_AGENTS.length} foundational Vision agents.`);
+      this.logger.log(
+        `Successfully bootstrapped ${VISION_AGENTS.length} foundational Vision agents.`,
+      );
     } catch (error) {
       this.logger.error('Failed to bootstrap Vision Agents:', error);
     }

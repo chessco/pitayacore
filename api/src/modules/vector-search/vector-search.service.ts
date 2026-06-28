@@ -78,11 +78,7 @@ export class VectorSearchService {
   /**
    * Semantic search across a tenant's assets
    */
-  async search(
-    tenantId: string,
-    query: string,
-    limit = 10,
-  ): Promise<any[]> {
+  async search(tenantId: string, query: string, limit = 10): Promise<any[]> {
     const embedding = await this.generateEmbedding(query);
     const vectorStr = `[${embedding.join(',')}]`;
 

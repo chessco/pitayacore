@@ -2,7 +2,8 @@ export const VISION_AGENTS = [
   {
     name: 'Creative Director',
     slug: 'creative-director',
-    description: 'Convertir objetivos de negocio en activos creativos de alto impacto.',
+    description:
+      'Convertir objetivos de negocio en activos creativos de alto impacto.',
     category: 'creative',
     systemPrompt: `You are Creative Director.
 
@@ -36,13 +37,18 @@ Always explain reasoning.`,
         'generar briefs creativos',
         'coordinar personajes',
         'seleccionar formatos',
-        'optimizar creatividad'
+        'optimizar creatividad',
       ],
-      recommendedSkills: ['image-generation', 'campaign-builder', 'prompt-engine', 'asset-planner'],
+      recommendedSkills: [
+        'image-generation',
+        'campaign-builder',
+        'prompt-engine',
+        'asset-planner',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.7,
-      tags: ['creative', 'director', 'strategy', 'campaign']
-    }
+      tags: ['creative', 'director', 'strategy', 'campaign'],
+    },
   },
   {
     name: 'Brand Guardian',
@@ -70,13 +76,13 @@ Your goal is to ensure every asset feels like it belongs to the same brand.`,
         'review visual identity',
         'verify branding',
         'detect inconsistencies',
-        'enforce style guides'
+        'enforce style guides',
       ],
       recommendedSkills: ['brand-analysis', 'asset-review', 'style-compliance'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.2,
-      tags: ['branding', 'consistency', 'guardian', 'compliance']
-    }
+      tags: ['branding', 'consistency', 'guardian', 'compliance'],
+    },
   },
   {
     name: 'Campaign Planner',
@@ -104,13 +110,17 @@ Always recommend next actions.`,
         'define strategy',
         'define channels',
         'define content plan',
-        'define asset requirements'
+        'define asset requirements',
       ],
-      recommendedSkills: ['campaign-design', 'audience-analysis', 'asset-planning'],
+      recommendedSkills: [
+        'campaign-design',
+        'audience-analysis',
+        'asset-planning',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.5,
-      tags: ['marketing', 'planner', 'strategy', 'campaign']
-    }
+      tags: ['marketing', 'planner', 'strategy', 'campaign'],
+    },
   },
   {
     name: 'Vision Analyst',
@@ -152,13 +162,18 @@ Scale later.`,
         'analyze campaigns',
         'analyze characters',
         'analyze providers',
-        'optimize costs'
+        'optimize costs',
       ],
-      recommendedSkills: ['analytics', 'reporting', 'optimization', 'provider-analysis'],
+      recommendedSkills: [
+        'analytics',
+        'reporting',
+        'optimization',
+        'provider-analysis',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.3,
-      tags: ['operations', 'analyst', 'optimization', 'metrics']
-    }
+      tags: ['operations', 'analyst', 'optimization', 'metrics'],
+    },
   },
   {
     name: 'Character Architect',
@@ -183,13 +198,17 @@ Your goal is to create characters that generate long-term value and audience eng
         'character creation',
         'character positioning',
         'persona design',
-        'influencer strategy'
+        'influencer strategy',
       ],
-      recommendedSkills: ['character-design', 'persona-builder', 'avatar-planning'],
+      recommendedSkills: [
+        'character-design',
+        'persona-builder',
+        'avatar-planning',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.8,
-      tags: ['character', 'architect', 'persona', 'design']
-    }
+      tags: ['character', 'architect', 'persona', 'design'],
+    },
   },
   {
     name: 'Visual Strategist',
@@ -218,13 +237,17 @@ Always maximize quality while minimizing production cost.`,
         'define styles',
         'define composition',
         'define visual direction',
-        'recommend providers'
+        'recommend providers',
       ],
-      recommendedSkills: ['visual-analysis', 'style-selection', 'provider-selection'],
+      recommendedSkills: [
+        'visual-analysis',
+        'style-selection',
+        'provider-selection',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.6,
-      tags: ['visual', 'strategist', 'style', 'composition']
-    }
+      tags: ['visual', 'strategist', 'style', 'composition'],
+    },
   },
   {
     name: 'Creative Producer',
@@ -249,12 +272,16 @@ Prioritize speed, quality and consistency.`,
         'execution',
         'workflow selection',
         'asset generation',
-        'production tracking'
+        'production tracking',
       ],
-      recommendedSkills: ['image-generation', 'workflow-selection', 'asset-management'],
+      recommendedSkills: [
+        'image-generation',
+        'workflow-selection',
+        'asset-management',
+      ],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.4,
-      tags: ['production', 'producer', 'execution', 'workflow']
-    }
-  }
+      tags: ['production', 'producer', 'execution', 'workflow'],
+    },
+  },
 ];

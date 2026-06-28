@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
 
 @Injectable()
 export class TenantOwnershipGuard implements CanActivate {
@@ -9,7 +14,7 @@ export class TenantOwnershipGuard implements CanActivate {
     const userRole = request.headers['x-user-role']?.toUpperCase();
 
     if (!paramsTenantId) {
-        return true; // No tenant context in URL, let other guards handle
+      return true; // No tenant context in URL, let other guards handle
     }
 
     // SYSTEM or ADMIN can bypass ownership check for operational purposes if needed,
@@ -17,14 +22,18 @@ export class TenantOwnershipGuard implements CanActivate {
     // For now, we enforce that if you are acting on a tenant resource via URL,
     // your context (header) must match the URL unless you are SYSTEM.
     if (userRole === 'SYSTEM') {
-        return true;
+      return true;
     }
 
-    const resolvedParams = paramsTenantId === 'default' ? 'DEFAULT_TENANT' : paramsTenantId;
-    const resolvedHeader = headerTenantId === 'default' ? 'DEFAULT_TENANT' : headerTenantId;
+    const resolvedParams =
+      paramsTenantId === 'default' ? 'DEFAULT_TENANT' : paramsTenantId;
+    const resolvedHeader =
+      headerTenantId === 'default' ? 'DEFAULT_TENANT' : headerTenantId;
 
     if (resolvedParams !== resolvedHeader) {
-      throw new ForbiddenException('You do not have permission to access resources for this tenant.');
+      throw new ForbiddenException(
+        'You do not have permission to access resources for this tenant.',
+      );
     }
 
     return true;

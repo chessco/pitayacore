@@ -10,22 +10,30 @@ export class VisionConnectorsService {
     private readonly db: DatabaseService,
     private readonly geminiProvider: GeminiProvider,
     private readonly falProvider: FalProvider,
-    private readonly creditsService: CreditsService
+    private readonly creditsService: CreditsService,
   ) {}
 
-  async generateFromConnector(tenantId: string, verticalId: string, inputData: any) {
+  async generateFromConnector(
+    tenantId: string,
+    verticalId: string,
+    inputData: any,
+  ) {
     // 0. Deduct 1 credit for image generation
     try {
-      await this.creditsService.deductCredit(tenantId, 1, `Generación de Asset Vision para ${verticalId}`);
+      await this.creditsService.deductCredit(
+        tenantId,
+        1,
+        `Generación de Asset Vision para ${verticalId}`,
+      );
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.PAYMENT_REQUIRED);
     }
     // Map verticalId to agent slug
     const agentMap: Record<string, string> = {
-      'pitayacore': 'aquaculture-educator',
-      'mando': 'political-creative',
-      'luxuryos': 'luxury-modeler',
-      'vision': 'creative-director'
+      pitayacore: 'aquaculture-educator',
+      mando: 'political-creative',
+      luxuryos: 'luxury-modeler',
+      vision: 'creative-director',
     };
 
     const agentSlug = agentMap[verticalId];
@@ -36,19 +44,22 @@ export class VisionConnectorsService {
     // Get the agent from the database to get its system prompt
     let systemPrompt = '';
     const agent = await this.db.mysql.agent.findUnique({
-      where: { slug: agentSlug }
+      where: { slug: agentSlug },
     });
 
     if (agent) {
       systemPrompt = agent.prompt;
     } else {
       const agentTemplate = await this.db.mysql.agentTemplate.findUnique({
-        where: { slug: agentSlug }
+        where: { slug: agentSlug },
       });
       if (agentTemplate && agentTemplate.systemPrompt) {
         systemPrompt = agentTemplate.systemPrompt;
       } else {
-        throw new HttpException(`Agent ${agentSlug} not found in database. Seed required.`, HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new HttpException(
+          `Agent ${agentSlug} not found in database. Seed required.`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
     }
 
@@ -58,18 +69,29 @@ export class VisionConnectorsService {
     // 1. Generate visual prompt using Gemini
     let visualPrompt = '';
     try {
-      visualPrompt = await this.geminiProvider.generateText(userPrompt, systemPrompt);
+      visualPrompt = await this.geminiProvider.generateText(
+        userPrompt,
+        systemPrompt,
+      );
     } catch (error) {
-      throw new HttpException('Error generating visual prompt with Gemini: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error generating visual prompt with Gemini: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     // 2. Generate Image using FalProvider (FLUX)
     let imageUrl = '';
     try {
-      const falResult = await this.falProvider.generateImage(visualPrompt, { image_size: 'landscape_16_9' });
+      const falResult = await this.falProvider.generateImage(visualPrompt, {
+        image_size: 'landscape_16_9',
+      });
       imageUrl = falResult.imageUrl;
     } catch (error) {
-      throw new HttpException('Error generating image with FalProvider: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error generating image with FalProvider: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     // 3. Save as Asset in Database
@@ -84,9 +106,9 @@ export class VisionConnectorsService {
           verticalId,
           inputData,
           visualPrompt,
-          agentSlug
-        })
-      }
+          agentSlug,
+        }),
+      },
     });
 
     return {
@@ -94,8 +116,8 @@ export class VisionConnectorsService {
       asset,
       details: {
         visualPrompt,
-        agentUsed: agent.name
-      }
+        agentUsed: agent.name,
+      },
     };
   }
 }

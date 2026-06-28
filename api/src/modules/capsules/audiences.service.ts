@@ -129,11 +129,11 @@ export class AudiencesService {
       }
 
       // Try to find name and phone
-      let nameIdx = headers.findIndex(
+      const nameIdx = headers.findIndex(
         (h) =>
           h.includes('nombre') || h.includes('contacto') || h.includes('name'),
       );
-      let phoneIdx = headers.findIndex(
+      const phoneIdx = headers.findIndex(
         (h) =>
           h.includes('tel') ||
           h.includes('phone') ||
@@ -142,12 +142,12 @@ export class AudiencesService {
           h.includes('movil'),
       );
 
-      let rawEmail = emailIdx !== -1 ? cols[emailIdx] : null;
-      let rawPhone = phoneIdx !== -1 ? cols[phoneIdx] : null;
+      const rawEmail = emailIdx !== -1 ? cols[emailIdx] : null;
+      const rawPhone = phoneIdx !== -1 ? cols[phoneIdx] : null;
 
       let email =
         rawEmail && emailRegex.test(rawEmail) ? rawEmail.toLowerCase() : null;
-      let phone =
+      const phone =
         rawPhone && rawPhone.trim()
           ? rawPhone.split(',')[0].replace(/[^\d+]/g, '')
           : null;

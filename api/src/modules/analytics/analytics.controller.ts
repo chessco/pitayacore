@@ -181,7 +181,7 @@ export class AnalyticsController {
         timestamp: log.createdAt.getTime(),
         description:
           log.action === 'LOGIN'
-            ? `Conexión establecida desde ${(log.changes as any)?.role || 'usuario'}`
+            ? `Conexión establecida desde ${log.changes?.role || 'usuario'}`
             : log.action === 'CREATE'
               ? `Se ha dado de alta un nuevo acceso.`
               : `Se han realizado cambios en los permisos.`,

@@ -11,7 +11,7 @@ export class CreditsService {
 
   async getBalance(tenantId: string) {
     let wallet = await this.prisma.mysql.creditWallet.findUnique({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     if (!wallet) {
@@ -19,8 +19,8 @@ export class CreditsService {
       wallet = await this.prisma.mysql.creditWallet.create({
         data: {
           tenantId,
-          balance: 100 // Seed with 100 credits
-        }
+          balance: 100, // Seed with 100 credits
+        },
       });
     }
     return wallet;
@@ -30,23 +30,25 @@ export class CreditsService {
     const wallet = await this.getBalance(tenantId);
 
     if (wallet.balance < amount) {
-      throw new Error(`Insufficient credits. Required: ${amount}, Available: ${wallet.balance}`);
+      throw new Error(
+        `Insufficient credits. Required: ${amount}, Available: ${wallet.balance}`,
+      );
     }
 
     // Use transaction to update balance and record transaction
     const [updatedWallet, transaction] = await this.prisma.mysql.$transaction([
       this.prisma.mysql.creditWallet.update({
         where: { tenantId },
-        data: { balance: { decrement: amount } }
+        data: { balance: { decrement: amount } },
       }),
       this.prisma.mysql.creditTransaction.create({
         data: {
           walletId: wallet.id,
           type: 'DEBIT',
           amount,
-          reason
-        }
-      })
+          reason,
+        },
+      }),
     ]);
 
     return updatedWallet;

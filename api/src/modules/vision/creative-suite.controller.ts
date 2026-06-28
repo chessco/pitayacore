@@ -9,7 +9,10 @@ import {
   Headers,
 } from '@nestjs/common';
 import { VisionService } from './vision.service';
-import { FalProvider, VideoGenerationResult } from '../../infrastructure/providers/image/fal.provider';
+import {
+  FalProvider,
+  VideoGenerationResult,
+} from '../../infrastructure/providers/image/fal.provider';
 import { R2StorageProvider } from '../../infrastructure/providers/storage/r2-storage.provider';
 import { CreditsService } from '../credits/credits.service';
 import { randomUUID } from 'crypto';
@@ -88,7 +91,8 @@ export class CreativeSuiteController {
     return {
       jobId,
       status: 'processing',
-      message: 'Video generation started. Poll /creative-suite/video/status/{jobId} for results.',
+      message:
+        'Video generation started. Poll /creative-suite/video/status/{jobId} for results.',
     };
   }
 
@@ -119,24 +123,24 @@ export class CreativeSuiteController {
     return response;
   }
 
-  private async processVideoInBackground(jobId: string, body: VideoGenerationRequest) {
+  private async processVideoInBackground(
+    jobId: string,
+    body: VideoGenerationRequest,
+  ) {
     const job = this.videoJobs.get(jobId);
     if (!job) return;
 
     job.status = 'processing';
 
     try {
-      const result: VideoGenerationResult = await this.falProvider.generateVideo(
-        body.imageUrl,
-        body.prompt,
-        {
+      const result: VideoGenerationResult =
+        await this.falProvider.generateVideo(body.imageUrl, body.prompt, {
           resolution: body.resolution || '720p',
           duration: body.duration || 'auto',
           aspectRatio: body.aspectRatio || 'auto',
           generateAudio: body.generateAudio !== false,
           bitrateMode: body.bitrateMode || 'standard',
-        },
-      );
+        });
 
       job.status = 'completed';
       job.videoUrl = result.videoUrl;

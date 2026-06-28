@@ -54,8 +54,7 @@ describe('Smoke Test (Production Sanity)', () => {
   }, 30000); // 30s timeout for AI calls
 
   it('/api/webhooks/flow/incoming (POST) - Bridge Authenticity Check', async () => {
-    const internalKey =
-      process.env.INTERNAL_API_KEY || 'test-key';
+    const internalKey = process.env.INTERNAL_API_KEY || 'test-key';
 
     const response = await request(app.getHttpServer())
       .post('/api/webhooks/flow/incoming')
