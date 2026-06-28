@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useTenant } from '../../contexts/TenantContext';
 import {
   ShieldCheck,
+  Database,
   RefreshCw,
   CheckCircle2,
   AlertCircle,
