@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import axios from 'axios';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
@@ -52,7 +52,7 @@ export function UserContextFormModal({ isOpen, onClose, onSave, initialData, rol
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-[#1A1F2E] border border-[#2A3143] rounded-xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-[#2A3143]">
-          <h2 className="text-xl font-semibold text-white">Nueva Asignaci�n de Contexto</h2>
+          <h2 className="text-xl font-semibold text-white">Nueva Asignaciï¿½n de Contexto</h2>
           <button onClick={onClose} className="text-[#8892B0] hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>

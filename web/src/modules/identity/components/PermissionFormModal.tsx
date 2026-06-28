@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+ï»¿import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface PermissionFormModalProps {
@@ -64,11 +64,11 @@ export function PermissionFormModal({ isOpen, onClose, onSave, initialData }: Pe
             <input type="text" required value={resource} onChange={e => setResource(e.target.value)} className="w-full bg-[#11141D] border border-[#2A3143] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#0066FF]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#8892B0] mb-1">Acción (Action)</label>
+            <label className="block text-sm font-medium text-[#8892B0] mb-1">AcciÃ³n (Action)</label>
             <input type="text" required value={action} onChange={e => setAction(e.target.value)} className="w-full bg-[#11141D] border border-[#2A3143] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#0066FF]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#8892B0] mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-[#8892B0] mb-1">DescripciÃ³n</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-[#11141D] border border-[#2A3143] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#0066FF]" rows={2} />
           </div>
         </form>

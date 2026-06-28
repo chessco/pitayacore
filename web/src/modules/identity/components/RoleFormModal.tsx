@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface RoleFormModalProps {
@@ -79,7 +79,7 @@ export function RoleFormModal({ isOpen, onClose, onSave, initialData, permission
               <input type="text" required value={slug} onChange={e => setSlug(e.target.value)} className="w-full bg-[#11141D] border border-[#2A3143] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#0066FF]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#8892B0] mb-1">Descripci�n</label>
+              <label className="block text-sm font-medium text-[#8892B0] mb-1">Descripción</label>
               <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-[#11141D] border border-[#2A3143] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#0066FF]" rows={3} />
             </div>
             <div className="flex items-center gap-2">
