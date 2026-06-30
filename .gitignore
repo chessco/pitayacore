@@ -177,3 +177,13 @@ __pycache__/
 # CLI config (runtime-generated)
 # ============================
 cli/config.json
+
+# ============================
+# Temporary/Fix scripts & patches
+# ============================
+patch.txt
+*.patch
+temp_*.*
+fix*.*
+pristine*.*
+.opencodeignore
