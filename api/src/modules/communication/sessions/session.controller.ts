@@ -6,22 +6,22 @@ import { getTenantId } from '../../../common/tenant/tenant.middleware';
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
-  @Post(':provider/initialize')
-  async initializeSession(@Param('provider') provider: string) {
+  @Post(':channelId/initialize')
+  async initializeSession(@Param('channelId') channelId: string) {
     const tenantId = getTenantId();
-    return this.sessionService.initializeSession(tenantId, provider);
+    return this.sessionService.initializeSession(tenantId, channelId);
   }
 
-  @Get(':provider/status')
-  async getSessionStatus(@Param('provider') provider: string) {
+  @Get(':channelId/status')
+  async getSessionStatus(@Param('channelId') channelId: string) {
     const tenantId = getTenantId();
-    return this.sessionService.getSessionStatus(tenantId, provider);
+    return this.sessionService.getSessionStatus(tenantId, channelId);
   }
 
-  @Delete(':provider/disconnect')
-  async disconnectSession(@Param('provider') provider: string) {
+  @Delete(':channelId/disconnect')
+  async disconnectSession(@Param('channelId') channelId: string) {
     const tenantId = getTenantId();
-    await this.sessionService.disconnectSession(tenantId, provider);
+    await this.sessionService.disconnectSession(tenantId, channelId);
     return { success: true };
   }
 }

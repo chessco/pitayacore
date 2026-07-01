@@ -12,55 +12,52 @@ export class SessionService {
   ) {}
 
   /**
-   * Initializes or gets the session for the given tenant and provider.
+   * Initializes or gets the session for the given tenant and channel.
    */
-  async initializeSession(tenantId: string, provider: string): Promise<any> {
-    this.logger.log(`Initializing session for tenant ${tenantId}, provider ${provider}`);
+  async initializeSession(tenantId: string, channelId: string): Promise<any> {
+    this.logger.log(`Initializing session for tenant ${tenantId}, channel ${channelId}`);
     
-    // UPSERT session in DB
+    // UPSERT session in DB using sessionIdentifier as channelId
     let session = await this.db.mysql.communicationSession.findFirst({
-      where: { tenantId, provider },
+      where: { tenantId, sessionIdentifier: channelId },
     });
 
     if (!session) {
       session = await this.db.mysql.communicationSession.create({
         data: {
           tenantId,
-          provider,
+          provider: 'whatsapp', // Defaulting for now, we should fetch channel to get exact provider
+          sessionIdentifier: channelId,
           status: 'INITIALIZING',
         },
       });
     }
 
-    if (provider === 'whatsapp') {
-      // Background init, not blocking the request
-      this.whatsappProvider.connect(tenantId).catch(err => {
-        this.logger.error(`Failed to connect whatsapp for tenant ${tenantId}`, err);
-      });
-    }
+    // Always trigger connect with channelId
+    this.whatsappProvider.connect(tenantId, channelId).catch(err => {
+      this.logger.error(`Failed to connect whatsapp for tenant ${tenantId} on channel ${channelId}`, err);
+    });
 
     return session;
   }
 
   /**
-   * Disconnects the session for a specific tenant and provider.
+   * Disconnects the session for a specific tenant and channel.
    */
-  async disconnectSession(tenantId: string, provider: string): Promise<void> {
-    this.logger.log(`Disconnecting session for tenant ${tenantId}, provider ${provider}`);
+  async disconnectSession(tenantId: string, channelId: string): Promise<void> {
+    this.logger.log(`Disconnecting session for tenant ${tenantId}, channel ${channelId}`);
     
-    if (provider === 'whatsapp') {
-      await this.whatsappProvider.disconnect(tenantId);
-    }
+    await this.whatsappProvider.disconnect(tenantId, channelId);
 
     await this.db.mysql.communicationSession.updateMany({
-      where: { tenantId, provider },
+      where: { tenantId, sessionIdentifier: channelId },
       data: { status: 'DISCONNECTED' },
     });
   }
 
-  async getSessionStatus(tenantId: string, provider: string) {
+  async getSessionStatus(tenantId: string, channelId: string) {
     const session = await this.db.mysql.communicationSession.findFirst({
-      where: { tenantId, provider },
+      where: { tenantId, sessionIdentifier: channelId },
     });
     return session;
   }

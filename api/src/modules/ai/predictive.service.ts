@@ -53,6 +53,8 @@ export class PredictiveService {
         suggestedResponse: 'Hola, ¿en qué puedo ayudarte?',
         confidence: 1.0,
         references: [],
+        quickReplies: [],
+        leadJourney: [],
       };
     }
     const lastMessage = messages[messages.length - 1]?.content || '';
@@ -102,7 +104,9 @@ export class PredictiveService {
         "summary": "Breve resumen de 1 oración",
         "suggestedResponse": "Sugerencia de respuesta profesional",
         "confidence": 0.XX,
-        "references": [{"id": "UUID", "title": "Nombre del Documento"}]
+        "references": [{"id": "UUID", "title": "Nombre del Documento"}],
+        "quickReplies": [{"id": "str", "trigger": "str", "correction": "str"}],
+        "leadJourney": [{"status": "str", "date": "str", "completed": boolean}]
       }
       
       IMPORTANTE:
@@ -174,6 +178,8 @@ export class PredictiveService {
           'Lo siento, hubo un error técnico al analizar esta parte. Por favor, reintenta en un momento.',
         confidence: 0.8,
         references: [],
+        quickReplies: [],
+        leadJourney: [],
       };
     }
   }

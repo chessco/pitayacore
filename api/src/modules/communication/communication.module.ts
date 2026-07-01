@@ -11,6 +11,7 @@ import { ContactService } from './contacts/contact.service';
 import { ConversationService } from './conversations/conversation.service';
 import { MessageService } from './messages/message.service';
 import { InboxService } from './agent-inbox/inbox.service';
+import { InboxController } from './agent-inbox/inbox.controller';
 import { CommunicationGateway } from './gateways/communication.gateway';
 import { AgentInboxGateway } from './gateways/agent-inbox.gateway';
 import { PresenceGateway } from './gateways/presence.gateway';
@@ -18,6 +19,8 @@ import { AgentRouterService } from './services/agent-router.service';
 
 import { AiModule } from '../ai/ai.module';
 import { DatabaseModule } from '../../common/database/database.module';
+import { VectorSearchModule } from '../vector-search/vector-search.module';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
   imports: [
@@ -25,6 +28,8 @@ import { DatabaseModule } from '../../common/database/database.module';
     EventEmitterModule.forRoot(), // Setup event emitter for the module
     DatabaseModule,
     AiModule,
+    VectorSearchModule,
+    ChannelsModule,
   ],
   providers: [
     FilesystemSessionStorageProvider,
@@ -44,7 +49,7 @@ import { DatabaseModule } from '../../common/database/database.module';
     AgentInboxGateway,
     PresenceGateway,
   ],
-  controllers: [SessionController],
+  controllers: [SessionController, InboxController],
   exports: [
     WhatsappWebProvider,
     CommunicationEventBusService,

@@ -123,4 +123,67 @@ export class VectorSearchService {
       };
     });
   }
+
+  /**
+   * Index semantic memory from a conversation message
+   */
+  async indexMemory(
+    tenantId: string,
+    messageId: string,
+    conversationId: string,
+    content: string,
+    role: string,
+  ): Promise<void> {
+    try {
+      const embedding = await this.generateEmbedding(content);
+      const vectorStr = `[${embedding.join(',')}]`;
+      const metadata = JSON.stringify({ role, conversationId });
+
+      const record = await this.db.postgres.vectorRecord.create({
+        data: {
+          tenantId,
+          content,
+          refId: messageId,
+          refType: 'MEMORY',
+        },
+      });
+
+      await this.db.postgres.$executeRawUnsafe(
+        `UPDATE "VectorRecord" SET embedding = $1::vector WHERE id = $2`,
+        vectorStr,
+        record.id,
+      );
+
+      this.logger.log(`Indexed memory for message ${messageId}`);
+    } catch (error) {
+      this.logger.error(`Error indexing memory ${messageId}`, error);
+    }
+  }
+
+  /**
+   * Semantic search across a tenant's conversation memory
+   */
+  async searchMemory(tenantId: string, query: string, limit = 5): Promise<any[]> {
+    const embedding = await this.generateEmbedding(query);
+    const vectorStr = `[${embedding.join(',')}]`;
+
+    const records = await this.db.postgres.$queryRawUnsafe<
+      { id: string; refId: string; content: string; distance: number }[]
+    >(
+      `SELECT id, "refId", content, embedding <-> $1::vector AS distance
+       FROM "VectorRecord"
+       WHERE "tenantId" = $2 AND "refType" = 'MEMORY'
+       ORDER BY distance ASC
+       LIMIT $3`,
+      vectorStr,
+      tenantId,
+      limit,
+    );
+
+    return records.map(record => ({
+      score: 1 - record.distance,
+      messageId: record.refId,
+      content: record.content,
+    }));
+  }
 }

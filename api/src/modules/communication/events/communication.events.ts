@@ -9,6 +9,7 @@ export class MessageReceivedEvent {
   constructor(
     public readonly tenantId: string,
     public readonly provider: string,
+    public readonly channelId: string,
     public readonly from: string,
     public readonly content: string,
     public readonly rawMessage: any
@@ -19,6 +20,7 @@ export class SessionStatusEvent {
   constructor(
     public readonly tenantId: string,
     public readonly provider: string,
+    public readonly channelId: string,
     public readonly status: 'AUTHENTICATING' | 'READY' | 'DISCONNECTED' | 'QR_READY',
     public readonly data?: any
   ) {}

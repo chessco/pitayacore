@@ -9,7 +9,7 @@ import * as qrcode from 'qrcode-terminal';
 @Injectable()
 export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestroy {
   private readonly logger = new Logger(WhatsappWebProvider.name);
-  private clients: Map<string, Client> = new Map();
+  private clients: Map<string, Client> = new Map(); // key = `${tenantId}:${channelId}`
   private readonly PROVIDER_NAME = 'whatsapp';
 
   constructor(
@@ -17,19 +17,20 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
     private readonly eventBus: CommunicationEventBusService,
   ) {}
 
-  async connect(tenantId: string): Promise<void> {
-    if (this.clients.has(tenantId)) {
-      this.logger.warn(`Client for tenant ${tenantId} is already connected or connecting.`);
+  async connect(tenantId: string, channelId: string): Promise<void> {
+    const clientKey = `${tenantId}:${channelId}`;
+    if (this.clients.has(clientKey)) {
+      this.logger.warn(`Client for tenant ${tenantId}, channel ${channelId} is already connected or connecting.`);
       return;
     }
 
-    const dataPath = this.sessionStorage.getSessionDataPath(tenantId, this.PROVIDER_NAME);
+    const dataPath = this.sessionStorage.getSessionDataPath(tenantId, `${this.PROVIDER_NAME}_${channelId}`);
     
-    this.logger.log(`Initializing WhatsApp Web client for tenant: ${tenantId} at ${dataPath}`);
+    this.logger.log(`Initializing WhatsApp Web client for tenant: ${tenantId}, channel: ${channelId} at ${dataPath}`);
     
     const client = new Client({
       authStrategy: new LocalAuth({
-        clientId: `tenant_${tenantId}`,
+        clientId: `channel_${channelId}`,
         dataPath: dataPath,
       }),
       puppeteer: {
@@ -38,47 +39,49 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
       },
     });
 
-    this.clients.set(tenantId, client);
-    this.registerEvents(tenantId, client);
+    this.clients.set(clientKey, client);
+    this.registerEvents(tenantId, channelId, client);
 
     try {
       await client.initialize();
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'AUTHENTICATING')
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'AUTHENTICATING')
       );
     } catch (error) {
-      this.logger.error(`Failed to initialize WhatsApp client for ${tenantId}`, error);
-      this.clients.delete(tenantId);
+      this.logger.error(`Failed to initialize WhatsApp client for ${tenantId}, channel ${channelId}`, error);
+      this.clients.delete(clientKey);
       throw error;
     }
   }
 
-  async disconnect(tenantId: string): Promise<void> {
-    const client = this.clients.get(tenantId);
+  async disconnect(tenantId: string, channelId: string): Promise<void> {
+    const clientKey = `${tenantId}:${channelId}`;
+    const client = this.clients.get(clientKey);
     if (!client) {
-      this.logger.warn(`No active client found for tenant: ${tenantId}`);
+      this.logger.warn(`No active client found for tenant: ${tenantId}, channel ${channelId}`);
       return;
     }
 
     try {
       await client.destroy();
-      this.clients.delete(tenantId);
-      this.logger.log(`Disconnected client for tenant: ${tenantId}`);
+      this.clients.delete(clientKey);
+      this.logger.log(`Disconnected client for tenant: ${tenantId}, channel ${channelId}`);
       
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'DISCONNECTED')
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'DISCONNECTED')
       );
     } catch (error) {
-      this.logger.error(`Error destroying client for tenant ${tenantId}`, error);
+      this.logger.error(`Error destroying client for tenant ${tenantId}, channel ${channelId}`, error);
     }
   }
 
-  async sendMessage(tenantId: string, to: string, content: string): Promise<any> {
-    const client = this.clients.get(tenantId);
+  async sendMessage(tenantId: string, channelId: string, to: string, content: string): Promise<any> {
+    const clientKey = `${tenantId}:${channelId}`;
+    const client = this.clients.get(clientKey);
     if (!client) {
-      throw new Error(`No active WhatsApp client for tenant ${tenantId}`);
+      throw new Error(`No active WhatsApp client for tenant ${tenantId}, channel ${channelId}`);
     }
 
     try {
@@ -86,66 +89,68 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
       const formattedTo = to.includes('@c.us') || to.includes('@g.us') ? to : `${to}@c.us`;
       const message = await client.sendMessage(formattedTo, content);
       
-      this.logger.debug(`Message sent to ${formattedTo} for tenant ${tenantId}`);
+      this.logger.debug(`Message sent to ${formattedTo} for tenant ${tenantId}, channel ${channelId}`);
       
       // Optionally publish a MESSAGE_SENT event here
       
       return message;
     } catch (error) {
-      this.logger.error(`Failed to send message for tenant ${tenantId}`, error);
+      this.logger.error(`Failed to send message for tenant ${tenantId}, channel ${channelId}`, error);
       throw error;
     }
   }
 
-  private registerEvents(tenantId: string, client: Client) {
+  private registerEvents(tenantId: string, channelId: string, client: Client) {
     client.on('qr', (qr) => {
-      this.logger.log(`QR Code generated for tenant ${tenantId}`);
+      this.logger.log(`QR Code generated for tenant ${tenantId}, channel ${channelId}`);
       // Print to terminal for local debugging (optional)
       qrcode.generate(qr, { small: true });
 
       this.eventBus.publish(
         COMMUNICATION_EVENTS.QR_CODE_GENERATED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'QR_READY', { qr })
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'QR_READY', { qr })
       );
     });
 
     client.on('ready', () => {
-      this.logger.log(`WhatsApp client is ready for tenant ${tenantId}`);
+      this.logger.log(`WhatsApp client is ready for tenant ${tenantId}, channel ${channelId}`);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'READY')
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'READY')
       );
     });
 
     client.on('authenticated', () => {
-      this.logger.log(`WhatsApp client authenticated for tenant ${tenantId}`);
+      this.logger.log(`WhatsApp client authenticated for tenant ${tenantId}, channel ${channelId}`);
     });
 
     client.on('auth_failure', (msg) => {
-      this.logger.error(`WhatsApp authentication failed for tenant ${tenantId}: ${msg}`);
+      this.logger.error(`WhatsApp authentication failed for tenant ${tenantId}, channel ${channelId}: ${msg}`);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'DISCONNECTED', { error: msg })
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'DISCONNECTED', { error: msg })
       );
     });
 
     client.on('disconnected', (reason) => {
-      this.logger.warn(`WhatsApp client disconnected for tenant ${tenantId}: ${reason}`);
-      this.clients.delete(tenantId);
+      const clientKey = `${tenantId}:${channelId}`;
+      this.logger.warn(`WhatsApp client disconnected for tenant ${tenantId}, channel ${channelId}: ${reason}`);
+      this.clients.delete(clientKey);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, 'DISCONNECTED', { reason })
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'DISCONNECTED', { reason })
       );
     });
 
     client.on('message', async (message: Message) => {
-      this.logger.debug(`Received message for tenant ${tenantId} from ${message.from}`);
+      this.logger.debug(`Received message for tenant ${tenantId}, channel ${channelId} from ${message.from}`);
       
       this.eventBus.publish(
         COMMUNICATION_EVENTS.MESSAGE_RECEIVED,
         new MessageReceivedEvent(
           tenantId,
           this.PROVIDER_NAME,
+          channelId,
           message.from,
           message.body,
           message
@@ -156,12 +161,12 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
 
   async onModuleDestroy() {
     this.logger.log('Destroying all WhatsApp Web clients on module destroy...');
-    for (const [tenantId, client] of this.clients.entries()) {
+    for (const [clientKey, client] of this.clients.entries()) {
       try {
         await client.destroy();
-        this.logger.debug(`Destroyed client for tenant ${tenantId}`);
+        this.logger.debug(`Destroyed client ${clientKey}`);
       } catch (error) {
-        this.logger.error(`Failed to destroy client for ${tenantId}`, error);
+        this.logger.error(`Failed to destroy client ${clientKey}`, error);
       }
     }
     this.clients.clear();

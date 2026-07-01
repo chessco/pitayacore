@@ -76,7 +76,7 @@ export class AgentRouterService {
       // 5. Send back via provider
       if (response && event.provider === 'whatsapp') {
         const responseText = typeof response === 'string' ? response : JSON.stringify(response);
-        await this.whatsappProvider.sendMessage(event.tenantId, event.from, responseText);
+        await this.whatsappProvider.sendMessage(event.tenantId, event.channelId, event.from, responseText);
         
         // 6. Save outgoing message
         await this.db.mysql.message.create({

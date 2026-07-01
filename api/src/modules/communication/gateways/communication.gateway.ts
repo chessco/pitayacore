@@ -68,17 +68,34 @@ export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisco
 
   @OnEvent(COMMUNICATION_EVENTS.QR_CODE_GENERATED)
   handleQrCodeGenerated(event: SessionStatusEvent) {
-    this.logger.debug(`Broadcasting QR code for tenant ${event.tenantId}`);
-    this.server.to(event.tenantId).emit('session.qr', { qr: event.data.qr });
+    this.logger.debug(`Broadcasting QR code for tenant ${event.tenantId}, channel ${event.channelId}`);
+    this.server.to(event.tenantId).emit('session.qr', { qr: event.data.qr, channelId: event.channelId });
   }
 
   @OnEvent(COMMUNICATION_EVENTS.MESSAGE_RECEIVED)
   handleMessageReceived(event: MessageReceivedEvent) {
-    this.logger.debug(`Broadcasting new message for tenant ${event.tenantId}`);
+    this.logger.debug(`Broadcasting new message for tenant ${event.tenantId}, channel ${event.channelId}`);
     this.server.to(event.tenantId).emit('message.new', {
       from: event.from,
       content: event.content,
       provider: event.provider,
+      channelId: event.channelId,
     });
+  }
+
+  // --- New Channel Connected Events ---
+  @OnEvent('channel.connected')
+  handleChannelConnected(event: { tenantId: string; provider: string; channelId: string }) {
+    this.server.to(event.tenantId).emit('new_channel_connected', event);
+  }
+
+  @OnEvent('channel.disconnected')
+  handleChannelDisconnected(event: { tenantId: string; provider: string; channelId: string }) {
+    this.server.to(event.tenantId).emit('channel_disconnected', event);
+  }
+
+  @OnEvent('channel.sync_completed')
+  handleSyncCompleted(event: { tenantId: string; provider: string }) {
+    this.server.to(event.tenantId).emit('omnichannel_sync_completed', event);
   }
 }
