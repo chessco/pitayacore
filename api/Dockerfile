@@ -2,6 +2,8 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 RUN npm install
 
@@ -17,6 +19,7 @@ FROM node:20-slim
 
 # Install Chromium and all required system libraries for whatsapp-web.js / Puppeteer
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
     chromium \
     fonts-liberation \
     fonts-noto-color-emoji \
