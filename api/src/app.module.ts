@@ -47,6 +47,7 @@ import { VisionDashboardModule } from './modules/vision-dashboard/vision-dashboa
 import { SocialPostsModule } from './modules/social-posts/social-posts.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CommunicationModule } from './modules/communication/communication.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -92,6 +93,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     VisionDashboardModule,
     SocialPostsModule,
     IdentityModule,
+    CommunicationModule,
   ],
   controllers: [AppController],
   providers: [

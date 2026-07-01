@@ -9,53 +9,56 @@ datasource db {
 }
 
 model Tenant {
-  id                 String              @id @default(uuid())
-  name               String
-  slug               String?             @unique
-  stripeApiKey       String?
-  plan               Plan                @default(FREE)
-  status             Status              @default(ACTIVE)
-  sector             String?             @default("retail")
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  brandingConfig     Json?
-  enabledModules     Json?
-  isDefault          Boolean             @default(false)
-  agents             Agent[]
-  costLogs           AiCostLog[]
-  campaigns          Campaign[]
-  capsules           Capsule[]
-  conversations      Conversation[]
-  corrections        HumanCorrection[]
-  knowledge          KnowledgeBase[]
-  skills             Skill[]
-  tenantFeatures     TenantFeature[]
-  users              User[]
-  leads              Lead[]
-  products           Product[]
-  categories         Category[]
-  orders             Order[]
-  stockMovements     StockMovement[]
-  contacts           Contact[]
-  audiences          Audience[]
-  workspaceNotes     WorkspaceNote[]
-  workspaceDocuments WorkspaceDocument[]
-  workspaceIdeas     WorkspaceIdea[]
-  workspaceRelations WorkspaceRelation[]
-  verticals          TenantVertical[]
-  characters         Character[]
-  assets             Asset[]
-  wallet             CreditWallet?
-  socialPosts        SocialPost[]
-  userRoles          UserRole[]
-  userContexts       UserContext[]
-  organizations      Organization?    @relation(fields: [organizationId], references: [id])
-  parentProfiles     ParentProfile[]
-  teacherProfiles    TeacherProfile[]
-  childProfiles      ChildProfile[]
-  schools            School[]
-  classrooms         Classroom[]
-  organizationId     String?
+  communicationSessions CommunicationSession[]
+  channels              Channel[]
+  id                    String                 @id @default(uuid())
+  name                  String
+  slug                  String?                @unique
+  stripeApiKey          String?
+  plan                  Plan                   @default(FREE)
+  status                Status                 @default(ACTIVE)
+  sector                String?                @default("retail")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  brandingConfig        Json?
+  enabledModules        Json?
+  isDefault             Boolean                @default(false)
+  agents                Agent[]
+  costLogs              AiCostLog[]
+  campaigns             Campaign[]
+  capsules              Capsule[]
+  conversationsOld      ConversationOld[]
+  corrections           HumanCorrection[]
+  knowledge             KnowledgeBase[]
+  skills                Skill[]
+  tenantFeatures        TenantFeature[]
+  users                 User[]
+  leads                 Lead[]
+  products              Product[]
+  categories            Category[]
+  orders                Order[]
+  stockMovements        StockMovement[]
+  contacts              Contact[]
+  audiences             Audience[]
+  workspaceNotes        WorkspaceNote[]
+  workspaceDocuments    WorkspaceDocument[]
+  workspaceIdeas        WorkspaceIdea[]
+  workspaceRelations    WorkspaceRelation[]
+  verticals             TenantVertical[]
+  characters            Character[]
+  assets                Asset[]
+  wallet                CreditWallet?
+  socialPosts           SocialPost[]
+  userRoles             UserRole[]
+  userContexts          UserContext[]
+  organizations         Organization?          @relation(fields: [organizationId], references: [id])
+  parentProfiles        ParentProfile[]
+  teacherProfiles       TeacherProfile[]
+  childProfiles         ChildProfile[]
+  schools               School[]
+  classrooms            Classroom[]
+  organizationId        String?
+  conversations         Conversation[]
 
   @@index([organizationId])
 }
@@ -74,81 +77,81 @@ model HumanCorrection {
 }
 
 model User {
-  id                    String         @id @default(uuid())
-  tenantId              String
-  email                 String         @unique
-  name                  String
-  role                  User_role
-  status                Status         @default(ACTIVE)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @default(now())
-  password              String?
-  permissions           Json?
-  avatarUrl             String?
-  phone                 String?
-  lastLoginAt           DateTime?
-  emailVerified         Boolean        @default(false)
-  assignedConversations Conversation[] @relation("AssignedTo")
-  conversations         Conversation[] @relation("ConversationOwner")
-  tenant                Tenant         @relation(fields: [tenantId], references: [id])
-  userRoles             UserRole[]
-  userContexts          UserContext[]
-  sessions              Session[]
-  parentProfile         ParentProfile?
-  teacherProfile        TeacherProfile?
-  childProfile          ChildProfile?
+  id                       String            @id @default(uuid())
+  tenantId                 String
+  email                    String            @unique
+  name                     String
+  role                     User_role
+  status                   Status            @default(ACTIVE)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @default(now())
+  password                 String?
+  permissions              Json?
+  avatarUrl                String?
+  phone                    String?
+  lastLoginAt              DateTime?
+  emailVerified            Boolean           @default(false)
+  assignedConversationsOld ConversationOld[] @relation("AssignedTo")
+  conversationsOld         ConversationOld[] @relation("ConversationOwner")
+  tenant                   Tenant            @relation(fields: [tenantId], references: [id])
+  userRoles                UserRole[]
+  userContexts             UserContext[]
+  sessions                 Session[]
+  parentProfile            ParentProfile?
+  teacherProfile           TeacherProfile?
+  childProfile             ChildProfile?
 
   @@index([tenantId], map: "User_tenantId_fkey")
 }
 
-model Conversation {
-  id           String    @id @default(uuid())
+model ConversationOld {
+  id           String       @id @default(uuid())
   tenantId     String
   userId       String?
   externalId   String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   assignedToId String?
-  source       String    @default("WHATSAPP")
+  source       String       @default("WHATSAPP")
   metadata     Json?
-  assignedTo   User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  user         User?     @relation("ConversationOwner", fields: [userId], references: [id])
+  assignedTo   User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  user         User?        @relation("ConversationOwner", fields: [userId], references: [id])
   leads        Lead[]
-  messages     Message[]
+  messagesOld  MessageOld[]
 
-  @@index([assignedToId], map: "Conversation_assignedToId_fkey")
-  @@index([tenantId], map: "Conversation_tenantId_fkey")
-  @@index([userId], map: "Conversation_userId_fkey")
+  @@index([assignedToId], map: "ConversationOld_assignedToId_fkey")
+  @@index([tenantId], map: "ConversationOld_tenantId_fkey")
+  @@index([userId], map: "ConversationOld_userId_fkey")
 }
 
-model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  tenantId       String
-  role           String
-  content        String       @db.Text
-  classification String?       @db.Text
-  confidence     Float?
-  isFlagged      Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  hitl           HitlAction?
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
+model MessageOld {
+  id              String          @id @default(uuid())
+  conversationId  String
+  tenantId        String
+  role            String
+  content         String          @db.Text
+  classification  String?         @db.Text
+  confidence      Float?
+  isFlagged       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  hitl            HitlAction?
+  conversationOld ConversationOld @relation(fields: [conversationId], references: [id])
 
-  @@index([conversationId], map: "Message_conversationId_fkey")
+  @@index([conversationId], map: "MessageOld_conversationId_fkey")
 }
 
 model HitlAction {
-  id         String   @id @default(uuid())
-  messageId  String   @unique
+  id         String     @id @default(uuid())
+  messageId  String     @unique
   tenantId   String
   level      String
   status     String
   reviewerId String?
-  comments   String?  @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  message    Message  @relation(fields: [messageId], references: [id])
+  comments   String?    @db.Text
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  messageOld MessageOld @relation(fields: [messageId], references: [id])
 }
 
 model Skill {
@@ -317,7 +320,7 @@ model Lead {
   metadata           Json?
   createdAt          DateTime            @default(now())
   capsule            Capsule             @relation(fields: [capsuleId], references: [id])
-  conversation       Conversation?       @relation(fields: [conversationId], references: [id])
+  conversationOld    ConversationOld?    @relation(fields: [conversationId], references: [id])
   campaign           Campaign?           @relation(fields: [campaignId], references: [id])
   tenant             Tenant?             @relation(fields: [tenantId], references: [id])
   contactId          String?
@@ -529,6 +532,8 @@ enum OrderStatus {
 }
 
 model Contact {
+  provider           String?
+  externalId         String?
   id                 String              @id @default(uuid())
   tenantId           String
   name               String
@@ -549,6 +554,7 @@ model Contact {
   deals              Deal[]
   tasks              Task[]
   workspaceRelations WorkspaceRelation[]
+  conversations      Conversation[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, phone])
@@ -967,36 +973,36 @@ model CreditTransaction {
 
 // RBAC SYSTEM
 model Role {
-  id             String          @id @default(uuid())
-  name           String
-  slug           String          @unique
-  description    String?         @db.Text
-  isSystem       Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  permissions    RolePermission[]
-  userRoles      UserRole[]
-  verticalRoles  VerticalRole[]
-  userContexts   UserContext[]
+  permissions   RolePermission[]
+  userRoles     UserRole[]
+  verticalRoles VerticalRole[]
+  userContexts  UserContext[]
 }
 
 model Permission {
-  id             String          @id @default(uuid())
-  key            String          @unique
-  resource       String
-  action         String
-  description    String?         @db.Text
-  createdAt      DateTime        @default(now())
+  id          String   @id @default(uuid())
+  key         String   @unique
+  resource    String
+  action      String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
 
   rolePermissions RolePermission[]
 }
 
 model RolePermission {
-  id            String   @id @default(uuid())
-  roleId        String
-  permissionId  String
-  createdAt     DateTime @default(now())
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
@@ -1060,14 +1066,14 @@ model UserContext {
 }
 
 model Session {
-  id           String    @id @default(uuid())
-  userId       String
-  token        String    @unique
-  ipAddress    String?
-  userAgent    String?
-  expiresAt    DateTime
-  revokedAt    DateTime?
-  createdAt    DateTime  @default(now())
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1119,14 +1125,14 @@ model TeacherProfile {
 }
 
 model ChildProfile {
-  id              String   @id @default(uuid())
-  userId          String   @unique
+  id              String    @id @default(uuid())
+  userId          String    @unique
   tenantId        String
   birthDate       DateTime?
   grade           String?
   learningProfile Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1135,13 +1141,13 @@ model ChildProfile {
 }
 
 model School {
-  id         String   @id @default(uuid())
-  tenantId   String
-  name       String
-  address    String?
-  status     Status   @default(ACTIVE)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  address   String?
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   classrooms Classroom[]
@@ -1159,9 +1165,9 @@ model Classroom {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  school   School?         @relation(fields: [schoolId], references: [id])
-  teacher  TeacherProfile? @relation(fields: [teacherId], references: [id])
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school  School?         @relation(fields: [schoolId], references: [id])
+  teacher TeacherProfile? @relation(fields: [teacherId], references: [id])
 
   @@index([tenantId])
   @@index([schoolId])
@@ -1182,9 +1188,9 @@ model AgentConfiguration {
 model SocialPost {
   id          String    @id @default(uuid())
   tenantId    String
-  platform    String    // 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'LINKEDIN'
+  platform    String // 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'LINKEDIN'
   content     String    @db.Text
-  mediaUrls   Json      // Array of asset storage paths
+  mediaUrls   Json // Array of asset storage paths
   status      String    @default("DRAFT") // 'DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED'
   scheduledAt DateTime?
   publishedAt DateTime?
@@ -1194,4 +1200,71 @@ model SocialPost {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, status])
+}
+
+model CommunicationSession {
+  id                String    @id @default(uuid())
+  tenantId          String
+  provider          String
+  agentId           String?
+  phoneNumber       String?
+  sessionIdentifier String?
+  status            String
+  metadata          Json?
+  lastSeenAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model Channel {
+  id             String  @id @default(uuid())
+  tenantId       String
+  name           String
+  provider       String
+  defaultAgentId String?
+  status         String
+  configuration  Json?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  tenantId        String
+  provider        String
+  contactId       String
+  assignedAgentId String?
+  status          String
+  lastMessageAt   DateTime?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  contact  Contact   @relation(fields: [contactId], references: [id])
+  messages Message[]
+
+  @@index([tenantId])
+  @@index([contactId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  provider       String
+  direction      String
+  messageType    String
+  content        String   @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
 }

@@ -17,6 +17,12 @@ Multi-tenant AI agent platform: NestJS API + two React frontends + Python CLI.
 - Prisma clients generated to `@prisma/mysql-client` and `@prisma/postgres-client` (custom output paths)
 - Both managed by `DatabaseService` (`api/src/common/database/database.service.ts`) — `@Global()` module
 
+**Communication Suite (Omnichannel)**:
+- **Architecture**: Separated from core verticals. Uses a `Provider Pattern` (`WhatsappWebProvider`, `TelegramProvider`, etc.).
+- **Session Storage**: Abstracted via `SessionStorageProvider` (defaults to persistent volumes, e.g., `/opt/pitaya/pitayacore/storage`). DO NOT store session files in databases or ephemeral storage.
+- **Events**: Uses Nest `EventEmitter` internally. Real-time updates via dedicated WebSockets (`communication`, `agent-inbox`, `presence` gateways). Does NOT reuse legacy conversation websockets.
+- **Data Migration**: Legacy tables (`ConversationOld`, `MessageOld`) are preserved. Do NOT perform in-place mutation of legacy tables.
+
 **Multi-tenancy**: `AsyncLocalStorage`-based via `TenantMiddleware`. Every request needs `x-tenant-id` header. `getTenantId()` throws if missing.
 
 **Auth chain** (global `CombinedAuthGuard`):

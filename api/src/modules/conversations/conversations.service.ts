@@ -31,7 +31,7 @@ export class ConversationsService {
     const tenantId = tenantIdParam || getTenantId();
 
     // 1. Find or create conversation
-    let conversation = await this.db.mysql.conversation.findFirst({
+    let conversation = await this.db.mysql.conversationOld.findFirst({
       where: {
         tenantId,
         OR: [{ userId }, { externalId: userId }],
@@ -41,7 +41,7 @@ export class ConversationsService {
     if (!conversation) {
       const isCapsule = channel.toUpperCase() === 'CAPSULE';
       const isInternal = channel.toUpperCase() === 'INTERNAL';
-      conversation = await this.db.mysql.conversation.create({
+      conversation = await this.db.mysql.conversationOld.create({
         data: {
           userId: isCapsule || isInternal ? null : userId,
           tenantId,
@@ -98,7 +98,7 @@ export class ConversationsService {
     }
 
     // 2. Save user message
-    const savedUserMessage = await this.db.mysql.message.create({
+    const savedUserMessage = await this.db.mysql.messageOld.create({
       data: {
         conversationId: conversation.id,
         tenantId,
@@ -153,7 +153,7 @@ export class ConversationsService {
     }
 
     // 4. Save AI message
-    const savedAiMessage = await this.db.mysql.message.create({
+    const savedAiMessage = await this.db.mysql.messageOld.create({
       data: {
         conversationId: conversation.id,
         tenantId,
@@ -223,13 +223,12 @@ export class ConversationsService {
 
   async findConversationByPhone(phone: string) {
     const tenantId = getTenantId();
-    return this.db.mysql.conversation.findFirst({
+    return this.db.mysql.conversationOld.findFirst({
       where: {
         tenantId,
         OR: [{ userId: phone }, { externalId: phone }],
       },
-      include: {
-        messages: {
+      include: { messagesOld: {
           orderBy: { createdAt: 'asc' },
         },
       },
@@ -240,13 +239,13 @@ export class ConversationsService {
     const tenantId = getTenantId();
     const whereClause = tenantId === 'global' ? {} : { tenantId };
 
-    return this.db.mysql.conversation.findMany({
+    return this.db.mysql.conversationOld.findMany({
       where: whereClause,
       include: {
         assignedTo: {
           select: { id: true, name: true, role: true, email: true },
         },
-        messages: {
+        messagesOld: {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
@@ -262,7 +261,7 @@ export class ConversationsService {
       whereClause.tenantId = tenantId;
     }
 
-    return this.db.mysql.message.findMany({
+    return this.db.mysql.messageOld.findMany({
       where: whereClause,
       orderBy: { createdAt: 'asc' },
     });
@@ -286,7 +285,7 @@ export class ConversationsService {
   ) {
     const tenantId = getTenantId();
 
-    const updated = await this.db.mysql.conversation.upsert({
+    const updated = await this.db.mysql.conversationOld.upsert({
       where: { id: conversationId },
       update: {
         assignedToId: operatorId,
@@ -312,7 +311,7 @@ export class ConversationsService {
   }
 
   async setHumanActive(conversationId: string) {
-    const conversation = await this.db.mysql.conversation.findUnique({
+    const conversation = await this.db.mysql.conversationOld.findUnique({
       where: { id: conversationId },
     });
 
@@ -323,7 +322,7 @@ export class ConversationsService {
         humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       };
 
-      await this.db.mysql.conversation.update({
+      await this.db.mysql.conversationOld.update({
         where: { id: conversationId },
         data: { metadata: updatedMetadata },
       });
@@ -332,7 +331,7 @@ export class ConversationsService {
   }
 
   async setAutopilotActive(conversationId: string) {
-    const conversation = await this.db.mysql.conversation.findUnique({
+    const conversation = await this.db.mysql.conversationOld.findUnique({
       where: { id: conversationId },
     });
 
@@ -343,7 +342,7 @@ export class ConversationsService {
         humanActiveUntil: null, // Clear human control timer
       };
 
-      const updatedConv = await this.db.mysql.conversation.update({
+      const updatedConv = await this.db.mysql.conversationOld.update({
         where: { id: conversationId },
         data: { metadata: updatedMetadata },
         include: { assignedTo: true },
@@ -382,7 +381,7 @@ export class ConversationsService {
     // 2. Count tickets for each operator
     const operatorCounts = await Promise.all(
       operators.map(async (op) => {
-        const count = await this.db.mysql.conversation.count({
+        const count = await this.db.mysql.conversationOld.count({
           where: { assignedToId: op.id },
         });
         return { op, count };
@@ -394,14 +393,14 @@ export class ConversationsService {
     const bestOperator = operatorCounts[0].op;
 
     // 4. Assign
-    const updatedConv = await this.db.mysql.conversation.update({
+    const updatedConv = await this.db.mysql.conversationOld.update({
       where: { id: conversationId },
       data: { assignedToId: bestOperator.id },
       include: {
         assignedTo: {
           select: { id: true, name: true, role: true, email: true },
         },
-        messages: {
+        messagesOld: {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
@@ -426,7 +425,7 @@ export class ConversationsService {
     const tenantId = getTenantId();
 
     // 1. Save operator message
-    const message = await this.db.mysql.message.create({
+    const message = await this.db.mysql.messageOld.create({
       data: {
         conversationId,
         tenantId,
@@ -436,7 +435,7 @@ export class ConversationsService {
     });
 
     // 2. Mark human as active for 10 minutes
-    const conversation = await this.db.mysql.conversation.findUnique({
+    const conversation = await this.db.mysql.conversationOld.findUnique({
       where: { id: conversationId },
     });
 
@@ -447,7 +446,7 @@ export class ConversationsService {
         humanActiveUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes from now
       };
 
-      const updatedConv = await this.db.mysql.conversation.update({
+      const updatedConv = await this.db.mysql.conversationOld.update({
         where: { id: conversationId },
         data: { metadata: updatedMetadata },
         include: { assignedTo: true },

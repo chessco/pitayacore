@@ -10,10 +10,8 @@ export class HitlService {
     const tenantId = getTenantId();
     return this.db.mysql.hitlAction.findMany({
       where: { tenantId, status: 'PENDING' },
-      include: {
-        message: {
-          include: {
-            conversation: true,
+      include: { messageOld: {
+          include: { conversationOld: true,
           },
         },
       },
@@ -30,14 +28,14 @@ export class HitlService {
     const tenantId = getTenantId();
 
     // Check if message exists
-    let message = await this.db.mysql.message.findUnique({
+    let message = await this.db.mysql.messageOld.findUnique({
       where: { id: messageId },
     });
 
     if (!message) {
       // Create a placeholder message so the HITL system works even for unsynced Flow messages
       // We need a conversation first
-      let conversation = await this.db.mysql.conversation.findFirst({
+      let conversation = await this.db.mysql.conversationOld.findFirst({
         where: { tenantId },
       });
 
@@ -58,7 +56,7 @@ export class HitlService {
           );
         }
 
-        conversation = await this.db.mysql.conversation.create({
+        conversation = await this.db.mysql.conversationOld.create({
           data: {
             userId: firstUser.id,
             tenantId,
@@ -67,7 +65,7 @@ export class HitlService {
         });
       }
 
-      message = await this.db.mysql.message.create({
+      message = await this.db.mysql.messageOld.create({
         data: {
           id: messageId,
           conversationId: conversation.id,
@@ -86,7 +84,7 @@ export class HitlService {
     if (existingAction) {
       // If we now have the content and the message was previously unsynced, update it
       if (initialContent) {
-        await this.db.mysql.message.update({
+        await this.db.mysql.messageOld.update({
           where: { id: messageId },
           data: { content: initialContent },
         });
@@ -109,7 +107,7 @@ export class HitlService {
     const tenantId = getTenantId();
     const action: any = await this.db.mysql.hitlAction.findUnique({
       where: { id: actionId },
-      include: { message: true },
+      include: { messageOld: true },
     });
 
     if (!action) {
@@ -129,10 +127,10 @@ export class HitlService {
     // Update message if edited
     if (editedContent) {
       // Find the user's message that triggered this response for learning
-      const userMessage = await this.db.mysql.message.findFirst({
+      const userMessage = await this.db.mysql.messageOld.findFirst({
         where: {
-          conversationId: action.message.conversationId,
-          createdAt: { lt: action.message.createdAt },
+          conversationId: action.messageOld.conversationId,
+          createdAt: { lt: action.messageOld.createdAt },
           role: 'user',
         },
         orderBy: { createdAt: 'desc' },
@@ -158,7 +156,7 @@ export class HitlService {
         });
       }
 
-      await this.db.mysql.message.update({
+      await this.db.mysql.messageOld.update({
         where: { id: action.messageId },
         data: { content: editedContent },
       });
@@ -167,7 +165,7 @@ export class HitlService {
     // Update action status
     const updatedAction = await this.db.mysql.hitlAction.update({
       where: { id: actionId },
-      include: { message: true },
+      include: { messageOld: true },
       data: {
         status: 'APPROVED',
         reviewerId,
@@ -187,7 +185,7 @@ export class HitlService {
     const tenantId = getTenantId();
     const action: any = await this.db.mysql.hitlAction.findUnique({
       where: { id: actionId },
-      include: { message: true },
+      include: { messageOld: true },
     });
 
     if (!action) {
@@ -205,7 +203,7 @@ export class HitlService {
 
     return this.db.mysql.hitlAction.update({
       where: { id: actionId },
-      include: { message: true },
+      include: { messageOld: true },
       data: {
         status: 'REJECTED',
         reviewerId,
@@ -222,7 +220,7 @@ export class HitlService {
   }
 
   private async syncToKnowledgeBase(messageId: string) {
-    const message = await this.db.mysql.message.findUnique({
+    const message = await this.db.mysql.messageOld.findUnique({
       where: { id: messageId },
     });
 

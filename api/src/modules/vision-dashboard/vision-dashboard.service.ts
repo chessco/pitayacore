@@ -15,7 +15,7 @@ export class VisionDashboardService {
       where: { tenantId },
     });
 
-    const totalSessions = await this.db.mysql.conversation.count({
+    const totalSessions = await this.db.mysql.conversationOld.count({
       where: { tenantId, source: 'CREATIVE_CHAT' },
     });
 
@@ -24,7 +24,7 @@ export class VisionDashboardService {
     // For a simple count, we can fetch all CREATIVE_CHAT metadata and filter in memory,
     // or just assume approved campaigns are the ones we care about.
     // Since we did this in vision-campaigns.service:
-    const allCreativeSessions = await this.db.mysql.conversation.findMany({
+    const allCreativeSessions = await this.db.mysql.conversationOld.findMany({
       where: { tenantId, source: 'CREATIVE_CHAT' },
       select: { metadata: true },
     });
@@ -63,7 +63,7 @@ export class VisionDashboardService {
     // Recent Campaigns
     // We fetch the latest approved campaigns.
     // To do this efficiently, we'll fetch recently updated sessions and filter.
-    const recentCreativeSessions = await this.db.mysql.conversation.findMany({
+    const recentCreativeSessions = await this.db.mysql.conversationOld.findMany({
       where: { tenantId, source: 'CREATIVE_CHAT' },
       orderBy: { updatedAt: 'desc' },
       take: 20, // Fetch a bit more to ensure we get some campaigns

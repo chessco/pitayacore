@@ -15,11 +15,10 @@ export class VisionCampaignsService {
 
   async findAll(tenantId: string) {
     const resolvedTenantId = await this.resolveTenantId(tenantId);
-    const conversations = await this.db.mysql.conversation.findMany({
+    const conversations = await this.db.mysql.conversationOld.findMany({
       where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
-      include: {
-        messages: {
+      include: { messagesOld: {
           where: { role: 'ai' },
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -36,7 +35,7 @@ export class VisionCampaignsService {
 
       if (!sessionMeta.campaignId) continue;
 
-      const lastAiMsg = conv.messages[0];
+      const lastAiMsg = conv.messagesOld[0];
       const msgMeta: any = lastAiMsg?.classification
         ? JSON.parse(lastAiMsg.classification)
         : {};
@@ -71,7 +70,7 @@ export class VisionCampaignsService {
 
   async delete(tenantId: string, id: string) {
     const resolvedTenantId = await this.resolveTenantId(tenantId);
-    const conv = await this.db.mysql.conversation.findFirst({
+    const conv = await this.db.mysql.conversationOld.findFirst({
       where: { id, tenantId: resolvedTenantId },
     });
 
@@ -96,11 +95,11 @@ export class VisionCampaignsService {
       }
     }
 
-    await this.db.mysql.message.deleteMany({
+    await this.db.mysql.messageOld.deleteMany({
       where: { conversationId: id },
     });
 
-    await this.db.mysql.conversation.delete({ where: { id } });
+    await this.db.mysql.conversationOld.delete({ where: { id } });
 
     return { deleted: true };
   }

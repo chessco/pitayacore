@@ -269,7 +269,7 @@ export class CapsulesService {
 
     // If userId is provided, try to find and update the associated conversation
     if (userId) {
-      const conversation = await this.db.mysql.conversation.findFirst({
+      const conversation = await this.db.mysql.conversationOld.findFirst({
         where: {
           OR: [{ userId: userId }, { externalId: userId }],
         },
@@ -286,7 +286,7 @@ export class CapsulesService {
           userPhone: dto.phone,
         };
 
-        const updatedConv = await this.db.mysql.conversation.update({
+        const updatedConv = await this.db.mysql.conversationOld.update({
           where: { id: conversation.id },
           data: {
             metadata: updatedMetadata,
@@ -349,7 +349,7 @@ export class CapsulesService {
 
     // Recompensa de AcuaPoints por interacción (si hay contacto vinculado)
     if (aiMessage.conversationId) {
-      const conv = await this.db.mysql.conversation.findUnique({
+      const conv = await this.db.mysql.conversationOld.findUnique({
         where: { id: aiMessage.conversationId },
         include: { leads: { include: { contact: true } } },
       });
@@ -421,7 +421,7 @@ export class CapsulesService {
       include: {
         capsule: true,
         campaign: true,
-        conversation: true,
+        conversationOld: true,
         contact: true,
       },
     });
@@ -511,7 +511,7 @@ export class CapsulesService {
   }
 
   async getLeadJourney(conversationId: string, tenantId: string) {
-    const conversation = await this.db.mysql.conversation.findUnique({
+    const conversation = await this.db.mysql.conversationOld.findUnique({
       where: { id: conversationId },
       include: {
         leads: {
@@ -522,7 +522,7 @@ export class CapsulesService {
       },
     });
 
-    if (!conversation) throw new NotFoundException('Conversation not found');
+    if (!conversation) throw new NotFoundException('ConversationOld not found');
 
     const lead = conversation.leads[0];
     const timeline: any[] = [];

@@ -25,11 +25,10 @@ export class ChatSessionsService {
 
   async getSessions(tenantId: string) {
     const resolvedTenantId = await this.resolveTenantId(tenantId);
-    return this.db.mysql.conversation.findMany({
+    return this.db.mysql.conversationOld.findMany({
       where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
-      include: {
-        messages: {
+      include: { messagesOld: {
           orderBy: { createdAt: 'asc' },
         },
       },
@@ -37,7 +36,7 @@ export class ChatSessionsService {
   }
 
   async getSessionMessages(sessionId: string) {
-    const session = await this.db.mysql.conversation.findUnique({
+    const session = await this.db.mysql.conversationOld.findUnique({
       where: { id: sessionId },
     });
 
@@ -45,7 +44,7 @@ export class ChatSessionsService {
       throw new NotFoundException('Chat session not found');
     }
 
-    const messages = await this.db.mysql.message.findMany({
+    const messages = await this.db.mysql.messageOld.findMany({
       where: { conversationId: sessionId },
       orderBy: { createdAt: 'asc' },
     });
@@ -72,7 +71,7 @@ export class ChatSessionsService {
   async createSession(tenantId: string, title: string) {
     const resolvedTenantId = await this.resolveTenantId(tenantId);
     const meta = { title };
-    const session = await this.db.mysql.conversation.create({
+    const session = await this.db.mysql.conversationOld.create({
       data: {
         tenantId: resolvedTenantId,
         source: 'CREATIVE_CHAT',
@@ -89,7 +88,7 @@ export class ChatSessionsService {
   }
 
   async postMessage(sessionId: string, text: string) {
-    const session = await this.db.mysql.conversation.findUnique({
+    const session = await this.db.mysql.conversationOld.findUnique({
       where: { id: sessionId },
     });
 
@@ -97,7 +96,7 @@ export class ChatSessionsService {
       throw new NotFoundException('Chat session not found');
     }
 
-    const userMessage = await this.db.mysql.message.create({
+    const userMessage = await this.db.mysql.messageOld.create({
       data: {
         conversationId: sessionId,
         tenantId: session.tenantId,
@@ -203,7 +202,7 @@ Asegúrate de incluir absolutamente toda la información solicitada en el campo 
         loraPath ? { loras: [{ path: loraPath, scale: 1.0 }] } : undefined,
       );
 
-      // 3. Save AI Message — use strategy.copy as the main content displayed in chat
+      // 3. Save AI MessageOld — use strategy.copy as the main content displayed in chat
       const completedSteps = [
         ...baseSteps,
         {
@@ -231,7 +230,7 @@ Asegúrate de incluir absolutamente toda la información solicitada en el campo 
         strategy.copy ||
         `Campaña generada para: "${text}"\n\n[Sin contenido generado]`;
 
-      const aiMessage = await this.db.mysql.message.create({
+      const aiMessage = await this.db.mysql.messageOld.create({
         data: {
           conversationId: sessionId,
           tenantId: session.tenantId,
@@ -263,7 +262,7 @@ Asegúrate de incluir absolutamente toda la información solicitada en el campo 
   }
 
   async approveCampaign(sessionId: string) {
-    const session = await this.db.mysql.conversation.findUnique({
+    const session = await this.db.mysql.conversationOld.findUnique({
       where: { id: sessionId },
     });
 
@@ -271,7 +270,7 @@ Asegúrate de incluir absolutamente toda la información solicitada en el campo 
       throw new NotFoundException('Chat session not found');
     }
 
-    const lastAiMessage = await this.db.mysql.message.findFirst({
+    const lastAiMessage = await this.db.mysql.messageOld.findFirst({
       where: { conversationId: sessionId, role: 'ai' },
       orderBy: { createdAt: 'desc' },
     });
@@ -340,7 +339,7 @@ Asegúrate de incluir absolutamente toda la información solicitada en el campo 
     });
 
     const newSessionMeta = { ...sessionMeta, campaignId: campaign.id };
-    await this.db.mysql.conversation.update({
+    await this.db.mysql.conversationOld.update({
       where: { id: sessionId },
       data: { metadata: JSON.stringify(newSessionMeta) },
     });

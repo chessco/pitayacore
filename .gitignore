@@ -167,11 +167,12 @@ id_rsa*
 id_ed25519*
 
 # ============================
-# Python cache
+# Python cache & scripts
 # ============================
 __pycache__/
 *.pyc
 *.pyo
+*.py
 
 # ============================
 # CLI config (runtime-generated)

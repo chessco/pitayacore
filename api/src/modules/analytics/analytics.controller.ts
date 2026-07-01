@@ -46,32 +46,31 @@ export class AnalyticsController {
       recentLogins,
       dailyStats,
     ] = await Promise.all([
-      this.db.mysql.conversation.count({ where: convFilters }),
+      this.db.mysql.conversationOld.count({ where: convFilters }),
       this.db.mysql.hitlAction.count({
         where: { ...hitlFilters, status: 'PENDING' },
       }),
       this.db.mysql.tenant.count({
         where: isSystemUser ? {} : { id: tenantId, status: 'ACTIVE' },
       }),
-      this.db.mysql.message.count({ where: msgFilters }),
-      this.db.mysql.message.count({
+      this.db.mysql.messageOld.count({ where: msgFilters }),
+      this.db.mysql.messageOld.count({
         where: { ...msgFilters, role: 'assistant' },
       }),
-      this.db.mysql.message.findMany({
+      this.db.mysql.messageOld.findMany({
         where: {
           ...msgFilters,
           OR: [{ isFlagged: true }, { confidence: { lt: 0.7 } }],
         },
         orderBy: { createdAt: 'desc' },
         take: 3,
-        include: { conversation: { include: { tenant: true } } },
+        include: { conversationOld: { include: { tenant: true } } },
       }),
       this.db.mysql.hitlAction.findMany({
         where: hitlFilters,
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: {
-          message: { include: { conversation: { include: { tenant: true } } } },
+        include: { messageOld: { include: { conversationOld: { include: { tenant: true } } } },
         },
       }),
       this.db.mysql.auditLog.findMany({
@@ -83,7 +82,7 @@ export class AnalyticsController {
         take: 10,
       }),
       // Fetch recent messages to calculate daily volume manually (more robust than groupBy with relations)
-      this.db.mysql.message.findMany({
+      this.db.mysql.messageOld.findMany({
         where: { ...msgFilters, createdAt: { gte: sevenDaysAgo } },
         select: { createdAt: true },
       }),
@@ -118,7 +117,7 @@ export class AnalyticsController {
       title: msg.isFlagged
         ? 'Alerta: Sentimiento Crítico'
         : 'IA: Baja Confianza',
-      tenant: msg.conversation.tenant.name,
+      tenant: msg.conversationOld.tenant.name,
       description: msg.content.substring(0, 80) + '...',
       time: msg.createdAt.toLocaleTimeString([], {
         hour: '2-digit',
@@ -152,7 +151,7 @@ export class AnalyticsController {
           minute: '2-digit',
         }),
         timestamp: hitl.createdAt.getTime(),
-        description: hitl.message.content.substring(0, 50) + '...',
+        description: hitl.messageOld.content.substring(0, 50) + '...',
       })),
       ...recentLogins.map((log: any) => ({
         id: log.id,

@@ -57,7 +57,7 @@ export class AiRouterService {
     }
 
     // 0. Fetch recent history for context
-    const history = await this.db.mysql.message.findMany({
+    const history = await this.db.mysql.messageOld.findMany({
       where: {
         tenantId,
       },
