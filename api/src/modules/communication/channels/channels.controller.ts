@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { getTenantId } from '../../../common/tenant/tenant.middleware';
-import { CombinedAuthGuard } from '../../../common/guards/combined-auth.guard';
 
-@UseGuards(CombinedAuthGuard)
 @Controller('communication/channels')
 export class ChannelsController {
   constructor(private readonly channelsService: ChannelsService) {}
