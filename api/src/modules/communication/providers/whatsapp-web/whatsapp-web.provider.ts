@@ -113,6 +113,13 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
       // Print to terminal for local debugging (optional)
       qrcode.generate(qr, { small: true });
 
+      // Update channel status to QR_READY so the frontend shows the QR panel
+      this.eventBus.publish(
+        COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'QR_READY')
+      );
+
+      // Broadcast the QR data itself
       this.eventBus.publish(
         COMMUNICATION_EVENTS.QR_CODE_GENERATED,
         new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'QR_READY', { qr })
