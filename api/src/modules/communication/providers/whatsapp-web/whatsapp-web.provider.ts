@@ -49,17 +49,23 @@ export class WhatsappWebProvider implements CommunicationProvider, OnModuleDestr
     this.clients.set(clientKey, client);
     this.registerEvents(tenantId, channelId, client);
 
-    try {
-      await client.initialize();
-      this.eventBus.publish(
-        COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
-        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'AUTHENTICATING')
-      );
-    } catch (error) {
+    // Emit AUTHENTICATING immediately so the UI shows connecting state
+    this.eventBus.publish(
+      COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
+      new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'AUTHENTICATING')
+    );
+
+    // Fire-and-forget: initialize() is event-driven (qr → ready → disconnected).
+    // Do NOT await — awaiting causes it to emit AUTHENTICATING AFTER QR_READY,
+    // which hides the QR panel on the frontend.
+    client.initialize().catch((error) => {
       this.logger.error(`Failed to initialize WhatsApp client for ${tenantId}, channel ${channelId}`, error);
       this.clients.delete(clientKey);
-      throw error;
-    }
+      this.eventBus.publish(
+        COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
+        new SessionStatusEvent(tenantId, this.PROVIDER_NAME, channelId, 'DISCONNECTED', { error: error.message })
+      );
+    });
   }
 
   async disconnect(tenantId: string, channelId: string): Promise<void> {
