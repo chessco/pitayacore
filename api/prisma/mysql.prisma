@@ -1238,10 +1238,10 @@ model Channel {
 model Conversation {
   id              String    @id @default(uuid())
   tenantId        String
-  provider        String
-  contactId       String
+  provider        String    @default("")
+  contactId       String    @default("")
   assignedAgentId String?
-  status          String
+  status          String    @default("OPEN")
   priority        String    @default("MEDIUM")
   origin          String    @default("USER")
   lastMessageAt   DateTime?
@@ -1261,9 +1261,9 @@ model Conversation {
 model Message {
   id             String   @id @default(uuid())
   conversationId String
-  provider       String
-  direction      String
-  messageType    String
+  provider       String    @default("")
+  direction      String    @default("INBOUND")
+  messageType    String    @default("TEXT")
   content        String   @db.Text
   metadata       Json?
   createdAt      DateTime @default(now())
