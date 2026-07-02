@@ -11,6 +11,11 @@ export function registerResources(server, api) {
             { uri: 'pitaya://channels/{id}', name: 'Channel detail', mimeType: 'application/json' },
             { uri: 'pitaya://skills', name: 'Skills list', mimeType: 'application/json' },
             { uri: 'pitaya://analytics/dashboard', name: 'Dashboard KPIs', mimeType: 'application/json' },
+            { uri: 'pitaya://workspace/notes', name: 'Workspace notes', mimeType: 'application/json' },
+            { uri: 'pitaya://workspace/notes/{id}', name: 'Workspace note detail', mimeType: 'application/json' },
+            { uri: 'pitaya://workspace/documents', name: 'Workspace documents', mimeType: 'application/json' },
+            { uri: 'pitaya://workspace/ideas', name: 'Workspace ideas', mimeType: 'application/json' },
+            { uri: 'pitaya://workspace/ideas/{id}', name: 'Workspace idea detail', mimeType: 'application/json' },
         ],
     }));
     server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
@@ -46,6 +51,23 @@ export function registerResources(server, api) {
         else if (uri.startsWith('pitaya://channels/')) {
             const id = uri.replace('pitaya://channels/', '');
             data = await api.get(`/api/communication/channels/${id}`);
+        }
+        else if (uri === 'pitaya://workspace/notes') {
+            data = await api.get('/api/workspace/notes');
+        }
+        else if (uri.startsWith('pitaya://workspace/notes/')) {
+            const id = uri.replace('pitaya://workspace/notes/', '');
+            data = await api.get(`/api/workspace/notes/${id}`);
+        }
+        else if (uri === 'pitaya://workspace/documents') {
+            data = await api.get('/api/workspace/documents');
+        }
+        else if (uri === 'pitaya://workspace/ideas') {
+            data = await api.get('/api/workspace/ideas');
+        }
+        else if (uri.startsWith('pitaya://workspace/ideas/')) {
+            const id = uri.replace('pitaya://workspace/ideas/', '');
+            data = await api.get(`/api/workspace/ideas/${id}`);
         }
         else {
             throw new Error(`Unknown resource: ${uri}`);

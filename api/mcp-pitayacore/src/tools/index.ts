@@ -159,6 +159,82 @@ export function registerTools(server: Server, api: ApiClient): void {
         required: ['query'],
       },
     },
+    {
+      name: 'list_notes',
+      description: 'List all workspace notes',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'create_note',
+      description: 'Create a workspace note',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['title', 'content'],
+      },
+    },
+    {
+      name: 'list_documents',
+      description: 'List all workspace documents',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'list_ideas',
+      description: 'List all workspace ideas',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'create_idea',
+      description: 'Create a workspace idea',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'IN_REVIEW', 'IMPLEMENTED', 'ARCHIVED'] },
+          priority: { type: 'string' },
+          category: { type: 'string' },
+        },
+        required: ['title'],
+      },
+    },
+    {
+      name: 'generate_ideas_ai',
+      description: 'Generate workspace ideas using AI',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'Topic or description for AI to generate ideas' },
+        },
+        required: ['prompt'],
+      },
+    },
+    {
+      name: 'search_workspace',
+      description: 'Full-text search across notes, documents, and ideas',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'ask_workspace_ai',
+      description: 'Ask the workspace AI assistant with context from all workspace items',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          question: { type: 'string' },
+        },
+        required: ['question'],
+      },
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
@@ -247,6 +323,48 @@ export function registerTools(server: Server, api: ApiClient): void {
             query: args.query,
             limit: args.limit || 5,
           });
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'list_notes': {
+          const data = await api.get('/api/workspace/notes');
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'create_note': {
+          const data = await api.post('/api/workspace/notes', {
+            title: args.title,
+            content: args.content,
+            tags: args.tags,
+          });
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'list_documents': {
+          const data = await api.get('/api/workspace/documents');
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'list_ideas': {
+          const data = await api.get('/api/workspace/ideas');
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'create_idea': {
+          const data = await api.post('/api/workspace/ideas', {
+            title: args.title,
+            description: args.description,
+            status: args.status,
+            priority: args.priority,
+            category: args.category,
+          });
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'generate_ideas_ai': {
+          const data = await api.post('/api/workspace/ideas/generate-ai', { prompt: args.prompt });
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'search_workspace': {
+          const data = await api.get(`/api/workspace/search?q=${encodeURIComponent(args.query)}`);
+          return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+        }
+        case 'ask_workspace_ai': {
+          const data = await api.post('/api/workspace/ai/ask', { question: args.question });
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
         }
         default:
