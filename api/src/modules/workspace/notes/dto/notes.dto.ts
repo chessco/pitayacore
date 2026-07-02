@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsIn } from 'class-validator';
 
 export class CreateNoteDto {
   @IsString()
@@ -28,4 +28,10 @@ export class UpdateNoteDto {
 
   @IsOptional()
   tags?: any;
+}
+
+export class VoteNoteDto {
+  @IsInt()
+  @IsIn([1, -1])
+  value: number;
 }

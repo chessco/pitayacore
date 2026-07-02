@@ -47,5 +47,13 @@ export function useWorkspaceNotes() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workspace-notes', tenantId] }),
   });
 
-  return { notes, isLoading, createNote, updateNote, deleteNote };
+  const voteNote = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: number }) => {
+      const res = await axios.post(`${API_URL}/api/workspace/notes/${id}/vote`, { value }, { headers });
+      return res.data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workspace-notes', tenantId] }),
+  });
+
+  return { notes, isLoading, createNote, updateNote, deleteNote, voteNote };
 }

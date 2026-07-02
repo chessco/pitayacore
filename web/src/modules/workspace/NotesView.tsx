@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Loader2, Check, Plus, Trash2, FileText, Calendar, Bold, Image as ImageIcon, Columns, Eye, Edit3 } from 'lucide-react';
+import { Save, Loader2, Check, Plus, Trash2, FileText, Calendar, Bold, Image as ImageIcon, Columns, Eye, Edit3, ChevronUp, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useWorkspaceNotes } from './hooks/useWorkspaceNotes';
@@ -12,15 +12,12 @@ export function NotesView() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { notes, createNote, updateNote, deleteNote } = useWorkspaceNotes();
+  const { notes, createNote, updateNote, deleteNote, voteNote } = useWorkspaceNotes();
 
-  // Load the most recent note by default if no note is selected
+  // Load the first note by default if no note is selected
   useEffect(() => {
     if (notes && notes.length > 0 && !currentNoteId && !isCreatingNew) {
-      const sortedNotes = [...notes].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-      const latestNote = sortedNotes[0];
+      const latestNote = notes[0];
       setCurrentNoteId(latestNote.id);
       setTitle(latestNote.title || '');
       setContent(latestNote.content || '');
@@ -96,9 +93,7 @@ export function NotesView() {
   };
 
   const isSaving = createNote.isPending || updateNote.isPending;
-  const sortedNotesList = notes
-    ? [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    : [];
+  const sortedNotesList = notes || [];
 
   return (
     <div className="bg-white rounded-3xl shadow-xl h-full flex overflow-hidden border border-slate-100 min-h-[500px]">
@@ -125,41 +120,75 @@ export function NotesView() {
               <p className="text-xs font-semibold">No hay notas creadas aún.</p>
             </div>
           ) : (
-            sortedNotesList.map((note) => {
+            sortedNotesList.map((note: any) => {
               const isSelected = currentNoteId === note.id;
               return (
                 <div
                   key={note.id}
                   onClick={() => handleSelectNote(note)}
-                  className={`p-3 rounded-2xl border transition-all cursor-pointer relative group flex flex-col ${
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer relative group flex gap-3 ${
                     isSelected
                       ? 'bg-white border-brand-blue/30 shadow-md ring-1 ring-brand-blue/5'
                       : 'border-transparent hover:border-slate-200 hover:bg-slate-100/50 bg-white/60'
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-1 pr-6">
-                    <span className={`font-bold text-sm line-clamp-1 ${isSelected ? 'text-brand-blue' : 'text-slate-700'}`}>
-                      {note.title || 'Nota sin título'}
+                  {/* Reddit Vote Widget */}
+                  <div className="flex flex-col items-center justify-start py-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => voteNote.mutate({ id: note.id, value: 1 })}
+                      className={`p-1 rounded transition-colors ${
+                        note.userVote === 1
+                          ? 'text-orange-500 hover:bg-orange-50'
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                      }`}
+                      title="Votar a favor"
+                    >
+                      <ChevronUp size={18} className={note.userVote === 1 ? 'fill-orange-500/20' : ''} />
+                    </button>
+                    <span className={`text-xs font-black my-0.5 min-w-[20px] text-center ${
+                      note.userVote === 1 ? 'text-orange-500' : note.userVote === -1 ? 'text-blue-500' : 'text-slate-600'
+                    }`}>
+                      {note.score ?? 0}
                     </span>
                     <button
-                      onClick={(e) => handleDeleteNote(note.id, e)}
-                      className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all p-1 rounded-lg hover:bg-red-50"
-                      title="Eliminar nota"
+                      onClick={() => voteNote.mutate({ id: note.id, value: -1 })}
+                      className={`p-1 rounded transition-colors ${
+                        note.userVote === -1
+                          ? 'text-blue-500 hover:bg-blue-50'
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                      }`}
+                      title="Votar en contra"
                     >
-                      <Trash2 size={13} />
+                      <ChevronDown size={18} className={note.userVote === -1 ? 'fill-blue-500/20' : ''} />
                     </button>
                   </div>
-                  <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed mb-2">
-                    {note.content || 'Sin contenido...'}
-                  </p>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
-                    <Calendar size={10} />
-                    {new Date(note.updatedAt).toLocaleDateString('es-ES', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+
+                  {/* Note Details */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex justify-between items-start mb-1 pr-6">
+                      <span className={`font-bold text-sm line-clamp-1 ${isSelected ? 'text-brand-blue' : 'text-slate-700'}`}>
+                        {note.title || 'Nota sin título'}
+                      </span>
+                      <button
+                        onClick={(e) => handleDeleteNote(note.id, e)}
+                        className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all p-1 rounded-lg hover:bg-red-50"
+                        title="Eliminar nota"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                    <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed mb-2">
+                      {note.content || 'Sin contenido...'}
+                    </p>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                      <Calendar size={10} />
+                      {new Date(note.updatedAt).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
                   </div>
                 </div>
               );
