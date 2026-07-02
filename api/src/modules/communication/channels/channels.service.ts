@@ -7,7 +7,10 @@ export class ChannelsService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  async createChannel(tenantId: string, data: { name: string; provider: string; configuration?: any }) {
+  async createChannel(
+    tenantId: string,
+    data: { name: string; provider: string; configuration?: any },
+  ) {
     this.logger.log(`Creating channel ${data.name} for tenant ${tenantId}`);
     return this.db.mysql.channel.create({
       data: {
@@ -37,13 +40,26 @@ export class ChannelsService {
     return channel;
   }
 
-  async updateChannel(tenantId: string, id: string, data: { name?: string; defaultAgentId?: string | null; configuration?: any }) {
+  async updateChannel(
+    tenantId: string,
+    id: string,
+    data: {
+      name?: string;
+      defaultAgentId?: string | null;
+      configuration?: any;
+    },
+  ) {
     const channel = await this.getChannel(tenantId, id);
-    
+
     // Merge configuration if provided
     let newConfig = channel.configuration;
     if (data.configuration) {
-      newConfig = { ...(typeof channel.configuration === 'object' ? (channel.configuration as any) : {}), ...data.configuration };
+      newConfig = {
+        ...(typeof channel.configuration === 'object'
+          ? channel.configuration
+          : {}),
+        ...data.configuration,
+      };
     }
 
     return this.db.mysql.channel.update({

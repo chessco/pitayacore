@@ -16,7 +16,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
   namespace: '/presence',
   cors: { origin: '*' },
 })
-export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class PresenceGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -24,7 +26,7 @@ export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // Maps to keep track of online users and agents
   private onlineUsers = new Map<string, string>(); // socketId -> userId
-  
+
   constructor(private eventEmitter: EventEmitter2) {}
 
   handleConnection(client: Socket) {
@@ -43,12 +45,16 @@ export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   @SubscribeMessage('set.status')
   handleSetStatus(
-    @MessageBody() payload: { userId: string; status: 'online' | 'offline' | 'busy' },
+    @MessageBody()
+    payload: { userId: string; status: 'online' | 'offline' | 'busy' },
     @ConnectedSocket() client: Socket,
   ) {
     if (payload.status === 'online') {
       this.onlineUsers.set(client.id, payload.userId);
-      this.server.emit('user.online', { userId: payload.userId, status: payload.status });
+      this.server.emit('user.online', {
+        userId: payload.userId,
+        status: payload.status,
+      });
     } else if (payload.status === 'offline') {
       this.onlineUsers.delete(client.id);
       this.server.emit('user.offline', { userId: payload.userId });
@@ -58,7 +64,8 @@ export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   @SubscribeMessage('user.typing')
   handleUserTyping(
-    @MessageBody() payload: { conversationId: string; userId: string; tenantId: string },
+    @MessageBody()
+    payload: { conversationId: string; userId: string; tenantId: string },
     @ConnectedSocket() client: Socket,
   ) {
     this.server.to(payload.tenantId).emit('user.typing', payload);
@@ -66,7 +73,8 @@ export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   @SubscribeMessage('user.stop_typing')
   handleUserStopTyping(
-    @MessageBody() payload: { conversationId: string; userId: string; tenantId: string },
+    @MessageBody()
+    payload: { conversationId: string; userId: string; tenantId: string },
     @ConnectedSocket() client: Socket,
   ) {
     this.server.to(payload.tenantId).emit('user.stop_typing', payload);
@@ -74,11 +82,17 @@ export class PresenceGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // --- Server to Client Methods --- //
 
-  broadcastAgentTyping(tenantId: string, payload: { conversationId: string; agentId: string }) {
+  broadcastAgentTyping(
+    tenantId: string,
+    payload: { conversationId: string; agentId: string },
+  ) {
     this.server.to(tenantId).emit('agent.typing', payload);
   }
 
-  broadcastAgentStopTyping(tenantId: string, payload: { conversationId: string; agentId: string }) {
+  broadcastAgentStopTyping(
+    tenantId: string,
+    payload: { conversationId: string; agentId: string },
+  ) {
     this.server.to(tenantId).emit('agent.stop_typing', payload);
   }
 }

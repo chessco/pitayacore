@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { ChannelsService } from './channels.service';
 import { getTenantId } from '../../../common/tenant/tenant.middleware';
 
@@ -7,7 +15,9 @@ export class ChannelsController {
   constructor(private readonly channelsService: ChannelsService) {}
 
   @Post()
-  create(@Body() data: { name: string; provider: string; configuration?: any }) {
+  create(
+    @Body() data: { name: string; provider: string; configuration?: any },
+  ) {
     const tenantId = getTenantId();
     return this.channelsService.createChannel(tenantId, data);
   }
@@ -27,7 +37,12 @@ export class ChannelsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() data: { name?: string; defaultAgentId?: string | null; configuration?: any }
+    @Body()
+    data: {
+      name?: string;
+      defaultAgentId?: string | null;
+      configuration?: any;
+    },
   ) {
     const tenantId = getTenantId();
     return this.channelsService.updateChannel(tenantId, id, data);

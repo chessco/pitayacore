@@ -16,7 +16,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
   namespace: '/agent-inbox',
   cors: { origin: '*' },
 })
-export class AgentInboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class AgentInboxGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -47,19 +49,27 @@ export class AgentInboxGateway implements OnGatewayConnection, OnGatewayDisconne
 
   @SubscribeMessage('message.send')
   handleMessageSend(
-    @MessageBody() payload: { conversationId: string; content: string; tenantId: string },
+    @MessageBody()
+    payload: { conversationId: string; content: string; tenantId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.eventEmitter.emit('agent-inbox.message.send', { ...payload, socketId: client.id });
+    this.eventEmitter.emit('agent-inbox.message.send', {
+      ...payload,
+      socketId: client.id,
+    });
     return { status: 'processing' };
   }
 
   @SubscribeMessage('conversation.assign')
   handleConversationAssign(
-    @MessageBody() payload: { conversationId: string; operatorId: string; tenantId: string },
+    @MessageBody()
+    payload: { conversationId: string; operatorId: string; tenantId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.eventEmitter.emit('agent-inbox.conversation.assign', { ...payload, socketId: client.id });
+    this.eventEmitter.emit('agent-inbox.conversation.assign', {
+      ...payload,
+      socketId: client.id,
+    });
     return { status: 'processing' };
   }
 
@@ -68,7 +78,10 @@ export class AgentInboxGateway implements OnGatewayConnection, OnGatewayDisconne
     @MessageBody() payload: { conversationId: string; tenantId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.eventEmitter.emit('agent-inbox.hitl.resolve', { ...payload, socketId: client.id });
+    this.eventEmitter.emit('agent-inbox.hitl.resolve', {
+      ...payload,
+      socketId: client.id,
+    });
     return { status: 'processing' };
   }
 

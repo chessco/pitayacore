@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { DatabaseService } from '../../../common/database/database.service';
 import { VectorSearchService } from '../../vector-search/vector-search.service';
+import { AgentInboxGateway } from '../gateways/agent-inbox.gateway';
+import { WhatsappWebProvider } from '../providers/whatsapp-web/whatsapp-web.provider';
 
 @Injectable()
 export class InboxService {
@@ -9,12 +11,25 @@ export class InboxService {
 
   constructor(
     private db: DatabaseService,
-    private vectorSearch: VectorSearchService
+    private vectorSearch: VectorSearchService,
+    private inboxGateway: AgentInboxGateway,
+    private whatsappProvider: WhatsappWebProvider,
   ) {}
 
   async getConversations(tenantId: string) {
     return this.db.mysql.conversation.findMany({
-      where: { tenantId },
+      where: {
+        tenantId,
+        messages: {
+          some: {
+            NOT: {
+              content: {
+                contains: 'notification_template',
+              },
+            },
+          },
+        },
+      },
       include: {
         contact: true,
         messages: {
@@ -45,7 +60,12 @@ export class InboxService {
     });
   }
 
-  async assignConversation(tenantId: string, conversationId: string, agentId: string, humanUserId?: string) {
+  async assignConversation(
+    tenantId: string,
+    conversationId: string,
+    agentId: string,
+    humanUserId?: string,
+  ) {
     const conv = await this.db.mysql.conversation.findFirst({
       where: { id: conversationId, tenantId },
     });
@@ -78,10 +98,16 @@ export class InboxService {
   }
 
   @OnEvent('agent-inbox.message.send')
-  async handleOutboundMessage(payload: { conversationId: string; content: string; tenantId: string }) {
+  async handleOutboundMessage(payload: {
+    conversationId: string;
+    content: string;
+    tenantId: string;
+  }) {
     try {
-      this.logger.log(`Handling outbound message for conversation ${payload.conversationId}`);
-      
+      this.logger.log(
+        `Handling outbound message for conversation ${payload.conversationId}`,
+      );
+
       // Save message in MySQL
       const message = await this.db.mysql.message.create({
         data: {
@@ -90,13 +116,39 @@ export class InboxService {
           direction: 'OUTBOUND',
           messageType: 'text',
           provider: 'web',
-        }
+        },
       });
+
+      // Fetch conversation to get provider and contact
+      const conversation = await this.db.mysql.conversation.findUnique({
+        where: { id: payload.conversationId },
+        include: { contact: true },
+      });
+
+      if (conversation?.provider === 'whatsapp' && conversation.contact?.externalId) {
+        const channel = await this.db.mysql.channel.findFirst({
+          where: { tenantId: payload.tenantId, provider: 'whatsapp' }
+        });
+        if (channel) {
+          try {
+            await this.whatsappProvider.sendMessage(
+              payload.tenantId,
+              channel.id,
+              conversation.contact.externalId,
+              payload.content,
+            );
+          } catch (e) {
+            this.logger.error(`Failed to send whatsapp message for tenant ${payload.tenantId}: ${e.message}`);
+          }
+        } else {
+          this.logger.error(`No whatsapp channel found for tenant ${payload.tenantId}`);
+        }
+      }
 
       // Update conversation lastMessageAt
       await this.db.mysql.conversation.update({
         where: { id: payload.conversationId },
-        data: { lastMessageAt: new Date() }
+        data: { lastMessageAt: new Date() },
       });
 
       // Index in pgvector semantic memory
@@ -105,17 +157,36 @@ export class InboxService {
         message.id,
         payload.conversationId,
         payload.content,
-        'assistant'
+        'assistant',
       );
 
-      this.logger.log(`Successfully stored and indexed outbound message ${message.id}`);
+      // Broadcast to inbox WebSocket
+      this.inboxGateway.broadcastNewMessage(payload.tenantId, {
+        id: message.id,
+        conversationId: payload.conversationId,
+        content: payload.content,
+        direction: 'OUTBOUND',
+        provider: 'web',
+        senderId: 'Operador',
+        createdAt: message.createdAt,
+      });
+
+      this.logger.log(
+        `Successfully stored and indexed outbound message ${message.id}`,
+      );
     } catch (error) {
       this.logger.error(`Failed to handle outbound message: ${error.message}`);
     }
   }
 
   @OnEvent('communication.message.received')
-  async handleInboundMessage(payload: { tenantId: string; conversationId: string; messageId: string; content: string; role: string }) {
+  async handleInboundMessage(payload: {
+    tenantId: string;
+    conversationId: string;
+    messageId: string;
+    content: string;
+    role: string;
+  }) {
     // Index inbound messages into memory too
     try {
       await this.vectorSearch.indexMemory(
@@ -123,7 +194,7 @@ export class InboxService {
         payload.messageId,
         payload.conversationId,
         payload.content,
-        payload.role
+        payload.role,
       );
       this.logger.log(`Indexed inbound message ${payload.messageId} to memory`);
     } catch (error) {

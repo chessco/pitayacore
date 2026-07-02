@@ -733,7 +733,7 @@ export function OperationalDashboard() {
           )}
 
           {AVAILABLE_MODULES.find(m => m.id === activeTab)?.component && (
-            <div className="flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 h-full">
               {(() => {
                 const ModuleComponent = AVAILABLE_MODULES.find(m => m.id === activeTab)!.component;
                 return <ModuleComponent setActiveTab={setActiveTab} />;

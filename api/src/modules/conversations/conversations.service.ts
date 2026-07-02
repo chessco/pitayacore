@@ -228,7 +228,8 @@ export class ConversationsService {
         tenantId,
         OR: [{ userId: phone }, { externalId: phone }],
       },
-      include: { messagesOld: {
+      include: {
+        messagesOld: {
           orderBy: { createdAt: 'asc' },
         },
       },

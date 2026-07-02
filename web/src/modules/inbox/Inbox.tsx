@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { useTenant } from '../../contexts/TenantContext';
 import { io, Socket } from 'socket.io-client';
 
@@ -9,6 +10,22 @@ import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
 import { InboxActionPanel } from './components/InboxActionPanel';
 import { KnowledgeBaseModal } from './components/KnowledgeBaseModal';
+
+function formatSnippetText(str: string): string {
+  if (typeof str !== 'string') return str;
+  const trimmed = str.trim().replace(/\s/g, '');
+  const isRawBase64 = 
+    trimmed.startsWith('/9j/') || 
+    trimmed.startsWith('iVBORw0') || 
+    trimmed.startsWith('R0lGOD') || 
+    trimmed.startsWith('UklGR');
+  const isDataUri = trimmed.startsWith('data:image/');
+  
+  if ((isRawBase64 && trimmed.length > 100) || isDataUri) {
+    return '📷 Imagen';
+  }
+  return str;
+}
 
 export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const { selectedTenant, flowApiKey } = useTenant();
@@ -51,6 +68,11 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
+  const activeConversationIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   // Computed properties
   const activeConversation = conversations.find(c => c.id === activeConversationId);
@@ -120,21 +142,7 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
     if (!inputText.trim() || !activeConversationId) return;
     const tid = selectedTenant?.id || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
     
-    // Add locally for optimistic UI
-    const newMessage = {
-      id: Date.now().toString(),
-      conversationId: activeConversationId,
-      content: inputText,
-      role: 'assistant',
-      direction: 'OUTBOUND',
-      createdAt: new Date().toISOString()
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setMessageCache(prev => ({
-      ...prev,
-      [activeConversationId]: [...(prev[activeConversationId] || []), newMessage]
-    }));
+
     
     // Send via socket OR API based on what's available
     if (socketRef.current?.connected) {
@@ -190,7 +198,7 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
         
         let filtered = data.map((c: any) => {
           // Normalize legacy and omnichannel representations
-          const rawId = c.userId || c.contact?.displayName || c.contact?.name || c.contactId || c.externalId || 'Anónimo';
+          const rawId = c.userId || c.contact?.displayName || c.contact?.name || c.contact?.phoneNumber || c.contact?.externalId || c.contactId || c.externalId || 'Anónimo';
           const isAnon = String(rawId).startsWith('anon-');
           const metadataName = c.metadata?.userName;
           const shortId = String(rawId).split('-')[1]?.substring(0, 5) || '';
@@ -201,13 +209,20 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
             ...c,
             userId: displayName,
             updatedAt: c.updatedAt || new Date().toISOString(),
-            snippet: c.messages?.[0]?.content || "Nueva conversación"
+            snippet: formatSnippetText(c.messages?.[0]?.content || c.snippet || "Nueva conversación")
           };
         });
 
         if (role === 'operator' && userEmail) {
           filtered = filtered.filter((c: any) => !c.assignedTo || c.assignedTo?.email === userEmail || c.assignedAgentId === userEmail);
         }
+
+        // Sort by most recent first
+        filtered.sort((a: any, b: any) => {
+          const dateA = new Date(a.lastMessageAt || a.updatedAt).getTime();
+          const dateB = new Date(b.lastMessageAt || b.updatedAt).getTime();
+          return dateB - dateA;
+        });
 
         setConversations(filtered);
         if (filtered.length > 0 && !activeConversationId) {
@@ -239,25 +254,27 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
         return { ...prev, [newMsg.conversationId]: [...convMsgs, mappedMsg] };
       });
 
-      setActiveConversationId(currentActiveId => {
-        if (newMsg.conversationId === currentActiveId) {
-          setMessages(prev => {
-            if (prev.find(m => m.id === newMsg.id)) return prev;
-            return [...prev, mappedMsg];
-          });
-        }
-        return currentActiveId;
-      });
+      const currentActiveId = activeConversationIdRef.current;
+      if (newMsg.conversationId === currentActiveId) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === newMsg.id)) return prev;
+          return [...prev, mappedMsg];
+        });
+      }
 
       setConversations(prev => {
         const exists = prev.find(c => c.id === newMsg.conversationId);
         if (exists) {
-          return [{ ...exists, snippet: newMsg.content, updatedAt: new Date().toISOString() }, ...prev.filter(c => c.id !== newMsg.conversationId)];
+          return [{ ...exists, snippet: formatSnippetText(newMsg.content), updatedAt: new Date().toISOString() }, ...prev.filter(c => c.id !== newMsg.conversationId)];
         } else {
+          // Skip displaying new conversations if the incoming message is just a notification template
+          if (newMsg.content && newMsg.content.includes('notification_template')) {
+            return prev;
+          }
           const newConv = {
             id: newMsg.conversationId,
             userId: newMsg.role === 'user' ? (newMsg.senderId || 'Nuevo Usuario') : 'Usuario',
-            snippet: newMsg.content,
+            snippet: formatSnippetText(newMsg.content),
             updatedAt: new Date().toISOString(),
             provider: newMsg.provider || 'web',
             messages: [newMsg]
@@ -348,6 +365,47 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
           activeConversation={activeConversation}
           handleResolveConversation={handleToggleHitl}
           hitlEscalated={hitlEscalated}
+          isAiAnalysisOpen={isAiAnalysisOpen}
+          handleUpdateContactName={async (newName: string) => {
+            if (!activeConversation || !activeConversation.contactId) return;
+            const tid = selectedTenant?.id || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
+            try {
+              await fetch(`${apiUrl}/api/crm/contacts/${activeConversation.contactId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-tenant-id': tid, 'x-api-key': flowApiKey },
+                body: JSON.stringify({ displayName: newName })
+              });
+              setConversations(prev => prev.map(c => {
+                if (c.contactId === activeConversation.contactId) {
+                  return { ...c, userId: newName, contact: { ...c.contact, displayName: newName } };
+                }
+                return c;
+              }));
+            } catch (err) {
+              console.error("Error updating contact name", err);
+            }
+          }}
+          handleToggleCopilot={() => setIsAiAnalysisOpen(!isAiAnalysisOpen)}
+          handleToggleAutopilot={async () => {
+            if (!activeConversation) return;
+            const isCurrentlyAi = !!(activeConversation.metadata?.humanActiveUntil && new Date(activeConversation.metadata.humanActiveUntil) <= new Date());
+            
+            // If it's currently AI (ON), we turn AI OFF (human active until future)
+            // If it's currently OFF, we turn AI ON (human active until past)
+            const newDate = isCurrentlyAi ? "2099-12-31T23:59:59.999Z" : new Date().toISOString();
+            
+            const tid = selectedTenant?.id || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
+            try {
+              await fetch(`${apiUrl}/api/agent-inbox/conversations/${activeConversation.id}/metadata`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-tenant-id': tid, 'x-api-key': flowApiKey },
+                body: JSON.stringify({ humanActiveUntil: newDate })
+              });
+              setConversations(prev => prev.map(c => c.id === activeConversation.id ? { ...c, metadata: { ...c.metadata, humanActiveUntil: newDate } } : c));
+            } catch (err) {
+              console.error("Error toggling autopilot", err);
+            }
+          }}
         />
         
         <MessageList 
@@ -365,13 +423,17 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
         />
       </div>
 
-      <InboxActionPanel 
-        isAnalyzing={isAnalyzing}
-        analysis={analysis}
-        leadJourney={leadJourney}
-        setIsAiAnalysisOpen={setIsAiAnalysisOpen}
-        setInputText={setInputText}
-      />
+      <AnimatePresence>
+        {isAiAnalysisOpen && (
+          <InboxActionPanel 
+            isAnalyzing={isAnalyzing}
+            analysis={analysis}
+            leadJourney={leadJourney}
+            setIsAiAnalysisOpen={setIsAiAnalysisOpen}
+            setInputText={setInputText}
+          />
+        )}
+      </AnimatePresence>
 
       <KnowledgeBaseModal 
         isOpen={isKbModalOpen}

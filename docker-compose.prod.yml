@@ -38,6 +38,7 @@ services:
     networks:
       - pitayacode_net
     volumes:
+      - pitaya_storage:/app/.storage
       - ./api/public/uploads:/app/public/uploads
     depends_on:
       - mysql
@@ -50,3 +51,4 @@ networks:
 volumes:
   pitaya_mysql_data:
   pitaya_postgres_data:
+  pitaya_storage:

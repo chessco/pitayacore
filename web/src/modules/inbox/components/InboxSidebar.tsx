@@ -24,6 +24,7 @@ interface Conversation {
   updatedAt: string;
   snippet?: string;
   metadata?: any;
+  contact?: any;
 }
 
 interface InboxSidebarProps {
@@ -72,16 +73,16 @@ export function InboxSidebar({
           animate={{ width: 320, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="border-r border-slate-700/50 bg-slate-800/30 flex flex-col overflow-hidden relative backdrop-blur-sm"
+          className="border-r border-[#e9edef] bg-white flex flex-col overflow-hidden relative"
         >
-          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between sticky top-0 bg-slate-900/80 z-10 backdrop-blur-md">
-            <h2 className="font-semibold text-slate-200 flex items-center gap-2">
+          <div className="p-4 border-b border-[#e9edef] flex items-center justify-between sticky top-0 bg-[#f0f2f5] z-10">
+            <h2 className="font-semibold text-[#111b21] flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-indigo-400" />
               Inbox
             </h2>
             <button 
               onClick={() => setIsSidebarCollapsed(true)}
-              className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-1.5 hover:bg-black/5 rounded-lg text-[#54656f] hover:text-[#111b21] transition-colors"
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
@@ -96,28 +97,29 @@ export function InboxSidebar({
             ) : (
               conversations.map((c) => {
                 const isActive = activeConversationId === c.id;
-                const isHumanAssigned = !!c.metadata?.humanActiveUntil || c.assignedAgentId?.startsWith('usr_');
+                const isAiAssigned = !!(c.metadata?.humanActiveUntil && new Date(c.metadata.humanActiveUntil) <= new Date());
+                const isHumanAssigned = !isAiAssigned || c.assignedAgentId?.startsWith('usr_');
                 
                 return (
                   <div 
                     key={c.id}
                     onClick={() => setActiveConversationId(c.id)}
-                    className={`p-4 border-b border-slate-700/30 cursor-pointer transition-all duration-200 group relative
+                    className={`p-4 border-b border-[#e9edef] cursor-pointer transition-all duration-200 group relative
                       ${isActive 
-                        ? 'bg-indigo-500/10 border-l-2 border-l-indigo-400' 
-                        : 'hover:bg-slate-700/30 border-l-2 border-l-transparent'
+                        ? 'bg-[#f0f2f5]' 
+                        : 'hover:bg-[#f5f6f6]'
                       }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2 truncate">
                         {getProviderIcon(c.provider)}
-                        <span className={`font-medium truncate ${isActive ? 'text-indigo-300' : 'text-slate-200'}`}>
-                          {c.userId}
+                        <span className={`font-medium truncate ${isActive ? 'text-[#111b21]' : 'text-[#111b21]'}`}>
+                          {c.contact?.displayName || c.contact?.name || c.userId}
                         </span>
                       </div>
                       
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] text-slate-500 whitespace-nowrap flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded-full border border-slate-700/50">
+                        <span className="text-[10px] text-[#667781] whitespace-nowrap flex items-center gap-1 bg-[#f0f2f5] px-1.5 py-0.5 rounded-full border border-[#e9edef]">
                           <Clock className="w-3 h-3" />
                           {c.lastMessageAt || c.updatedAt ? formatDistanceToNow(new Date(c.lastMessageAt || c.updatedAt), { addSuffix: true, locale: es }) : 'ahora'}
                         </span>
@@ -136,7 +138,7 @@ export function InboxSidebar({
                       </span>
                     </div>
                     
-                    <p className={`text-sm line-clamp-2 ${isActive ? 'text-indigo-200/70' : 'text-slate-400 group-hover:text-slate-300'} transition-colors`}>
+                    <p className={`text-sm line-clamp-2 text-[#667781] transition-colors`}>
                       {c.snippet || "Nueva conversación"}
                     </p>
                   </div>
@@ -148,10 +150,10 @@ export function InboxSidebar({
       )}
       
       {isSidebarCollapsed && (
-        <div className="w-16 border-r border-slate-700/50 bg-slate-800/30 flex flex-col items-center py-4">
+        <div className="w-16 border-r border-[#e9edef] bg-white flex flex-col items-center py-4">
           <button 
             onClick={() => setIsSidebarCollapsed(false)}
-            className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors mb-4"
+            className="p-2 hover:bg-black/5 rounded-lg text-[#54656f] hover:text-[#111b21] transition-colors mb-4"
           >
             <PanelLeftOpen className="w-5 h-5" />
           </button>
@@ -163,7 +165,7 @@ export function InboxSidebar({
                   setActiveConversationId(c.id);
                   setIsSidebarCollapsed(false);
                 }}
-                className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${activeConversationId === c.id ? 'bg-indigo-500/20 text-indigo-400' : 'hover:bg-slate-700/50 text-slate-400'}`}
+                className={`w-full aspect-square rounded-xl flex items-center justify-center transition-all ${activeConversationId === c.id ? 'bg-[#f0f2f5] text-[#111b21]' : 'hover:bg-[#f5f6f6] text-[#54656f]'}`}
                 title={c.userId}
               >
                 {getProviderIcon(c.provider)}

@@ -163,7 +163,11 @@ export class VectorSearchService {
   /**
    * Semantic search across a tenant's conversation memory
    */
-  async searchMemory(tenantId: string, query: string, limit = 5): Promise<any[]> {
+  async searchMemory(
+    tenantId: string,
+    query: string,
+    limit = 5,
+  ): Promise<any[]> {
     const embedding = await this.generateEmbedding(query);
     const vectorStr = `[${embedding.join(',')}]`;
 
@@ -180,7 +184,7 @@ export class VectorSearchService {
       limit,
     );
 
-    return records.map(record => ({
+    return records.map((record) => ({
       score: 1 - record.distance,
       messageId: record.refId,
       content: record.content,

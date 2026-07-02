@@ -20,5 +20,10 @@ export interface CommunicationProvider {
    * @param to The recipient identifier (e.g., phone number)
    * @param content The text content of the message
    */
-  sendMessage(tenantId: string, channelId: string, to: string, content: string): Promise<any>;
+  sendMessage(
+    tenantId: string,
+    channelId: string,
+    to: string,
+    content: string,
+  ): Promise<any>;
 }

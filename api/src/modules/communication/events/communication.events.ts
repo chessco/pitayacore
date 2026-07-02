@@ -12,7 +12,7 @@ export class MessageReceivedEvent {
     public readonly channelId: string,
     public readonly from: string,
     public readonly content: string,
-    public readonly rawMessage: any
+    public readonly rawMessage: any,
   ) {}
 }
 
@@ -21,7 +21,11 @@ export class SessionStatusEvent {
     public readonly tenantId: string,
     public readonly provider: string,
     public readonly channelId: string,
-    public readonly status: 'AUTHENTICATING' | 'READY' | 'DISCONNECTED' | 'QR_READY',
-    public readonly data?: any
+    public readonly status:
+      | 'AUTHENTICATING'
+      | 'READY'
+      | 'DISCONNECTED'
+      | 'QR_READY',
+    public readonly data?: any,
   ) {}
 }

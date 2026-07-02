@@ -70,7 +70,10 @@ export class AnalyticsController {
         where: hitlFilters,
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: { messageOld: { include: { conversationOld: { include: { tenant: true } } } },
+        include: {
+          messageOld: {
+            include: { conversationOld: { include: { tenant: true } } },
+          },
         },
       }),
       this.db.mysql.auditLog.findMany({

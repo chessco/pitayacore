@@ -28,7 +28,8 @@ export class ChatSessionsService {
     return this.db.mysql.conversationOld.findMany({
       where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
-      include: { messagesOld: {
+      include: {
+        messagesOld: {
           orderBy: { createdAt: 'asc' },
         },
       },

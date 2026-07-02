@@ -1239,7 +1239,7 @@ model Conversation {
   id              String    @id @default(uuid())
   tenantId        String
   provider        String    @default("")
-  contactId       String    @default("")
+  contactId       String?
   assignedAgentId String?
   status          String    @default("OPEN")
   priority        String    @default("MEDIUM")
@@ -1250,7 +1250,7 @@ model Conversation {
   updatedAt       DateTime  @updatedAt
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
-  contact      Contact                  @relation(fields: [contactId], references: [id])
+  contact      Contact?                 @relation(fields: [contactId], references: [id])
   messages     Message[]
   assignments  ConversationAssignment[]
 

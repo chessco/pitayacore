@@ -22,7 +22,7 @@ export class FilesystemSessionStorageProvider implements SessionStorageProvider 
       this.baseStoragePath,
       provider,
       `tenant_${tenantId}`,
-      `${provider}-web`
+      `${provider}-web`,
     );
 
     // Ensure directory exists

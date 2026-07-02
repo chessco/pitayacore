@@ -35,7 +35,7 @@ import { ChannelsModule } from './channels/channels.module';
     FilesystemSessionStorageProvider,
     CommunicationEventBusService,
     WhatsappWebProvider,
-    
+
     // Core Services
     SessionService,
     ContactService,

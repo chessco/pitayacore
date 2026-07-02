@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Body,
-  Headers,
-} from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, Headers } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { getTenantId } from '../../../common/tenant/tenant.middleware';
 
@@ -35,6 +28,11 @@ export class InboxController {
     @Headers('x-tenant-id') tenantIdHeader: string,
   ) {
     const tenantId = tenantIdHeader || getTenantId();
-    return this.inboxService.assignConversation(tenantId, id, body.agentId, body.humanUserId);
+    return this.inboxService.assignConversation(
+      tenantId,
+      id,
+      body.agentId,
+      body.humanUserId,
+    );
   }
 }

@@ -18,7 +18,8 @@ export class VisionCampaignsService {
     const conversations = await this.db.mysql.conversationOld.findMany({
       where: { tenantId: resolvedTenantId, source: 'CREATIVE_CHAT' },
       orderBy: { createdAt: 'desc' },
-      include: { messagesOld: {
+      include: {
+        messagesOld: {
           where: { role: 'ai' },
           orderBy: { createdAt: 'desc' },
           take: 1,

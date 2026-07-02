@@ -63,11 +63,13 @@ export class VisionDashboardService {
     // Recent Campaigns
     // We fetch the latest approved campaigns.
     // To do this efficiently, we'll fetch recently updated sessions and filter.
-    const recentCreativeSessions = await this.db.mysql.conversationOld.findMany({
-      where: { tenantId, source: 'CREATIVE_CHAT' },
-      orderBy: { updatedAt: 'desc' },
-      take: 20, // Fetch a bit more to ensure we get some campaigns
-    });
+    const recentCreativeSessions = await this.db.mysql.conversationOld.findMany(
+      {
+        where: { tenantId, source: 'CREATIVE_CHAT' },
+        orderBy: { updatedAt: 'desc' },
+        take: 20, // Fetch a bit more to ensure we get some campaigns
+      },
+    );
 
     const recentCampaigns = [];
     for (const session of recentCreativeSessions) {

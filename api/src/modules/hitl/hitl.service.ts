@@ -10,9 +10,9 @@ export class HitlService {
     const tenantId = getTenantId();
     return this.db.mysql.hitlAction.findMany({
       where: { tenantId, status: 'PENDING' },
-      include: { messageOld: {
-          include: { conversationOld: true,
-          },
+      include: {
+        messageOld: {
+          include: { conversationOld: true },
         },
       },
       orderBy: { createdAt: 'desc' },

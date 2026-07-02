@@ -29,9 +29,9 @@ export function MessageInput({
       )}
 
       <div className="p-3 bg-[#f0f2f5] border-t border-border flex items-end gap-2 relative z-20">
-        <div className="flex items-center gap-1 text-slate-500 pb-1">
-          <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><Smile size={22} /></button>
-          <button className="p-2 hover:bg-slate-200 rounded-full transition-colors"><Plus size={22} /></button>
+        <div className="flex items-center gap-1 text-[#54656f] pb-1">
+          <button className="p-2 hover:bg-black/5 rounded-full transition-colors"><Smile size={24} /></button>
+          <button className="p-2 hover:bg-black/5 rounded-full transition-colors"><Plus size={24} /></button>
         </div>
         <div className="flex-1 relative pb-0.5">
           <input 
@@ -40,15 +40,15 @@ export function MessageInput({
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Escribe un mensaje..."
-            className="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm focus:ring-0 placeholder-slate-400 shadow-sm"
+            className="w-full bg-white border-none rounded-lg px-4 py-2.5 text-[15px] text-[#111b21] focus:ring-0 placeholder-[#8696a0] shadow-sm"
           />
         </div>
         <button 
           onClick={handleSendMessage} 
           disabled={!inputText.trim()}
-          className={`w-11 h-11 flex items-center justify-center rounded-full transition-all shadow-md ${inputText.trim() ? 'bg-emerald-500 text-white hover:bg-emerald-600 scale-105' : 'bg-white text-slate-400'}`}
+          className={`w-11 h-11 flex items-center justify-center rounded-full transition-all ${inputText.trim() ? 'text-[#00a884] hover:bg-black/5' : 'text-[#8696a0]'}`}
         >
-          <Send size={20} className={inputText.trim() ? 'translate-x-0.5' : ''} />
+          <Send size={24} className={inputText.trim() ? 'translate-x-0.5' : ''} />
         </button>
       </div>
     </>

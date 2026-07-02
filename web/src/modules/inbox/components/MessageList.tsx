@@ -1,4 +1,4 @@
-import { RefreshCw, CheckCircle, Zap } from 'lucide-react';
+import { RefreshCw, CheckCheck, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AnimatePresence } from 'motion/react';
 
@@ -11,47 +11,94 @@ interface MessageProps {
   provider?: string;
 }
 
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
+
+function isBase64Image(str: string): boolean {
+  if (typeof str !== 'string') return false;
+  const trimmed = str.trim().replace(/\s/g, '');
+  const isRawBase64 = 
+    trimmed.startsWith('/9j/') || 
+    trimmed.startsWith('iVBORw0') || 
+    trimmed.startsWith('R0lGOD') || 
+    trimmed.startsWith('UklGR');
+  const isDataUri = trimmed.startsWith('data:image/');
+  return (isRawBase64 && trimmed.length > 100) || isDataUri;
+}
+
+function getBase64ImageUrl(str: string): string {
+  const trimmed = str.trim().replace(/\s/g, '');
+  if (trimmed.startsWith('data:image/')) return trimmed;
+  
+  let mimeType = 'image/jpeg';
+  if (trimmed.startsWith('iVBORw0')) {
+    mimeType = 'image/png';
+  } else if (trimmed.startsWith('R0lGOD')) {
+    mimeType = 'image/gif';
+  } else if (trimmed.startsWith('UklGR')) {
+    mimeType = 'image/webp';
+  }
+  
+  return `data:${mimeType};base64,${trimmed}`;
+}
+
 export function Message({ text, time, isUser, isAI, avatar, provider }: MessageProps) {
   const isIncoming = isUser;
   const safeText = typeof text === 'string' ? text : (typeof text === 'object' ? JSON.stringify(text) : String(text || ''));
   const safeTime = time || '--:--';
+  const isImg = isBase64Image(safeText);
 
   return (
-    <div className={`flex items-end gap-2.5 mb-3 ${isIncoming ? 'flex-row' : 'flex-row-reverse'}`}>
-      {isIncoming && (
-        <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden shrink-0 shadow-sm border-2 border-white ring-1 ring-slate-200">
-          <img src={avatar || `https://ui-avatars.com/api/?name=Contact&background=random`} alt="avatar" className="w-full h-full object-cover" />
-        </div>
-      )}
-      <div className={`relative max-w-[85%] sm:max-w-[70%] p-3 px-4 rounded-2xl text-[13px] sm:text-[14.5px] shadow-sm transition-all hover:shadow-md ${isIncoming ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' : 'bg-[#e7fed6] text-slate-800 rounded-tr-none border border-[#d3eab8]'}`}>
-        <div className={`absolute top-0 w-2 h-3 ${isIncoming ? '-left-2 bg-white [clip-path:polygon(100%_0,0_0,100%_100%)] border-l border-slate-100' : '-right-2 bg-[#e7fed6] [clip-path:polygon(0_0,100%_0,0_100%)] border-r border-[#d3eab8]'}`} />
-        <div className="flex flex-col gap-1">
-          <div className="markdown-content leading-relaxed font-medium">
-            <ReactMarkdown
-              components={{
-                p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
-                ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-1.5" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-1.5" {...props} />,
-                li: ({node, ...props}) => <li className="mb-1" {...props} />,
-              }}
-            >
-              {safeText}
-            </ReactMarkdown>
+    <div className={`flex items-start gap-2 mb-1 ${isIncoming ? 'flex-row' : 'flex-row-reverse'}`}>
+      <div className={`relative max-w-[85%] sm:max-w-[70%] px-2 pt-1.5 pb-2 rounded-lg text-[13px] sm:text-[14.2px] shadow-sm ${isIncoming ? 'bg-white text-[#111b21] rounded-tl-none border-none ml-2 mt-1' : 'bg-[#d9fdd3] text-[#111b21] rounded-tr-none border-none mr-2 mt-1'}`}>
+        <div className={`absolute top-0 w-2 h-3 ${isIncoming ? '-left-2 bg-white [clip-path:polygon(100%_0,0_0,100%_100%)]' : '-right-2 bg-[#d9fdd3] [clip-path:polygon(0_0,100%_0,0_100%)]'}`} />
+        <div className="flex flex-col">
+          <div className="markdown-content leading-snug break-words pb-3">
+            {isImg ? (
+              <img 
+                src={getBase64ImageUrl(safeText)} 
+                alt="Imagen de WhatsApp" 
+                className="max-w-full max-h-[300px] sm:max-h-[400px] rounded-lg my-1 cursor-pointer object-contain hover:opacity-90 transition-opacity"
+                onClick={() => {
+                  const newWindow = window.open();
+                  if (newWindow) {
+                    newWindow.document.write(`<img src="${getBase64ImageUrl(safeText)}" style="max-w:100%; max-height:100vh; display:block; margin:auto;" />`);
+                  }
+                }}
+              />
+            ) : (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                components={{
+                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc ml-5 my-2" {...props} />,
+                  ol: ({node, ...props}) => <ol className="list-decimal ml-5 my-2" {...props} />,
+                  li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                  a: ({node, ...props}) => (
+                    <a 
+                      className="text-blue-600 hover:text-blue-800 hover:underline break-all font-semibold" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      {...props} 
+                    />
+                  ),
+                }}
+              >
+                {safeText}
+              </ReactMarkdown>
+            )}
           </div>
-          <div className="flex items-center justify-end gap-1.5 mt-0.5">
-            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-tighter opacity-80">{safeTime}</span>
+          <div className="flex items-center justify-end gap-1 absolute bottom-1 right-1.5">
+            <span className="text-[10px] text-[#667781] leading-none mt-0.5">{safeTime}</span>
             {!isIncoming && (
-              <div className="flex -space-x-1.5">
-                <CheckCircle size={11} className="text-brand-blue" />
-                <CheckCircle size={11} className="text-brand-blue" />
-              </div>
+              <CheckCheck size={14} className="text-[#53bdeb] ml-0.5" />
             )}
           </div>
         </div>
       </div>
       {!isIncoming && isAI && (
-        <div className="w-6 h-6 rounded-full bg-brand-blue flex items-center justify-center shadow-lg ring-2 ring-white transform translate-y-1">
-          <Zap size={12} className="text-white fill-white" />
+        <div className="w-5 h-5 mt-2 rounded-full bg-brand-blue flex items-center justify-center shadow-sm">
+          <Zap size={10} className="text-white fill-white" />
         </div>
       )}
     </div>
@@ -67,20 +114,19 @@ interface MessageListProps {
 
 export function MessageList({ messages, isMessagesLoading, activeConversation, messagesEndRef }: MessageListProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-4 bg-[url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg')] bg-cover bg-center bg-fixed scroll-smooth relative">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] pointer-events-none" />
-      <div className="relative z-10 flex flex-col justify-end min-h-full">
+    <div className="flex-1 overflow-y-auto p-4 bg-[#efeae2] bg-[url('https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png')] bg-repeat scroll-smooth relative opacity-95">
+      <div className="relative z-10 flex flex-col min-h-full">
         {isMessagesLoading ? (
           <div className="flex-1 flex flex-col justify-center items-center gap-4 text-slate-400">
             <RefreshCw size={24} className="animate-spin text-brand-blue" />
             <p className="text-[10px] font-black uppercase tracking-widest">Cargando Historial...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex-1 flex justify-center items-center text-slate-400 text-sm font-medium">Esperando mensajes...</div>
+          <div className="flex-1 flex justify-center items-center text-[#54656f] text-sm font-medium">Esperando mensajes...</div>
         ) : (
           <>
             <div className="flex justify-center my-4">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-[#dcf8c6]/50 px-3 py-1 rounded-lg backdrop-blur-sm">Cifrado de extremo a extremo</span>
+              <span className="text-[11px] font-medium text-[#54656f] bg-[#ffeecd] px-3 py-1.5 rounded-lg shadow-sm">Los mensajes están cifrados de extremo a extremo. Nadie fuera de este chat, ni siquiera PitayaCore, puede leerlos ni escucharlos.</span>
             </div>
             {messages.map((msg: any, idx: number) => {
               const currentMsgDate = new Date(msg.createdAt).toLocaleDateString();
@@ -91,13 +137,13 @@ export function MessageList({ messages, isMessagesLoading, activeConversation, m
                 <div key={msg.id || idx}>
                   {showDateSeparator && (
                     <div className="flex justify-center my-6">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-white/50 px-4 py-1.5 rounded-full border border-slate-100 shadow-sm backdrop-blur-sm">
+                      <span className="text-[11px] font-medium text-[#54656f] bg-white px-3 py-1.5 rounded-lg shadow-sm">
                         {(() => {
                           const today = new Date().toLocaleDateString();
                           const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
-                          if (currentMsgDate === today) return 'Hoy';
-                          if (currentMsgDate === yesterday) return 'Ayer';
-                          return new Date(msg.createdAt).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+                          if (currentMsgDate === today) return 'HOY';
+                          if (currentMsgDate === yesterday) return 'AYER';
+                          return new Date(msg.createdAt).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
                         })()}
                       </span>
                     </div>
