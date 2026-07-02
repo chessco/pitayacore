@@ -13,12 +13,8 @@ export function Overview({ setActiveSubTab }: OverviewProps) {
   const { documents, isLoading: loadingDocs } = useWorkspaceDocuments();
   const { ideas, isLoading: loadingIdeas } = useWorkspaceIdeas();
 
-  // Get top 3 items sorted by updatedAt
-  const recentNotes = notes
-    ? [...notes]
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, 3)
-    : [];
+  // Get top 3 items sorted by score (relevance) first (backend order)
+  const recentNotes = notes ? notes.slice(0, 3) : [];
 
   const recentDocs = documents
     ? [...documents]
@@ -109,7 +105,7 @@ export function Overview({ setActiveSubTab }: OverviewProps) {
                 </button>
               </div>
             ) : (
-              recentNotes.map((note) => (
+              recentNotes.map((note: any) => (
                 <div
                   key={note.id}
                   onClick={() => setActiveSubTab('notes')}
