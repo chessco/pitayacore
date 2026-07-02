@@ -53,7 +53,7 @@ export class WhatsappWebProvider
     );
 
     // Clean up Chromium singleton locks left from previous containers/crashes
-    const lockPath = path.join(dataPath, 'SingletonLock');
+    const lockPath = path.join(dataPath, `session-channel_${channelId}`, 'SingletonLock');
     try {
       fs.unlinkSync(lockPath);
       this.logger.log(`Removed Chromium SingletonLock at ${lockPath}`);

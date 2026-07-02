@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { IdeasService } from './ideas.service';
 import { CreateIdeaDto, UpdateIdeaDto } from './dto/ideas.dto';
+import { getTenantId } from '../../../common/tenant/tenant.middleware';
 
 // TODO: Import the specific auth guard
 
@@ -19,42 +20,41 @@ export class IdeasController {
 
   @Post()
   create(@Request() req: any, @Body() createIdeaDto: CreateIdeaDto) {
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     const userId = req.user.id;
     return this.ideasService.create(tenantId, userId, createIdeaDto);
   }
 
   @Post('generate-ai')
-  generateWithAI(@Request() req: any, @Body() body: { prompt?: string }) {
-    const tenantId = req.user.tenantId;
+  generateWithAI(@Body() body: { prompt?: string }) {
+    const tenantId = getTenantId();
     return this.ideasService.generateWithAI(tenantId, body.prompt || '');
   }
 
   @Get()
-  findAll(@Request() req: any) {
-    const tenantId = req.user.tenantId;
+  findAll() {
+    const tenantId = getTenantId();
     return this.ideasService.findAll(tenantId);
   }
 
   @Get(':id')
-  findOne(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  findOne(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.ideasService.findOne(tenantId, id);
   }
 
   @Patch(':id')
   update(
-    @Request() req: any,
     @Param('id') id: string,
     @Body() updateIdeaDto: UpdateIdeaDto,
   ) {
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     return this.ideasService.update(tenantId, id, updateIdeaDto);
   }
 
   @Delete(':id')
-  remove(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  remove(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.ideasService.remove(tenantId, id);
   }
 }

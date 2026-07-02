@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto/notes.dto';
+import { getTenantId } from '../../../common/tenant/tenant.middleware';
 
 // TODO: Import the specific auth and permissions guard for PitayaCore
 
@@ -20,36 +21,35 @@ export class NotesController {
 
   @Post()
   create(@Request() req: any, @Body() createNoteDto: CreateNoteDto) {
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     const userId = req.user.id;
     return this.notesService.create(tenantId, userId, createNoteDto);
   }
 
   @Get()
-  findAll(@Request() req: any) {
-    const tenantId = req.user.tenantId;
+  findAll() {
+    const tenantId = getTenantId();
     return this.notesService.findAll(tenantId);
   }
 
   @Get(':id')
-  findOne(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  findOne(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.notesService.findOne(tenantId, id);
   }
 
   @Patch(':id')
   update(
-    @Request() req: any,
     @Param('id') id: string,
     @Body() updateNoteDto: UpdateNoteDto,
   ) {
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     return this.notesService.update(tenantId, id, updateNoteDto);
   }
 
   @Delete(':id')
-  remove(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  remove(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.notesService.remove(tenantId, id);
   }
 }

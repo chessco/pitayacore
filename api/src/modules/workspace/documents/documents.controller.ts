@@ -17,6 +17,7 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto/documents.dto';
+import { getTenantId } from '../../../common/tenant/tenant.middleware';
 
 @Controller('workspace/documents')
 export class DocumentsController {
@@ -52,7 +53,7 @@ export class DocumentsController {
     if (!file) {
       throw new BadRequestException('No se ha proporcionado ningún archivo');
     }
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     const userId = req.user.id;
 
     // Populate DTO fields from the uploaded file metadata
@@ -67,30 +68,29 @@ export class DocumentsController {
   }
 
   @Get()
-  findAll(@Request() req: any) {
-    const tenantId = req.user.tenantId;
+  findAll() {
+    const tenantId = getTenantId();
     return this.documentsService.findAll(tenantId);
   }
 
   @Get(':id')
-  findOne(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  findOne(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.documentsService.findOne(tenantId, id);
   }
 
   @Patch(':id')
   update(
-    @Request() req: any,
     @Param('id') id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
   ) {
-    const tenantId = req.user.tenantId;
+    const tenantId = getTenantId();
     return this.documentsService.update(tenantId, id, updateDocumentDto);
   }
 
   @Delete(':id')
-  remove(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user.tenantId;
+  remove(@Param('id') id: string) {
+    const tenantId = getTenantId();
     return this.documentsService.remove(tenantId, id);
   }
 }
