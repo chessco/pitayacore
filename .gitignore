@@ -188,3 +188,6 @@ temp_*.*
 fix*.*
 pristine*.*
 .opencodeignore
+
+# opencode MCP config with secrets
+opencode.json

@@ -49,6 +49,7 @@ import { DealsBoard } from './crm/DealsBoard';
 import { LeadScoring } from './crm/LeadScoring';
 import { CRMOverview } from './crm/CRMOverview';
 import { ModuleManager } from './system/ModuleManager';
+import SocialSuiteView from './social/SocialSuiteView';
 
 import { IdentityPlatform } from './identity/IdentityPlatform';
 
@@ -332,5 +333,15 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     component: IdentityPlatform,
     description: 'Plataforma de identidad RBAC: roles, permisos, contextos y verticales.',
     category: 'sistema'
+  },
+  {
+    id: 'social_suite',
+    label: 'Social Suite',
+    icon: MessageSquareQuote,
+    component: SocialSuiteView,
+    description: 'AI-powered Social Operating System para marcas y campañas.',
+    category: 'avanzado',
+    suiteId: 'social',
+    featureId: 'SOCIAL_SUITE'
   }
 ];

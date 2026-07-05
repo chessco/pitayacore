@@ -59,6 +59,12 @@ model Tenant {
   classrooms            Classroom[]
   organizationId        String?
   conversations         Conversation[]
+  socialBrands          SocialBrand[]
+  socialAudiences       SocialAudience[]
+  socialCampaigns       SocialCampaign[]
+  socialContentPieces   SocialContentPiece[]
+  publishingQueue       PublishingQueue[]
+  postAnalytics         PostAnalytics[]
 
   @@index([organizationId])
 }
@@ -1302,3 +1308,157 @@ model ConversationAssignment {
   
   @@index([conversationId])
 }
+
+model SocialBrand {
+  id              String      @id @default(uuid())
+  tenantId        String
+  name            String
+  industry        String?
+  country         String?
+  language        String?
+  tone            Json?
+  personality     Json?
+  values          Json?
+  prohibitedTerms Json?
+  allowedEmojis   Json?
+  ctaStyle        String?
+  logoUrl         String?
+  brandColors     Json?
+  competitors     Json?
+  metadata        Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaigns       SocialCampaign[]
+  contentPieces   SocialContentPiece[]
+
+  @@index([tenantId])
+}
+
+model SocialAudience {
+  id            String      @id @default(uuid())
+  tenantId      String
+  name          String
+  segments      Json?
+  painPoints    Json?
+  goals         Json?
+  fears         Json?
+  emotions      Json?
+  demographics  Json?
+  psychographics Json?
+  buyerJourney  Json?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaigns     SocialCampaign[]
+
+  @@index([tenantId])
+}
+
+model SocialCampaign {
+  id              String      @id @default(uuid())
+  tenantId        String
+  brandId         String
+  name            String
+  objective       String
+  status          String
+  channels        Json?
+  startDate       DateTime?
+  endDate         DateTime?
+  frequency       String?
+  budget          Float?
+  metadata        Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  brand           SocialBrand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  audiences       SocialAudience[]
+  contentPieces   SocialContentPiece[]
+  publishingQueue PublishingQueue[]
+  postAnalytics   PostAnalytics[]
+
+  @@index([tenantId])
+  @@index([brandId])
+}
+
+model SocialContentPiece {
+  id                String          @id @default(uuid())
+  tenantId          String
+  campaignId        String?
+  brandId           String
+  contentType       String
+  title             String
+  prompt            String?         @db.Text
+  rawContent        String?         @db.Text
+  humanizedContent  String?         @db.Text
+  mediaUrls         Json?
+  status            String          @default("DRAFT")
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaign          SocialCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brand             SocialBrand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  queueItems        PublishingQueue[]
+
+  @@index([tenantId])
+  @@index([campaignId])
+  @@index([brandId])
+}
+
+model PublishingQueue {
+  id            String             @id @default(uuid())
+  tenantId      String
+  campaignId    String?
+  contentId     String
+  provider      String
+  scheduledAt   DateTime
+  publishedAt   DateTime?
+  status        String             @default("PENDING")
+  attempts      Int                @default(0)
+  error         String?            @db.Text
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaign      SocialCampaign?    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contentPiece  SocialContentPiece @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([campaignId])
+  @@index([contentId])
+  @@index([status])
+}
+
+model PostAnalytics {
+  id            String          @id @default(uuid())
+  tenantId      String
+  campaignId    String?
+  contentId     String?
+  provider      String
+  reach         Int             @default(0)
+  impressions   Int             @default(0)
+  engagement    Int             @default(0)
+  clicks        Int             @default(0)
+  ctr           Float           @default(0)
+  conversions   Int             @default(0)
+  cost          Float           @default(0)
+  roi           Float           @default(0)
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaign      SocialCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([campaignId])
+  @@index([provider])
+}
+

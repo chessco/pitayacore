@@ -506,6 +506,42 @@ export class IdentityService {
           action: 'manage',
           description: 'Manage infrastructure',
         },
+        {
+          key: 'social:admin',
+          resource: 'social',
+          action: 'admin',
+          description: 'Full social administration',
+        },
+        {
+          key: 'social:manager',
+          resource: 'social',
+          action: 'manage',
+          description: 'Manage social campaigns and assets',
+        },
+        {
+          key: 'social:editor',
+          resource: 'social',
+          action: 'edit',
+          description: 'Edit social content pieces',
+        },
+        {
+          key: 'social:analyst',
+          resource: 'social',
+          action: 'analyze',
+          description: 'Read social analytics and performance',
+        },
+        {
+          key: 'social:approver',
+          resource: 'social',
+          action: 'approve',
+          description: 'Approve social content for publishing',
+        },
+        {
+          key: 'social:publisher',
+          resource: 'social',
+          action: 'publish',
+          description: 'Publish content to social networks',
+        },
       ];
 
       for (const perm of permissions) {
@@ -610,6 +646,36 @@ export class IdentityService {
           name: 'Supervisor',
           slug: 'supervisor',
           description: 'Aquaculture: supervises operations',
+        },
+        {
+          name: 'Social Admin',
+          slug: 'social_admin',
+          description: 'Social Suite: full administrator access',
+        },
+        {
+          name: 'Social Manager',
+          slug: 'social_manager',
+          description: 'Social Suite: manage campaigns, content, and queue',
+        },
+        {
+          name: 'Social Editor',
+          slug: 'social_editor',
+          description: 'Social Suite: create and edit content',
+        },
+        {
+          name: 'Social Analyst',
+          slug: 'social_analyst',
+          description: 'Social Suite: view reports and analytics',
+        },
+        {
+          name: 'Social Approver',
+          slug: 'social_approver',
+          description: 'Social Suite: approve generated content pieces',
+        },
+        {
+          name: 'Social Publisher',
+          slug: 'social_publisher',
+          description: 'Social Suite: execute queue publishing operations',
         },
       ];
 
@@ -746,8 +812,36 @@ export class IdentityService {
           'aqua:ponds:manage',
           'aqua:cycles:manage',
         ],
-        technician: ['aqua:ponds:manage', 'aqua:cycles:manage'],
         supervisor: ['aqua:farms:manage', 'aqua:ponds:manage'],
+        social_admin: [
+          'social:admin',
+          'social:manager',
+          'social:editor',
+          'social:analyst',
+          'social:approver',
+          'social:publisher',
+        ],
+        social_manager: [
+          'social:manager',
+          'social:editor',
+          'social:analyst',
+          'social:publisher',
+        ],
+        social_editor: [
+          'social:editor',
+          'social:analyst',
+        ],
+        social_analyst: [
+          'social:analyst',
+        ],
+        social_approver: [
+          'social:approver',
+          'social:analyst',
+        ],
+        social_publisher: [
+          'social:publisher',
+          'social:analyst',
+        ],
       };
 
       let rpCount = 0;
@@ -771,7 +865,17 @@ export class IdentityService {
 
       // 4. VERTICAL-ROLE ASSIGNMENTS
       const verticalRoleAssignments: Record<string, string[]> = {
-        vision: ['creative_director', 'brand_manager', 'campaign_manager'],
+        vision: [
+          'creative_director',
+          'brand_manager',
+          'campaign_manager',
+          'social_admin',
+          'social_manager',
+          'social_editor',
+          'social_analyst',
+          'social_approver',
+          'social_publisher',
+        ],
         lumo: ['school_admin', 'teacher', 'parent', 'student'],
         mando: ['campaign_manager', 'operator', 'analyst'],
         aquaculture: ['farm_manager', 'technician', 'supervisor'],
