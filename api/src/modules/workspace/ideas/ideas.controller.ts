@@ -44,10 +44,7 @@ export class IdeasController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateIdeaDto: UpdateIdeaDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateIdeaDto: UpdateIdeaDto) {
     const tenantId = getTenantId();
     return this.ideasService.update(tenantId, id, updateIdeaDto);
   }

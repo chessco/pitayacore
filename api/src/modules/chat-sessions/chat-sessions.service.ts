@@ -88,13 +88,25 @@ export class ChatSessionsService {
     };
   }
 
-  async postMessage(sessionId: string, text: string) {
-    const session = await this.db.mysql.conversationOld.findUnique({
+  async postMessage(sessionId: string, text: string, tenantIdParam?: string) {
+    let session = await this.db.mysql.conversationOld.findUnique({
       where: { id: sessionId },
     });
 
     if (!session) {
-      throw new NotFoundException('Chat session not found');
+      if (!tenantIdParam) {
+        throw new NotFoundException(
+          'Chat session not found and no tenantId provided to create it',
+        );
+      }
+      session = await this.db.mysql.conversationOld.create({
+        data: {
+          id: sessionId,
+          tenantId: tenantIdParam,
+          source: 'CREATIVE_CHAT',
+          metadata: JSON.stringify({ title: 'Imported Session' }),
+        },
+      });
     }
 
     const userMessage = await this.db.mysql.messageOld.create({

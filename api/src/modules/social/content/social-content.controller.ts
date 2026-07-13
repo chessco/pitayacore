@@ -61,16 +61,19 @@ export class SocialContentController {
       where: { id: piece.brandId },
     });
 
-    const humanized = await this.humanizerEngine.humanize(piece.rawContent || '', {
-      tone: brand?.tone as string,
-      personality: brand?.personality as string,
-      platform: 'LINKEDIN',
-      country: brand?.country || 'México',
-      language: brand?.language || 'es',
-      ctaStyle: brand?.ctaStyle || 'conversacional',
-      allowedEmojis: (brand?.allowedEmojis as string[]) || undefined,
-      prohibitedTerms: (brand?.prohibitedTerms as string[]) || undefined,
-    });
+    const humanized = await this.humanizerEngine.humanize(
+      piece.rawContent || '',
+      {
+        tone: brand?.tone as string,
+        personality: brand?.personality as string,
+        platform: 'LINKEDIN',
+        country: brand?.country || 'México',
+        language: brand?.language || 'es',
+        ctaStyle: brand?.ctaStyle || 'conversacional',
+        allowedEmojis: (brand?.allowedEmojis as string[]) || undefined,
+        prohibitedTerms: (brand?.prohibitedTerms as string[]) || undefined,
+      },
+    );
 
     return this.contentService.update(tenantId, id, {
       ...piece,

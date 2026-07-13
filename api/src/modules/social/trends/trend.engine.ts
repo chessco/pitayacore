@@ -12,7 +12,9 @@ export class TrendEngine {
   ) {}
 
   async fetchTrends(tenantId: string, sector = 'marketing'): Promise<any> {
-    this.logger.log(`Fetching trends for sector: ${sector} and tenant ${tenantId}`);
+    this.logger.log(
+      `Fetching trends for sector: ${sector} and tenant ${tenantId}`,
+    );
 
     const prompt = `Actúa como un analista de tendencias (Coolhunter) digital y estratega de redes sociales.
 Analiza la industria/sector: "${sector}".
@@ -35,7 +37,10 @@ Genera un reporte de tendencias actualizadas en formato JSON estructurado tal co
 }`;
 
     try {
-      const aiResponse = await this.aiService.generateRaw(prompt, 'gemini-2.5-flash');
+      const aiResponse = await this.aiService.generateRaw(
+        prompt,
+        'gemini-2.5-flash',
+      );
       const jsonStart = aiResponse.indexOf('{');
       const jsonEnd = aiResponse.lastIndexOf('}') + 1;
       const jsonStr = aiResponse.substring(jsonStart, jsonEnd);
@@ -55,11 +60,23 @@ Genera un reporte de tendencias actualizadas en formato JSON estructurado tal co
       this.logger.error('Error fetching trends via AI', error);
       return {
         hashtags: [
-          { tag: '#SocialIntelligence', volume: 'Creciente', context: 'Uso de IA en flujos de marketing' },
-          { tag: '#VisionAI', volume: 'Alto', context: 'Generación visual de alta calidad' },
+          {
+            tag: '#SocialIntelligence',
+            volume: 'Creciente',
+            context: 'Uso de IA en flujos de marketing',
+          },
+          {
+            tag: '#VisionAI',
+            volume: 'Alto',
+            context: 'Generación visual de alta calidad',
+          },
         ],
         topics: [
-          { title: 'Automatización Humana', growth: '+15%', description: 'Interés por copys que no parezcan escritos por IA' },
+          {
+            title: 'Automatización Humana',
+            growth: '+15%',
+            description: 'Interés por copys que no parezcan escritos por IA',
+          },
         ],
         competitorAnalysis: [],
         recommendedPrompts: [

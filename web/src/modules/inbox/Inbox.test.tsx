@@ -37,11 +37,11 @@ describe('Inbox Component Integration', () => {
 
     await waitFor(() => {
       expect(window.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/whatsapp/conversations'),
+        expect.stringContaining('/api/agent-inbox/conversations'),
         expect.objectContaining({
           headers: expect.objectContaining({
             'x-api-key': 'test_api_key_2026',
-            'x-tenant-id': 'pitaya'
+            'x-tenant-id': 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718'
           })
         })
       );
@@ -52,7 +52,7 @@ describe('Inbox Component Integration', () => {
     // 1. Initial fetch of conversations
     (window.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ id: 'conv_1', contact: { phone: '123' }, messages: [] }]
+      json: async () => [{ id: 'conv_1', contact: { phoneNumber: '123' }, messages: [] }]
     });
 
     // 2. Fetch history
@@ -67,32 +67,32 @@ describe('Inbox Component Integration', () => {
       json: async () => ({ success: true })
     });
 
-    render(
+    const { container } = render(
       <TenantProvider>
         <Inbox setActiveTab={() => {}} />
       </TenantProvider>
     );
 
     // Wait for conversations to load and select one
-    const contact = await screen.findByText('123');
-    fireEvent.click(contact);
+    const contacts = await screen.findAllByText('123');
+    fireEvent.click(contacts[0]);
 
     // Type and send
     const input = screen.getByPlaceholderText(/Escribe un mensaje/i);
     fireEvent.change(input, { target: { value: 'Hello Flow' } });
     
-    const sendButton = screen.getByRole('button', { name: '' }); // The send icon button
-    fireEvent.click(sendButton);
+    const sendButton = container.querySelector('.lucide-send')!.closest('button');
+    fireEvent.click(sendButton!);
 
     await waitFor(() => {
       expect(window.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/whatsapp/send'),
+        expect.stringContaining('/messages'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ to: '123', content: 'Hello Flow' }),
+          body: JSON.stringify({ content: 'Hello Flow' }),
           headers: expect.objectContaining({
             'x-api-key': 'test_api_key_2026',
-            'x-tenant-id': 'pitaya'
+            'x-tenant-id': 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718'
           })
         })
       );

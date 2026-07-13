@@ -73,9 +73,11 @@ export class AgentRouterService {
       if (!conversation) {
         // By default, turn OFF AI so it doesn't spam (especially groups)
         const isGroup = event.from.includes('@g.us');
-        const defaultMetadata = { 
-          humanActiveUntil: "2099-12-31T23:59:59.999Z", 
-          reason: isGroup ? "Group chat default OFF" : "Default OFF per user request" 
+        const defaultMetadata = {
+          humanActiveUntil: '2099-12-31T23:59:59.999Z',
+          reason: isGroup
+            ? 'Group chat default OFF'
+            : 'Default OFF per user request',
         };
 
         conversation = await this.db.mysql.conversation.create({
@@ -93,11 +95,11 @@ export class AgentRouterService {
       if (!finalContent || finalContent.trim() === '') {
         const rawType = event.rawMessage?.type;
         const rawBody = event.rawMessage?._data?.body;
-        
+
         if (rawBody && typeof rawBody === 'string' && rawBody.trim() !== '') {
           finalContent = rawBody;
         } else if (rawType === 'ciphertext') {
-          finalContent = "*(Mensaje cifrado/sincronizando)*";
+          finalContent = '*(Mensaje cifrado/sincronizando)*';
         } else {
           finalContent = `*(Mensaje sin texto - tipo: ${rawType || 'desconocido'})*`;
         }

@@ -65,6 +65,8 @@ model Tenant {
   socialContentPieces   SocialContentPiece[]
   publishingQueue       PublishingQueue[]
   postAnalytics         PostAnalytics[]
+  brands                Brand[]
+  whiteLabel            WhiteLabel?
 
   @@index([organizationId])
 }
@@ -1460,5 +1462,119 @@ model PostAnalytics {
   @@index([tenantId])
   @@index([campaignId])
   @@index([provider])
+}
+
+model Brand {
+  id              String      @id @default(uuid())
+  tenantId        String
+  name            String
+  description     String?
+  industry        String?
+  country         String?
+  language        String?     @default("es")
+  logo            String?
+  favicon         String?
+  brandGuide      String?     @db.Text
+  website         String?
+  primaryContact  String?
+  metadata        Json?
+  status          String      @default("ACTIVE")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  themes          Theme[]
+
+  @@index([tenantId])
+}
+
+model Theme {
+  id              String         @id @default(uuid())
+  tenantId        String
+  brandId         String
+  name            String
+  description     String?
+  mode            String         @default("LIGHT") // LIGHT, DARK, AUTO
+  status          String         @default("ACTIVE") // ACTIVE, DRAFT, ARCHIVED
+  version         String         @default("1.0.0")
+  isDefault       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  brand           Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  versions        ThemeVersion[]
+  tokens          ThemeToken[]
+  assets          ThemeAsset[]
+
+  @@index([tenantId])
+  @@index([brandId])
+}
+
+model ThemeVersion {
+  id              String      @id @default(uuid())
+  themeId         String
+  version         String
+  tokens          Json
+  status          String      @default("DRAFT")
+  createdAt       DateTime    @default(now())
+  theme           Theme       @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId])
+}
+
+model ThemeAsset {
+  id              String      @id @default(uuid())
+  themeId         String
+  key             String
+  value           String
+  createdAt       DateTime    @default(now())
+  theme           Theme       @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId])
+}
+
+model ThemeToken {
+  id              String      @id @default(uuid())
+  themeId         String
+  name            String
+  value           String
+  type            String
+  createdAt       DateTime    @default(now())
+  theme           Theme       @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId])
+}
+
+model WhiteLabel {
+  id              String      @id @default(uuid())
+  tenantId        String      @unique
+  appName         String
+  companyName     String
+  logo            String?
+  favicon         String?
+  primaryThemeId  String?
+  defaultLanguage String      @default("es")
+  defaultMode     String      @default("LIGHT")
+  emailsConfig    Json?
+  loginScreen     Json?
+  splashScreen    Json?
+  assets          Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model AppearanceSettings {
+  id              String      @id @default(uuid())
+  tenantId        String      @unique
+  contrast        String      @default("NORMAL")
+  accessibility   Json?
+  motion          String      @default("NORMAL")
+  glassEffects    Boolean     @default(false)
+  roundedCorners  String      @default("MEDIUM")
+  density         String      @default("NORMAL")
+  compactMode     Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 

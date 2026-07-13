@@ -17,9 +17,7 @@ export class SocialAgentsController {
   }
 
   @Post('chat')
-  chat(
-    @Body() body: { agentSlug: string; message: string; context?: any },
-  ) {
+  chat(@Body() body: { agentSlug: string; message: string; context?: any }) {
     return this.agentsService.chat(
       getTenantId(),
       body.agentSlug,

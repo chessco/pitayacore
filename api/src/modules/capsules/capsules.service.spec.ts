@@ -5,6 +5,9 @@ import { AiService } from '../ai/ai.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
+import { WorkflowsService } from '../crm/workflows.service';
+import { CrmService } from '../crm/crm.service';
+
 describe('CapsulesService (Unit Tests)', () => {
   let service: CapsulesService;
   let db: any;
@@ -26,6 +29,8 @@ describe('CapsulesService (Unit Tests)', () => {
         { provide: DatabaseService, useValue: dbMock },
         { provide: AiService, useValue: {} },
         { provide: ConversationsService, useValue: {} },
+        { provide: WorkflowsService, useValue: {} },
+        { provide: CrmService, useValue: {} },
       ],
     }).compile();
 

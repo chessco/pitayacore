@@ -827,21 +827,10 @@ export class IdentityService {
           'social:analyst',
           'social:publisher',
         ],
-        social_editor: [
-          'social:editor',
-          'social:analyst',
-        ],
-        social_analyst: [
-          'social:analyst',
-        ],
-        social_approver: [
-          'social:approver',
-          'social:analyst',
-        ],
-        social_publisher: [
-          'social:publisher',
-          'social:analyst',
-        ],
+        social_editor: ['social:editor', 'social:analyst'],
+        social_analyst: ['social:analyst'],
+        social_approver: ['social:approver', 'social:analyst'],
+        social_publisher: ['social:publisher', 'social:analyst'],
       };
 
       let rpCount = 0;

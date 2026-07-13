@@ -125,9 +125,12 @@ export class InboxService {
         include: { contact: true },
       });
 
-      if (conversation?.provider === 'whatsapp' && conversation.contact?.externalId) {
+      if (
+        conversation?.provider === 'whatsapp' &&
+        conversation.contact?.externalId
+      ) {
         const channel = await this.db.mysql.channel.findFirst({
-          where: { tenantId: payload.tenantId, provider: 'whatsapp' }
+          where: { tenantId: payload.tenantId, provider: 'whatsapp' },
         });
         if (channel) {
           try {
@@ -138,10 +141,14 @@ export class InboxService {
               payload.content,
             );
           } catch (e) {
-            this.logger.error(`Failed to send whatsapp message for tenant ${payload.tenantId}: ${e.message}`);
+            this.logger.error(
+              `Failed to send whatsapp message for tenant ${payload.tenantId}: ${e.message}`,
+            );
           }
         } else {
-          this.logger.error(`No whatsapp channel found for tenant ${payload.tenantId}`);
+          this.logger.error(
+            `No whatsapp channel found for tenant ${payload.tenantId}`,
+          );
         }
       }
 

@@ -52,10 +52,7 @@ export class NotesController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateNoteDto: UpdateNoteDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateNoteDto: UpdateNoteDto) {
     const tenantId = getTenantId();
     return this.notesService.update(tenantId, id, updateNoteDto);
   }

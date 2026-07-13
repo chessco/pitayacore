@@ -287,13 +287,19 @@ Prioritize speed, quality and consistency.`,
   {
     name: 'Marketing Strategist',
     slug: 'marketing-strategist',
-    description: 'Establece objetivos de campaña, definición de audiencias y estrategias emocionales.',
+    description:
+      'Establece objetivos de campaña, definición de audiencias y estrategias emocionales.',
     category: 'marketing',
     systemPrompt: `You are Marketing Strategist.
 Your mission is to align campaign objectives with audience demographics, psychographics, and target emotional responses.
 Analyze pain points and buyer journeys to craft strategies that convert.`,
     metadata: {
-      capabilities: ['define strategy', 'audience profiling', 'emotional marketing', 'buyer journey design'],
+      capabilities: [
+        'define strategy',
+        'audience profiling',
+        'emotional marketing',
+        'buyer journey design',
+      ],
       recommendedSkills: ['campaign-builder', 'audience-analysis'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.5,
@@ -303,13 +309,19 @@ Analyze pain points and buyer journeys to craft strategies that convert.`,
   {
     name: 'Copywriter',
     slug: 'copywriter',
-    description: 'Genera textos creativos de alto impacto para diferentes canales sociales.',
+    description:
+      'Genera textos creativos de alto impacto para diferentes canales sociales.',
     category: 'copywriting',
     systemPrompt: `You are Copywriter.
 Your goal is to write engaging, creative, and persuasive copies tailored for different platforms (LinkedIn, Instagram, X, etc.).
 Keep it punchy, hook-focused, and context-aware.`,
     metadata: {
-      capabilities: ['write copy', 'social writing', 'generate hooks', 'multi-platform translation'],
+      capabilities: [
+        'write copy',
+        'social writing',
+        'generate hooks',
+        'multi-platform translation',
+      ],
       recommendedSkills: ['prompt-engine'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.8,
@@ -319,12 +331,18 @@ Keep it punchy, hook-focused, and context-aware.`,
   {
     name: 'Humanizer Agent',
     slug: 'humanizer-agent',
-    description: 'Elimina patrones de Inteligencia Artificial y maximiza la autenticidad del contenido.',
+    description:
+      'Elimina patrones de Inteligencia Artificial y maximiza la autenticidad del contenido.',
     category: 'humanization',
     systemPrompt: `You are Humanizer Agent.
 Your job is to rewrite raw copy to remove AI clichés, vary sentence structure, introduce natural rhythms, and make content sound 100% human.`,
     metadata: {
-      capabilities: ['humanize copy', 'style adaptation', 'emoji control', 'storytelling injection'],
+      capabilities: [
+        'humanize copy',
+        'style adaptation',
+        'emoji control',
+        'storytelling injection',
+      ],
       recommendedSkills: ['prompt-engine'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.7,
@@ -334,13 +352,19 @@ Your job is to rewrite raw copy to remove AI clichés, vary sentence structure, 
   {
     name: 'Compliance Agent',
     slug: 'compliance-agent',
-    description: 'Revisa políticas de marca, lineamientos legales y cumplimiento ético de contenidos.',
+    description:
+      'Revisa políticas de marca, lineamientos legales y cumplimiento ético de contenidos.',
     category: 'compliance',
     systemPrompt: `You are Compliance Agent.
 Your mission is to audit social content against prohibited terms, brand values, style rules, and legal compliance.
 Flags issues and suggests corrections.`,
     metadata: {
-      capabilities: ['brand review', 'legal compliance', 'prohibited terms detection', 'policy review'],
+      capabilities: [
+        'brand review',
+        'legal compliance',
+        'prohibited terms detection',
+        'policy review',
+      ],
       recommendedSkills: ['style-compliance', 'asset-review'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.2,
@@ -350,12 +374,18 @@ Flags issues and suggests corrections.`,
   {
     name: 'Designer Agent',
     slug: 'designer-agent',
-    description: 'Diseña conceptos visuales y genera ideas de imágenes, carruseles y videos.',
+    description:
+      'Diseña conceptos visuales y genera ideas de imágenes, carruseles y videos.',
     category: 'design',
     systemPrompt: `You are Designer Agent.
 You generate image Prompts, layout compositions, and creative visual directions for carousels, reels, and posts.`,
     metadata: {
-      capabilities: ['image prompt generation', 'layout design', 'composition planning', 'visual styling'],
+      capabilities: [
+        'image prompt generation',
+        'layout design',
+        'composition planning',
+        'visual styling',
+      ],
       recommendedSkills: ['image-generation', 'asset-planner'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.7,
@@ -365,12 +395,18 @@ You generate image Prompts, layout compositions, and creative visual directions 
   {
     name: 'Publisher Agent',
     slug: 'publisher-agent',
-    description: 'Administra la publicación, calendarización y reintentos automatizados.',
+    description:
+      'Administra la publicación, calendarización y reintentos automatizados.',
     category: 'publishing',
     systemPrompt: `You are Publisher Agent.
 You manage queue schedules, handle publishing status checks, and process automated retries.`,
     metadata: {
-      capabilities: ['queue processing', 'scheduling', 'status verification', 'retries'],
+      capabilities: [
+        'queue processing',
+        'scheduling',
+        'status verification',
+        'retries',
+      ],
       recommendedSkills: ['campaign-builder'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.3,
@@ -380,12 +416,18 @@ You manage queue schedules, handle publishing status checks, and process automat
   {
     name: 'Performance Analyst',
     slug: 'performance-analyst',
-    description: 'Analiza el rendimiento histórico y optimiza la estrategia de contenido futura.',
+    description:
+      'Analiza el rendimiento histórico y optimiza la estrategia de contenido futura.',
     category: 'analytics',
     systemPrompt: `You are Performance Analyst.
 Your goal is to inspect post analytics (reach, clicks, CTR, ROI) and compile smart optimization recommendations.`,
     metadata: {
-      capabilities: ['compute analytics', 'generate insights', 'A/B testing review', 'ROI reporting'],
+      capabilities: [
+        'compute analytics',
+        'generate insights',
+        'A/B testing review',
+        'ROI reporting',
+      ],
       recommendedSkills: ['analytics', 'reporting', 'optimization'],
       allowedProviders: ['openai', 'anthropic'],
       defaultTemperature: 0.3,

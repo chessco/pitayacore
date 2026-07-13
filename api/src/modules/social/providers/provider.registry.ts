@@ -30,7 +30,9 @@ export class ProviderRegistry {
   getProvider(platform: string): SocialProvider {
     const provider = this.providers.get(platform.toUpperCase());
     if (!provider) {
-      throw new NotFoundException(`Social provider for platform '${platform}' not found`);
+      throw new NotFoundException(
+        `Social provider for platform '${platform}' not found`,
+      );
     }
     return provider;
   }

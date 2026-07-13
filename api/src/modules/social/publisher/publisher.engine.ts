@@ -28,7 +28,9 @@ export class PublisherEngine {
     title: string,
     topicPrompt: string,
   ) {
-    this.logger.log(`Generating content piece '${title}' for tenant ${tenantId}`);
+    this.logger.log(
+      `Generating content piece '${title}' for tenant ${tenantId}`,
+    );
 
     // 1. Fetch Brand settings
     const brand = await this.db.mysql.socialBrand.findFirst({
@@ -40,7 +42,9 @@ export class PublisherEngine {
 
     // Convert JSON fields
     const tone = brand.tone ? JSON.stringify(brand.tone) : 'profesional';
-    const personality = brand.personality ? JSON.stringify(brand.personality) : 'empático';
+    const personality = brand.personality
+      ? JSON.stringify(brand.personality)
+      : 'empático';
     const prohibitedTerms = (brand.prohibitedTerms as string[]) || [];
 
     // 2. Call Copywriter Agent (LLM)
@@ -51,13 +55,19 @@ Tema: "${topicPrompt}"
 Tipo de contenido: ${contentType}
 Genera una publicación atractiva y persuasiva para redes sociales.`;
 
-    const rawContent = await this.aiService.generateRaw(copywriterPrompt, 'gemini-2.5-flash');
+    const rawContent = await this.aiService.generateRaw(
+      copywriterPrompt,
+      'gemini-2.5-flash',
+    );
 
     // 3. Call Designer Agent (LLM) to suggest assets / visuals
     const designerPrompt = `Actúa como Designer Agent para la marca '${brand.name}'.
 Propón 2-3 sugerencias de imágenes, carruseles o contenido visual para acompañar este post:
 "${rawContent.substring(0, 150)}..."`;
-    const designSuggestions = await this.aiService.generateRaw(designerPrompt, 'gemini-2.5-flash');
+    const designSuggestions = await this.aiService.generateRaw(
+      designerPrompt,
+      'gemini-2.5-flash',
+    );
 
     // 4. Call Humanizer Engine
     const humanizedContent = await this.humanizerEngine.humanize(rawContent, {
@@ -171,13 +181,17 @@ Propón 2-3 sugerencias de imágenes, carruseles o contenido visual para acompa�
     });
 
     try {
-      const providerInstance = this.providerRegistry.getProvider(queueItem.provider);
+      const providerInstance = this.providerRegistry.getProvider(
+        queueItem.provider,
+      );
       const mediaUrls = (queueItem.contentPiece.mediaUrls as string[]) || [];
 
       // Execute actual mock publish
       const result = await providerInstance.publish(
         queueItem.tenantId,
-        queueItem.contentPiece.humanizedContent || queueItem.contentPiece.rawContent || '',
+        queueItem.contentPiece.humanizedContent ||
+          queueItem.contentPiece.rawContent ||
+          '',
         mediaUrls,
       );
 
@@ -224,7 +238,9 @@ Propón 2-3 sugerencias de imágenes, carruseles o contenido visual para acompa�
           `Publicación exitosa en ${queueItem.provider}. Contenido: ${queueItem.contentPiece.title}`,
         );
 
-        this.logger.log(`Queue item ${queueItemId} successfully published to ${queueItem.provider}`);
+        this.logger.log(
+          `Queue item ${queueItemId} successfully published to ${queueItem.provider}`,
+        );
         return true;
       } else {
         throw new Error(result.error || 'Failed to publish');
@@ -242,7 +258,9 @@ Propón 2-3 sugerencias de imágenes, carruseles o contenido visual para acompa�
         },
       });
 
-      this.logger.error(`Error publishing queue item ${queueItemId}: ${error.message}`);
+      this.logger.error(
+        `Error publishing queue item ${queueItemId}: ${error.message}`,
+      );
       return false;
     }
   }

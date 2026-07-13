@@ -60,7 +60,7 @@ describe('ApiKeyGuard', () => {
     expect(guard.canActivate(context)).toBe(false);
   });
 
-  it('should use default internal secret if config is missing', () => {
+  it('should return false if config is missing', () => {
     configService = {
       get: jest.fn(() => null),
     } as any;
@@ -70,12 +70,12 @@ describe('ApiKeyGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers: {
-            'x-api-key': process.env.INTERNAL_API_KEY || 'test-key',
+            'x-api-key': 'test-key',
           },
         }),
       }),
     } as ExecutionContext;
 
-    expect(guard.canActivate(context)).toBe(true);
+    expect(guard.canActivate(context)).toBe(false);
   });
 });

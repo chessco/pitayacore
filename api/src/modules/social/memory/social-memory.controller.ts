@@ -23,6 +23,11 @@ export class SocialMemoryController {
     @Query('limit') limit: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 5;
-    return this.memoryService.searchMemory(getTenantId(), refType, query, limitNum);
+    return this.memoryService.searchMemory(
+      getTenantId(),
+      refType,
+      query,
+      limitNum,
+    );
   }
 }

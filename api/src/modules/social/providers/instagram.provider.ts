@@ -14,8 +14,15 @@ export class InstagramProvider implements SocialProvider {
     };
   }
 
-  async publish(tenantId: string, content: string, mediaUrls: string[], metadata?: any) {
-    this.logger.log(`Publishing to Instagram for tenant ${tenantId}: "${content.substring(0, 30)}..."`);
+  async publish(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Publishing to Instagram for tenant ${tenantId}: "${content.substring(0, 30)}..."`,
+    );
     const externalId = 'ig_post_' + Math.random().toString(36).substring(2);
     return {
       success: true,
@@ -24,8 +31,16 @@ export class InstagramProvider implements SocialProvider {
     };
   }
 
-  async schedule(tenantId: string, content: string, mediaUrls: string[], scheduledAt: Date, metadata?: any) {
-    this.logger.log(`Scheduling to Instagram for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`);
+  async schedule(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    scheduledAt: Date,
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Scheduling to Instagram for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`,
+    );
     return {
       success: true,
       externalId: 'ig_sched_' + Math.random().toString(36).substring(2),
@@ -33,7 +48,9 @@ export class InstagramProvider implements SocialProvider {
   }
 
   async delete(tenantId: string, externalId: string) {
-    this.logger.log(`Deleting Instagram post ${externalId} for tenant ${tenantId}`);
+    this.logger.log(
+      `Deleting Instagram post ${externalId} for tenant ${tenantId}`,
+    );
     return { success: true };
   }
 
@@ -48,8 +65,18 @@ export class InstagramProvider implements SocialProvider {
 
   async comments(tenantId: string, externalId: string) {
     return [
-      { id: 'c1', author: 'Mariana_G', text: 'Increíble toma! Muy útil.', createdAt: new Date() },
-      { id: 'c2', author: 'Dev_User', text: 'Súper recomendado.', createdAt: new Date() },
+      {
+        id: 'c1',
+        author: 'Mariana_G',
+        text: 'Increíble toma! Muy útil.',
+        createdAt: new Date(),
+      },
+      {
+        id: 'c2',
+        author: 'Dev_User',
+        text: 'Súper recomendado.',
+        createdAt: new Date(),
+      },
     ];
   }
 

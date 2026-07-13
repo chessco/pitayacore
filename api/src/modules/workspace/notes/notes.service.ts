@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../../common/database/database.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto/notes.dto';
 
@@ -32,10 +36,7 @@ export class NotesService {
             }
           : false,
       },
-      orderBy: [
-        { score: 'desc' },
-        { updatedAt: 'desc' },
-      ],
+      orderBy: [{ score: 'desc' }, { updatedAt: 'desc' }],
     });
 
     return notes.map((note: any) => {

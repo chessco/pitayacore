@@ -52,7 +52,13 @@ export class SocialCampaignsController {
   @Post(':id/generate-content')
   generateContent(
     @Param('id') campaignId: string,
-    @Body() body: { brandId: string; contentType: string; title: string; prompt: string },
+    @Body()
+    body: {
+      brandId: string;
+      contentType: string;
+      title: string;
+      prompt: string;
+    },
   ) {
     return this.publisherEngine.generateContentPiece(
       getTenantId(),

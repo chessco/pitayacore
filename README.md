@@ -178,6 +178,27 @@ El directorio [`/cli`](file:///c:/PITAYACODE/PITAYACORE/cli) contiene una útil 
 
 ---
 
+## 🧪 Suite de Pruebas (Testing)
+
+El proyecto cuenta con suites de pruebas unitarias e integración configuradas tanto para el API como para la Web:
+
+* **API (NestJS + Jest):** Utiliza Jest para pruebas de servicios y controladores con mockeo de dependencias y base de datos (Prisma).
+  ```bash
+  cd api
+  npm run test        # Ejecuta todas las pruebas del API
+  npm run test:cov    # Ejecuta pruebas y muestra cobertura
+  ```
+* **Web (React + Vitest):** Utiliza Vitest en conjunto con JSDOM y `@testing-library/react` para pruebas de integración de la UI.
+  ```bash
+  cd web
+  npm run test        # Ejecuta las pruebas una vez
+  npm run test:watch  # Ejecuta las pruebas en modo observador (watch)
+  ```
+
+Para una guía técnica detallada sobre cómo escribir y estructurar pruebas en la plataforma, consulta la **[Guía Técnica de Testing (docs/TESTING.md)](file:///c:/PitayaCode/pitayacore/docs/TESTING.md)**.
+
+---
+
 ## 🌎 Despliegue en Producción
 
 El proyecto está diseñado para desplegarse mediante Docker y scripts automatizados en servidores remotos:

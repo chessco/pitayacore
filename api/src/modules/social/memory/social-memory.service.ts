@@ -32,7 +32,12 @@ export class SocialMemoryService {
   async indexMemory(
     tenantId: string,
     refId: string,
-    refType: 'BRAND_MEMORY' | 'AUDIENCE_MEMORY' | 'CAMPAIGN_MEMORY' | 'PERFORMANCE_MEMORY' | 'TREND_MEMORY',
+    refType:
+      | 'BRAND_MEMORY'
+      | 'AUDIENCE_MEMORY'
+      | 'CAMPAIGN_MEMORY'
+      | 'PERFORMANCE_MEMORY'
+      | 'TREND_MEMORY',
     content: string,
   ): Promise<void> {
     try {
@@ -68,7 +73,9 @@ export class SocialMemoryService {
         );
       }
 
-      this.logger.log(`Successfully indexed memory of type ${refType} for reference ${refId}`);
+      this.logger.log(
+        `Successfully indexed memory of type ${refType} for reference ${refId}`,
+      );
     } catch (error) {
       this.logger.error(`Error indexing memory for reference ${refId}`, error);
     }
@@ -76,7 +83,12 @@ export class SocialMemoryService {
 
   async searchMemory(
     tenantId: string,
-    refType: 'BRAND_MEMORY' | 'AUDIENCE_MEMORY' | 'CAMPAIGN_MEMORY' | 'PERFORMANCE_MEMORY' | 'TREND_MEMORY',
+    refType:
+      | 'BRAND_MEMORY'
+      | 'AUDIENCE_MEMORY'
+      | 'CAMPAIGN_MEMORY'
+      | 'PERFORMANCE_MEMORY'
+      | 'TREND_MEMORY',
     query: string,
     limit = 5,
   ): Promise<any[]> {

@@ -14,8 +14,15 @@ export class XProvider implements SocialProvider {
     };
   }
 
-  async publish(tenantId: string, content: string, mediaUrls: string[], metadata?: any) {
-    this.logger.log(`Publishing to X for tenant ${tenantId}: "${content.substring(0, 30)}..."`);
+  async publish(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Publishing to X for tenant ${tenantId}: "${content.substring(0, 30)}..."`,
+    );
     const externalId = 'x_tweet_' + Math.random().toString(36).substring(2);
     return {
       success: true,
@@ -24,8 +31,16 @@ export class XProvider implements SocialProvider {
     };
   }
 
-  async schedule(tenantId: string, content: string, mediaUrls: string[], scheduledAt: Date, metadata?: any) {
-    this.logger.log(`Scheduling to X for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`);
+  async schedule(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    scheduledAt: Date,
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Scheduling to X for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`,
+    );
     return {
       success: true,
       externalId: 'x_sched_' + Math.random().toString(36).substring(2),
@@ -48,8 +63,18 @@ export class XProvider implements SocialProvider {
 
   async comments(tenantId: string, externalId: string) {
     return [
-      { id: 'c1', author: 'user_99', text: 'Totalmente de acuerdo con el tweet!', createdAt: new Date() },
-      { id: 'c2', author: 'tech_insider', text: 'Esto cambia las reglas de juego.', createdAt: new Date() },
+      {
+        id: 'c1',
+        author: 'user_99',
+        text: 'Totalmente de acuerdo con el tweet!',
+        createdAt: new Date(),
+      },
+      {
+        id: 'c2',
+        author: 'tech_insider',
+        text: 'Esto cambia las reglas de juego.',
+        createdAt: new Date(),
+      },
     ];
   }
 

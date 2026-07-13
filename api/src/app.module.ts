@@ -49,6 +49,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { SocialModule } from './modules/social/social.module';
+import { DesignModule } from './modules/design/design.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -96,6 +97,7 @@ import { SocialModule } from './modules/social/social.module';
     IdentityModule,
     CommunicationModule,
     SocialModule,
+    DesignModule,
   ],
   controllers: [AppController],
   providers: [

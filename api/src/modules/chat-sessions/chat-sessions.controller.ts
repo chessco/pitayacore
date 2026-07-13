@@ -37,8 +37,12 @@ export class ChatSessionsController {
   }
 
   @Post(':id/messages')
-  async postMessage(@Param('id') id: string, @Body('text') text: string) {
-    return this.chatSessionsService.postMessage(id, text);
+  async postMessage(
+    @Param('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body('text') text: string,
+  ) {
+    return this.chatSessionsService.postMessage(id, text, tenantId);
   }
 
   @Post(':id/approve')

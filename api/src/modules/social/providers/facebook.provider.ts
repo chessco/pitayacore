@@ -14,8 +14,15 @@ export class FacebookProvider implements SocialProvider {
     };
   }
 
-  async publish(tenantId: string, content: string, mediaUrls: string[], metadata?: any) {
-    this.logger.log(`Publishing to Facebook for tenant ${tenantId}: "${content.substring(0, 30)}..."`);
+  async publish(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Publishing to Facebook for tenant ${tenantId}: "${content.substring(0, 30)}..."`,
+    );
     const externalId = 'fb_post_' + Math.random().toString(36).substring(2);
     return {
       success: true,
@@ -24,8 +31,16 @@ export class FacebookProvider implements SocialProvider {
     };
   }
 
-  async schedule(tenantId: string, content: string, mediaUrls: string[], scheduledAt: Date, metadata?: any) {
-    this.logger.log(`Scheduling to Facebook for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`);
+  async schedule(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    scheduledAt: Date,
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Scheduling to Facebook for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`,
+    );
     return {
       success: true,
       externalId: 'fb_sched_' + Math.random().toString(36).substring(2),
@@ -33,7 +48,9 @@ export class FacebookProvider implements SocialProvider {
   }
 
   async delete(tenantId: string, externalId: string) {
-    this.logger.log(`Deleting Facebook post ${externalId} for tenant ${tenantId}`);
+    this.logger.log(
+      `Deleting Facebook post ${externalId} for tenant ${tenantId}`,
+    );
     return { success: true };
   }
 
@@ -48,8 +65,18 @@ export class FacebookProvider implements SocialProvider {
 
   async comments(tenantId: string, externalId: string) {
     return [
-      { id: 'c1', author: 'Ana López', text: 'Me encanta esta publicación.', createdAt: new Date() },
-      { id: 'c2', author: 'Carlos Ruiz', text: 'Excelente información, gracias por compartir.', createdAt: new Date() },
+      {
+        id: 'c1',
+        author: 'Ana López',
+        text: 'Me encanta esta publicación.',
+        createdAt: new Date(),
+      },
+      {
+        id: 'c2',
+        author: 'Carlos Ruiz',
+        text: 'Excelente información, gracias por compartir.',
+        createdAt: new Date(),
+      },
     ];
   }
 

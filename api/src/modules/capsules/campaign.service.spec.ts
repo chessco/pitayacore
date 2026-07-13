@@ -2,8 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CampaignService } from './campaign.service';
 import { DatabaseService } from '../../common/database/database.service';
 import { MailService } from '../../common/mail/mail.service';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
+jest.mock('marked', () => ({
+  marked: {
+    parse: jest.fn((text) => text),
+  },
+}));
 describe('CampaignService (Unit Tests)', () => {
   let service: CampaignService;
   let db: any;
@@ -23,6 +29,7 @@ describe('CampaignService (Unit Tests)', () => {
         CampaignService,
         { provide: DatabaseService, useValue: dbMock },
         { provide: MailService, useValue: {} },
+        { provide: ConfigService, useValue: {} },
       ],
     }).compile();
 

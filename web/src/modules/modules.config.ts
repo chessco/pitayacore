@@ -20,7 +20,8 @@ import {
   Target,
   Trophy,
   FolderOpen,
-  Layers
+  Layers,
+  Palette
 } from 'lucide-react';
 import { WorkspaceView } from './workspace/WorkspaceView';
 import { Inbox } from './inbox/Inbox';
@@ -50,8 +51,8 @@ import { LeadScoring } from './crm/LeadScoring';
 import { CRMOverview } from './crm/CRMOverview';
 import { ModuleManager } from './system/ModuleManager';
 import SocialSuiteView from './social/SocialSuiteView';
-
 import { IdentityPlatform } from './identity/IdentityPlatform';
+import { AppearanceDashboard } from './design/AppearanceDashboard';
 
 export interface ModuleConfig {
   id: string;           
@@ -343,5 +344,13 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     category: 'avanzado',
     suiteId: 'social',
     featureId: 'SOCIAL_SUITE'
+  },
+  {
+    id: 'design_suite',
+    label: 'Design Suite',
+    icon: Palette,
+    component: AppearanceDashboard,
+    description: 'Personalización de marca blanca, temas dinámicos y tokens visuales.',
+    category: 'sistema'
   }
 ];

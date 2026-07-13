@@ -6,15 +6,24 @@ export class WhatsAppStatusProvider implements SocialProvider {
   private readonly logger = new Logger(WhatsAppStatusProvider.name);
 
   async authenticate(tenantId: string) {
-    this.logger.log(`Authenticating WhatsApp Status provider for tenant ${tenantId}`);
+    this.logger.log(
+      `Authenticating WhatsApp Status provider for tenant ${tenantId}`,
+    );
     return {
       success: true,
       token: 'mock_wa_access_token_' + Math.random().toString(36).substring(2),
     };
   }
 
-  async publish(tenantId: string, content: string, mediaUrls: string[], metadata?: any) {
-    this.logger.log(`Publishing WhatsApp Status for tenant ${tenantId}: "${content.substring(0, 30)}..."`);
+  async publish(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Publishing WhatsApp Status for tenant ${tenantId}: "${content.substring(0, 30)}..."`,
+    );
     const externalId = 'wa_status_' + Math.random().toString(36).substring(2);
     return {
       success: true,
@@ -23,8 +32,16 @@ export class WhatsAppStatusProvider implements SocialProvider {
     };
   }
 
-  async schedule(tenantId: string, content: string, mediaUrls: string[], scheduledAt: Date, metadata?: any) {
-    this.logger.log(`Scheduling WhatsApp Status for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`);
+  async schedule(
+    tenantId: string,
+    content: string,
+    mediaUrls: string[],
+    scheduledAt: Date,
+    metadata?: any,
+  ) {
+    this.logger.log(
+      `Scheduling WhatsApp Status for tenant ${tenantId} at ${scheduledAt}: "${content.substring(0, 30)}..."`,
+    );
     return {
       success: true,
       externalId: 'wa_sched_' + Math.random().toString(36).substring(2),
@@ -32,7 +49,9 @@ export class WhatsAppStatusProvider implements SocialProvider {
   }
 
   async delete(tenantId: string, externalId: string) {
-    this.logger.log(`Deleting WhatsApp Status ${externalId} for tenant ${tenantId}`);
+    this.logger.log(
+      `Deleting WhatsApp Status ${externalId} for tenant ${tenantId}`,
+    );
     return { success: true };
   }
 
@@ -47,8 +66,18 @@ export class WhatsAppStatusProvider implements SocialProvider {
 
   async comments(tenantId: string, externalId: string) {
     return [
-      { id: 'c1', author: 'Juan Gómez', text: 'Me interesa! Me pasas info?', createdAt: new Date() },
-      { id: 'c2', author: 'Leticia Díaz', text: 'Qué buen tip.', createdAt: new Date() },
+      {
+        id: 'c1',
+        author: 'Juan Gómez',
+        text: 'Me interesa! Me pasas info?',
+        createdAt: new Date(),
+      },
+      {
+        id: 'c2',
+        author: 'Leticia Díaz',
+        text: 'Qué buen tip.',
+        createdAt: new Date(),
+      },
     ];
   }
 

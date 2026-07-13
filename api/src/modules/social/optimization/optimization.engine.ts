@@ -23,11 +23,13 @@ export class OptimizationEngine {
 
     if (analytics.length === 0) {
       return {
-        summary: 'Aún no hay suficientes datos analíticos para generar optimizaciones.',
+        summary:
+          'Aún no hay suficientes datos analíticos para generar optimizaciones.',
         recommendations: [
           {
             title: 'Configura canales sociales',
-            description: 'Conecta al menos un proveedor social y publica contenidos para iniciar la recopilación de métricas.',
+            description:
+              'Conecta al menos un proveedor social y publica contenidos para iniciar la recopilación de métricas.',
             impact: 'HIGH',
           },
         ],
@@ -38,8 +40,14 @@ export class OptimizationEngine {
 
     // Compute simple local stats
     const totalReach = analytics.reduce((acc, curr) => acc + curr.reach, 0);
-    const totalEngagement = analytics.reduce((acc, curr) => acc + curr.engagement, 0);
-    const avgCtr = analytics.length > 0 ? analytics.reduce((acc, curr) => acc + curr.ctr, 0) / analytics.length : 0;
+    const totalEngagement = analytics.reduce(
+      (acc, curr) => acc + curr.engagement,
+      0,
+    );
+    const avgCtr =
+      analytics.length > 0
+        ? analytics.reduce((acc, curr) => acc + curr.ctr, 0) / analytics.length
+        : 0;
 
     const dataContext = `Métricas generales acumuladas de los últimos ${analytics.length} posts:
     - Alcance Total: ${totalReach}
@@ -82,7 +90,10 @@ Responde con un objeto JSON válido que contenga la estructura descrita abajo (n
 }`;
 
     try {
-      const aiResponse = await this.aiService.generateRaw(prompt, 'gemini-2.5-flash');
+      const aiResponse = await this.aiService.generateRaw(
+        prompt,
+        'gemini-2.5-flash',
+      );
       // Clean JSON formatting from Gemini if present
       const jsonStart = aiResponse.indexOf('{');
       const jsonEnd = aiResponse.lastIndexOf('}') + 1;
@@ -91,7 +102,8 @@ Responde con un objeto JSON válido que contenga la estructura descrita abajo (n
     } catch (error) {
       this.logger.error('Error generating optimization insights via AI', error);
       return {
-        summary: 'Error al computar optimizaciones asistidas por IA. Mostrando resumen preliminar.',
+        summary:
+          'Error al computar optimizaciones asistidas por IA. Mostrando resumen preliminar.',
         recommendations: [
           {
             title: 'Monitoreo de interacción',

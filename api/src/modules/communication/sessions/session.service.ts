@@ -12,7 +12,9 @@ export class SessionService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    this.logger.log('Bootstrapping SessionService: reconnecting active channels...');
+    this.logger.log(
+      'Bootstrapping SessionService: reconnecting active channels...',
+    );
     try {
       // Reset transient statuses (e.g. QR_READY, AUTHENTICATING) back to DISCONNECTED on restart
       await this.db.mysql.channel.updateMany({
@@ -30,11 +32,16 @@ export class SessionService implements OnApplicationBootstrap {
         },
       });
       for (const channel of channels) {
-        this.logger.log(`Auto-connecting whatsapp for tenant ${channel.tenantId}, channel ${channel.id}`);
+        this.logger.log(
+          `Auto-connecting whatsapp for tenant ${channel.tenantId}, channel ${channel.id}`,
+        );
         await this.initializeSession(channel.tenantId, channel.id);
       }
     } catch (err) {
-      this.logger.error('Failed to auto-connect channels during bootstrap', err);
+      this.logger.error(
+        'Failed to auto-connect channels during bootstrap',
+        err,
+      );
     }
   }
 

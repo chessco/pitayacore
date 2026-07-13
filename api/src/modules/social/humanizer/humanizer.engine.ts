@@ -20,7 +20,9 @@ export class HumanizerEngine {
       prohibitedTerms?: string[];
     },
   ): Promise<string> {
-    this.logger.log(`Humanizing content for platform: ${options.platform || 'any'}`);
+    this.logger.log(
+      `Humanizing content for platform: ${options.platform || 'any'}`,
+    );
 
     const tone = options.tone || 'profesional pero cercano';
     const personality = options.personality || 'empático y consultivo';
@@ -28,8 +30,12 @@ export class HumanizerEngine {
     const country = options.country || 'México';
     const language = options.language || 'es';
     const ctaStyle = options.ctaStyle || 'conversacional y sutil';
-    const allowedEmojis = options.allowedEmojis ? options.allowedEmojis.join(' ') : '👍 🚀 😊';
-    const prohibitedTerms = options.prohibitedTerms ? options.prohibitedTerms.join(', ') : 'inteligencia artificial, automatizar, optimizar';
+    const allowedEmojis = options.allowedEmojis
+      ? options.allowedEmojis.join(' ')
+      : '👍 🚀 😊';
+    const prohibitedTerms = options.prohibitedTerms
+      ? options.prohibitedTerms.join(', ')
+      : 'inteligencia artificial, automatizar, optimizar';
 
     const systemPrompt = `Actúa como un redactor humano experto y estratega de contenido nativo en redes sociales.
 Tu misión es reescribir y humanizar un post generado por IA para que parezca escrito 100% por una persona real, con autenticidad, emoción y ritmo natural.
@@ -61,7 +67,10 @@ ${content}
 Entrega únicamente la pieza humanizada final, sin comentarios, sin introducciones ("Aquí tienes tu texto:") ni explicaciones adicionales.`;
 
     try {
-      const response = await this.aiService.generateRaw(systemPrompt, 'gemini-2.5-flash');
+      const response = await this.aiService.generateRaw(
+        systemPrompt,
+        'gemini-2.5-flash',
+      );
       return response.trim();
     } catch (error) {
       this.logger.error('Error humanizing content', error);

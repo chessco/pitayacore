@@ -29,14 +29,19 @@ export class SocialSchedulerService {
         return;
       }
 
-      this.logger.log(`Found ${itemsToPublish.length} social posts ready for publishing.`);
+      this.logger.log(
+        `Found ${itemsToPublish.length} social posts ready for publishing.`,
+      );
 
       for (const item of itemsToPublish) {
         this.logger.log(`Executing publication for queue item: ${item.id}`);
         await this.publisherEngine.publishQueueItem(item.id);
       }
     } catch (error) {
-      this.logger.error('Error processing scheduled social publishing queue', error);
+      this.logger.error(
+        'Error processing scheduled social publishing queue',
+        error,
+      );
     }
   }
 }

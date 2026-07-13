@@ -28,16 +28,25 @@ export class SocialAgentsService {
     });
   }
 
-  async chat(tenantId: string, agentSlug: string, message: string, contextData?: any) {
+  async chat(
+    tenantId: string,
+    agentSlug: string,
+    message: string,
+    contextData?: any,
+  ) {
     const template = await this.db.mysql.agentTemplate.findFirst({
       where: { slug: agentSlug },
     });
 
     if (!template) {
-      throw new NotFoundException(`Agent template for slug '${agentSlug}' not found`);
+      throw new NotFoundException(
+        `Agent template for slug '${agentSlug}' not found`,
+      );
     }
 
-    const systemPrompt = template.systemPrompt || `Actúas como un agente experto del sistema de Social Suite.`;
+    const systemPrompt =
+      template.systemPrompt ||
+      `Actúas como un agente experto del sistema de Social Suite.`;
     const contextPrompt = contextData
       ? `\nContexto adicional de la marca/campaña:\n${JSON.stringify(contextData)}\n`
       : '';
