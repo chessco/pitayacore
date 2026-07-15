@@ -67,6 +67,11 @@ model Tenant {
   postAnalytics         PostAnalytics[]
   brands                Brand[]
   whiteLabel            WhiteLabel?
+  designAuditLogs       DesignAuditLog[]
+  syncManifest          ThemeSyncManifest?
+  themeCache            ThemeCache[]
+  brandMemories         BrandMemory[]
+  appearanceManager     AppearanceManager?
 
   @@index([organizationId])
 }
@@ -1503,6 +1508,7 @@ model Theme {
   versions        ThemeVersion[]
   tokens          ThemeToken[]
   assets          ThemeAsset[]
+  cache           ThemeCache[]
 
   @@index([tenantId])
   @@index([brandId])
@@ -1578,3 +1584,89 @@ model AppearanceSettings {
   updatedAt       DateTime    @updatedAt
 }
 
+// ============================================================
+// DESIGN SUITE — EXTENDED MODELS
+// ============================================================
+
+model DesignAuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String?
+  action    String   // ThemeActivated | ThemeUpdated | ThemeVersionCreated | ThemeRolledBack | BrandUpdated | WhiteLabelChanged | SyncCompleted
+  entity    String   // Theme | Brand | WhiteLabel | Sync
+  entityId  String
+  before    Json?
+  after     Json?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([action])
+  @@index([entity, entityId])
+}
+
+model ThemeSyncManifest {
+  id         String   @id @default(uuid())
+  tenantId   String   @unique
+  version    String   @default("1.0.0")
+  checksum   String
+  manifest   Json
+  lastSyncAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model ThemeCache {
+  id        String    @id @default(uuid())
+  tenantId  String
+  themeId   String
+  version   String
+  tokens    Json
+  checksum  String
+  manifest  Json?
+  cachedAt  DateTime  @default(now())
+  expiresAt DateTime?
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  theme     Theme     @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, themeId])
+  @@index([tenantId])
+  @@index([themeId])
+}
+
+model BrandMemory {
+  id        String   @id @default(uuid())
+  tenantId  String
+  brandId   String?
+  type      String   // BrandEvolution | DesignDecision | ThemeHistory | BrandAnalysis
+  title     String
+  content   Json
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([brandId])
+  @@index([type])
+}
+
+model AppearanceManager {
+  id             String    @id @default(uuid())
+  tenantId       String    @unique
+  activeThemeId  String?
+  activeBrandId  String?
+  currentVersion String    @default("1.0.0")
+  currentMode    String    @default("LIGHT") // LIGHT | DARK | AUTO
+  syncStatus     String    @default("SYNCED") // SYNCED | PENDING | ERROR
+  lastSyncAt     DateTime?
+  previewThemeId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}

@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../common/database/database.service';
+import { DesignAuditService } from '../audit/design-audit.service';
 
 @Injectable()
 export class WhiteLabelService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly audit: DesignAuditService,
+  ) {}
 
   async findByTenant(tenantId: string) {
     return this.db.mysql.whiteLabel.findUnique({
@@ -13,25 +17,38 @@ export class WhiteLabelService {
 
   async updateOrCreate(tenantId: string, data: any) {
     const existing = await this.findByTenant(tenantId);
+
+    let result: any;
     if (existing) {
-      return this.db.mysql.whiteLabel.update({
+      result = await this.db.mysql.whiteLabel.update({
         where: { tenantId },
         data,
       });
+    } else {
+      result = await this.db.mysql.whiteLabel.create({
+        data: {
+          ...data,
+          tenantId,
+        },
+      });
     }
 
-    return this.db.mysql.whiteLabel.create({
-      data: {
-        ...data,
-        tenantId,
-      },
+    // Audit
+    await this.audit.log({
+      tenantId,
+      action: 'WhiteLabelChanged',
+      entity: 'WhiteLabel',
+      entityId: tenantId,
+      before: existing ? { appName: existing.appName } : undefined,
+      after: { appName: data.appName || result.appName },
     });
+
+    return result;
   }
 
   async getCombinedConfig(tenantId: string) {
     const whiteLabel = await this.findByTenant(tenantId);
 
-    // Find active theme for this tenant
     const activeTheme = await this.db.mysql.theme.findFirst({
       where: { tenantId, isDefault: true },
       include: { tokens: true, assets: true },
