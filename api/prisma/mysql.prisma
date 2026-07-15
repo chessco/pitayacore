@@ -72,6 +72,10 @@ model Tenant {
   themeCache            ThemeCache[]
   brandMemories         BrandMemory[]
   appearanceManager     AppearanceManager?
+  workers               Worker[]
+  scripts               Script[]
+  jobs                  Job[]
+  jobExecutions         JobExecution[]
 
   @@index([organizationId])
 }
@@ -801,6 +805,120 @@ model WorkspaceRelation {
   @@index([ideaId])
   @@index([leadId])
   @@index([contactId])
+}
+
+// ---------------------------------------------------------
+// Operations Suite (Digital Workforce Platform)
+// ---------------------------------------------------------
+
+model Worker {
+  id            String         @id @default(uuid())
+  tenantId      String
+  name          String
+  type          String         // WINDOWS, LINUX, DOCKER, ANDROID
+  version       String         @default("1.0.0")
+  status        String         @default("OFFLINE") // ONLINE, OFFLINE, BUSY, ERROR
+  capabilities  Json?          // Array of capability strings like "Filesystem.Copy"
+  tags          Json?
+  environment   Json?
+  os            String?
+  hostname      String?
+  ip            String?
+  lastHeartbeat DateTime?
+  lastSeen      DateTime?
+  health        String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  executions    JobExecution[]
+
+  @@index([tenantId])
+}
+
+model Script {
+  id          String   @id @default(uuid())
+  tenantId    String
+  version     String   @default("1.0")
+  checksum    String?
+  language    String   // POWERSHELL, PYTHON, NODEJS, BASH, SQL, CSHARP
+  description String?  @db.Text
+  permissions Json?
+  content     String   @db.Text
+  history     Json?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@index([tenantId])
+}
+
+model Job {
+  id                  String         @id @default(uuid())
+  tenantId            String
+  name                String
+  description         String?        @db.Text
+  category            String?
+  version             String         @default("1.0")
+  permissions         Json?
+  triggers            Json?
+  runtimeRequirements Json?
+  executionPlan       Json?
+  approvalRequired    Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  tenant              Tenant         @relation(fields: [tenantId], references: [id])
+  executions          JobExecution[]
+
+  @@index([tenantId])
+}
+
+model JobExecution {
+  id              String             @id @default(uuid())
+  tenantId        String
+  jobId           String
+  workerId        String?
+  status          String             @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, WAITING_APPROVAL
+  startAt         DateTime?
+  endAt           DateTime?
+  duration        Int?               // in milliseconds
+  logs            Json?
+  generatedFiles  Json?
+  errors          Json?
+  retries         Int                @default(0)
+  metrics         Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  job             Job                @relation(fields: [jobId], references: [id])
+  worker          Worker?            @relation(fields: [workerId], references: [id])
+  tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  steps           JobExecutionStep[]
+
+  @@index([tenantId])
+  @@index([jobId])
+  @@index([workerId])
+}
+
+model JobExecutionStep {
+  id             String       @id @default(uuid())
+  executionId    String
+  name           String
+  status         String       @default("PENDING")
+  startAt        DateTime?
+  endAt          DateTime?
+  logs           Json?
+  error          String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  execution      JobExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
 }
 
 model AgentSkill {

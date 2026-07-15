@@ -50,6 +50,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { SocialModule } from './modules/social/social.module';
 import { DesignModule } from './modules/design/design.module';
+import { OperationsModule } from './modules/operations/operations.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -98,6 +100,7 @@ import { DesignModule } from './modules/design/design.module';
     CommunicationModule,
     SocialModule,
     DesignModule,
+    OperationsModule,
   ],
   controllers: [AppController],
   providers: [
