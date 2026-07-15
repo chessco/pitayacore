@@ -72,10 +72,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     // Apply new tokens
     tokens.forEach(token => {
-      // Injects theme variables (e.g., --primary, --background, etc.)
+      // Injects theme variables (e.g., --theme-primary, --theme-background, etc.)
       root.style.setProperty(`--theme-${token.name}`, token.value);
-      // For tailwind fallback
-      root.style.setProperty(`--${token.name}`, token.value);
     });
   };
 
