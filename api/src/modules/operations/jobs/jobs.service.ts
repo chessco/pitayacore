@@ -18,9 +18,11 @@ export class JobsService {
     const tenantId = getTenantId();
     return this.db.mysql.job.create({
       data: {
-        ...data,
+        name: data.name,
+        category: data.jobType || 'SCRAPING',
         tenantId,
-        status: 'PENDING'
+        version: '1.0',
+        executionPlan: data.payload ? JSON.parse(data.payload) : {}
       }
     });
   }

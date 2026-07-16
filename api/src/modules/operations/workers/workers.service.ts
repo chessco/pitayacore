@@ -23,10 +23,10 @@ export class WorkersService {
     const tenantId = getTenantId();
     return this.db.mysql.worker.create({
       data: {
-        ...data,
+        name: data.name,
+        type: data.workerType || 'WINDOWS_NATIVE',
         tenantId,
         status: 'OFFLINE',
-        health: 'UNKNOWN',
         version: '1.0.0'
       }
     });
