@@ -34,6 +34,18 @@ export class ExecutionEngine {
       },
     });
 
+    if (job.cronExpression) {
+      await this.db.mysql.job.update({
+        where: { id: job.id },
+        data: {
+          runtimeRequirements: {
+            ...(job.runtimeRequirements as any || {}),
+            isCronActive: true
+          }
+        }
+      });
+    }
+
     this.logger.log(`Execution ${execution.id} created for Job ${job.name}`);
 
     // Emit event to worker via websocket
@@ -53,6 +65,16 @@ export class ExecutionEngine {
       where: { id: jobId, tenantId },
     });
     if (!job) throw new Error('Job not found');
+
+    await this.db.mysql.job.update({
+      where: { id: job.id },
+      data: {
+        runtimeRequirements: {
+          ...(job.runtimeRequirements as any || {}),
+          isCronActive: false
+        }
+      }
+    });
 
     this.logger.log(`Emitting stop signal for Job ${job.name}`);
     this.gateway.server.emit('job.stop', { jobId: job.id });

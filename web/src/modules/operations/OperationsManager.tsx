@@ -566,14 +566,15 @@ export function OperationsManager() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex justify-end gap-1">
-                                {job.cronExpression && (
+                                {job.cronExpression && (job.runtimeRequirements as any)?.isCronActive ? (
                                   <button onClick={() => handleStopJob(job.id)} className="text-amber-600 hover:text-amber-800 p-1 bg-amber-50 rounded" title="Detener Cron">
                                     <Square className="w-4 h-4" />
                                   </button>
+                                ) : (
+                                  <button onClick={() => handleExecuteJob(job.id)} className="text-emerald-600 hover:text-emerald-800 p-1 bg-emerald-50 rounded" title="Ejecutar ahora">
+                                    <Play className="w-4 h-4" />
+                                  </button>
                                 )}
-                                <button onClick={() => handleExecuteJob(job.id)} className="text-emerald-600 hover:text-emerald-800 p-1 bg-emerald-50 rounded" title="Ejecutar ahora">
-                                  <Play className="w-4 h-4" />
-                                </button>
                                 <button onClick={() => handleOpenEditJob(job)} className="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded" title="Editar">
                                   <Edit3 className="w-4 h-4" />
                                 </button>
