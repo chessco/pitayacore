@@ -11,11 +11,10 @@ export class WorkersService {
     return this.db.mysql.worker.findMany({ where: { tenantId } });
   }
 
-  async heartbeat(workerId: string, status: string, health: string) {
-    const tenantId = getTenantId();
-    return this.db.mysql.worker.update({
+  async heartbeat(workerId: string, status: string, health: any) {
+    return this.db.mysql.worker.updateMany({
       where: { id: workerId },
-      data: { status, health, lastHeartbeat: new Date() },
+      data: { status, health: typeof health === 'string' ? health : JSON.stringify(health), lastHeartbeat: new Date() },
     });
   }
 
