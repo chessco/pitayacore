@@ -207,6 +207,51 @@ export class WhatsappWebProvider
     }
   }
 
+  /**
+   * Returns the channelId of the first session currently in READY state for
+   * the tenant, or undefined if no WhatsApp line is connected.
+   */
+  getFirstReadyChannel(tenantId: string): string | undefined {
+    const prefix = `${tenantId}:`;
+    for (const [key, status] of this.clientStatuses.entries()) {
+      if (key.startsWith(prefix) && status === 'READY') {
+        return key.slice(prefix.length);
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Checks whether a phone number is registered on WhatsApp using the given
+   * channel's live session. Returns the resolved WhatsApp id when registered.
+   */
+  async getNumberId(
+    tenantId: string,
+    channelId: string,
+    phone: string,
+  ): Promise<{ registered: boolean; serialized?: string }> {
+    const clientKey = `${tenantId}:${channelId}`;
+    const client = this.clients.get(clientKey);
+    if (!client) {
+      throw new Error(
+        `No active WhatsApp client for tenant ${tenantId}, channel ${channelId}`,
+      );
+    }
+
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) {
+      throw new Error('Invalid phone number');
+    }
+
+    // getNumberId resolves the real WhatsApp WID (or null if not registered),
+    // handling country-specific quirks (e.g. the MX "1" prefix) better than a
+    // raw isRegisteredUser check.
+    const numberId = await client.getNumberId(digits);
+    return numberId
+      ? { registered: true, serialized: numberId._serialized }
+      : { registered: false };
+  }
+
   private registerEvents(tenantId: string, channelId: string, client: Client) {
     const clientKey = `${tenantId}:${channelId}`;
 

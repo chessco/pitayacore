@@ -199,8 +199,17 @@ export class AgentRouterService {
       }
 
       // 5. Route to Agent Runtime (AI Router)
-      const agentSlug = conversation.assignedAgentId && !conversation.assignedAgentId.startsWith('usr_') ? conversation.assignedAgentId : undefined;
-      const response = await this.aiRouter.route(event.content, event.tenantId, undefined, agentSlug);
+      const agentSlug =
+        conversation.assignedAgentId &&
+        !conversation.assignedAgentId.startsWith('usr_')
+          ? conversation.assignedAgentId
+          : undefined;
+      const response = await this.aiRouter.route(
+        event.content,
+        event.tenantId,
+        undefined,
+        agentSlug,
+      );
 
       // 5. Send back via provider
       if (response && event.provider === 'whatsapp') {

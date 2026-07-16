@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
+import { WhatsappWebProvider } from '../communication/providers/whatsapp-web/whatsapp-web.provider';
 
 @Injectable()
 export class AudiencesService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private readonly whatsapp: WhatsappWebProvider,
+  ) {}
 
   async createAudience(
     tenantId: string,
@@ -254,5 +262,62 @@ export class AudiencesService {
       where: { id: memberId, audienceId },
       data: { status },
     });
+  }
+
+  /**
+   * Validates whether a member's phone number is registered on WhatsApp,
+   * using the tenant's first connected (READY) WhatsApp line, and persists
+   * the result in the member's status:
+   *   - not registered -> WA_INVALID ("Solo Correo")
+   *   - registered     -> clears a previous WA_INVALID back to SUBSCRIBED,
+   *                       but never overrides UNSUBSCRIBED / EMAIL_BOUNCED marks.
+   */
+  async checkWhatsApp(tenantId: string, audienceId: string, memberId: string) {
+    await this.getAudience(tenantId, audienceId);
+
+    const member = await this.db.mysql.audienceMember.findFirst({
+      where: { id: memberId, audienceId },
+    });
+    if (!member) throw new NotFoundException('Contacto no encontrado');
+    if (!member.phone?.trim()) {
+      throw new BadRequestException(
+        'El contacto no tiene un número de teléfono para validar.',
+      );
+    }
+
+    const channelId = this.whatsapp.getFirstReadyChannel(tenantId);
+    if (!channelId) {
+      throw new BadRequestException(
+        'No hay una línea de WhatsApp conectada. Conecta una línea antes de validar.',
+      );
+    }
+
+    let registered: boolean;
+    let serialized: string | undefined;
+    try {
+      ({ registered, serialized } = await this.whatsapp.getNumberId(
+        tenantId,
+        channelId,
+        member.phone,
+      ));
+    } catch {
+      throw new BadRequestException(
+        'No se pudo validar el número con WhatsApp. Verifica que la línea siga conectada.',
+      );
+    }
+
+    let status = member.status;
+    if (!registered) {
+      status = 'WA_INVALID';
+    } else if (member.status === 'WA_INVALID') {
+      status = 'SUBSCRIBED';
+    }
+
+    const updated = await this.db.mysql.audienceMember.update({
+      where: { id: member.id },
+      data: { status },
+    });
+
+    return { registered, serialized, status: updated.status };
   }
 }

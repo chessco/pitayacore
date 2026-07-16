@@ -14,11 +14,18 @@ import { FeatureFlagGuard } from '../../common/guards/feature-flag.guard';
 
 import { ConversationsModule } from '../conversations/conversations.module';
 import { CrmModule } from '../crm/crm.module';
+import { CommunicationModule } from '../communication/communication.module';
 
 import { CampaignTrackingController } from './campaign-tracking.controller';
 
 @Module({
-  imports: [DatabaseModule, AiModule, ConversationsModule, CrmModule],
+  imports: [
+    DatabaseModule,
+    AiModule,
+    ConversationsModule,
+    CrmModule,
+    CommunicationModule,
+  ],
   controllers: [
     CapsulesController,
     CapsuleStudioController,
