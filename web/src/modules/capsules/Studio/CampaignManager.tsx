@@ -112,10 +112,10 @@ export const CampaignManager: React.FC = () => {
     if (selectedTenant) fetchData();
   }, [selectedTenant, flowApiKey, refreshKey]);
 
-  // Refetch audiences specifically when switching back to the campaigns tab
-  // so any lists created in the Audiences tab show up in the dropdown
+  // Refetch audiences when switching to the campaigns OR whatsapp tab
+  // so any lists created in the Audiences tab show up in both dropdowns
   useEffect(() => {
-    if (activeTab === 'campaigns' && selectedTenant) {
+    if ((activeTab === 'campaigns' || activeTab === 'whatsapp') && selectedTenant) {
       const fetchAudiences = async () => {
         const token = localStorage.getItem('token');
         const role = localStorage.getItem('pitayacore_role') || 'ADMIN';

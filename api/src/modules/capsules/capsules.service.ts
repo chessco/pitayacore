@@ -37,12 +37,12 @@ export class CapsulesService {
   }
 
   async findAll(tenantId?: string, user?: any) {
-    const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
+    // Only the explicit "global"/"all" sentinel bypasses tenant scoping.
+    // A concrete tenantId always filters, even for ADMIN/SYSTEM roles,
+    // otherwise every admin request would leak data across tenants.
     const isGlobal = tenantId === 'global' || tenantId === 'all';
 
-    const where = tenantId && !isSystem && !isGlobal ? { tenantId } : {};
-
-    console.log('CAPSULES QUERY:', { tenantId, isSystem, isGlobal, where });
+    const where = tenantId && !isGlobal ? { tenantId } : {};
 
     const results = await this.db.mysql.capsule.findMany({
       where,
@@ -54,20 +54,15 @@ export class CapsulesService {
       },
     });
 
-    console.log('CAPSULES RESULT:', results.length);
     return results;
   }
 
   async findOne(id: string, tenantId: string, user?: any) {
-    console.log(
-      `FIND_ONE: id="${id}" (length: ${id?.length}), tenantId=${tenantId}, userRole=${user?.role}`,
-    );
     const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
     const isGlobal = tenantId === 'global' || tenantId === 'all';
 
     const where =
       isSystem || isGlobal ? { id: id.trim() } : { id: id.trim(), tenantId };
-    console.log(`FIND_ONE WHERE: ${JSON.stringify(where)}`);
 
     const capsule = await this.db.mysql.capsule.findFirst({
       where,
@@ -75,16 +70,6 @@ export class CapsulesService {
     });
 
     if (!capsule) {
-      console.log('FIND_ONE NOT FOUND IN DB');
-      // Let's try to find it by ID only to be sure
-      const debugCapsule = await this.db.mysql.capsule.findUnique({
-        where: { id: id.trim() },
-      });
-      console.log(
-        'DEBUG_FIND_BY_ID_ONLY:',
-        debugCapsule ? 'FOUND' : 'NOT FOUND',
-      );
-
       throw new NotFoundException('Capsule not found');
     }
     return capsule;

@@ -40,9 +40,9 @@ export class CampaignService {
   }
 
   async getCampaigns(tenantId: string, user?: any) {
-    const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
+    // Only the explicit "global"/"all" sentinel bypasses tenant scoping.
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where = isSystem || isGlobal ? {} : { tenantId };
+    const where = isGlobal ? {} : { tenantId };
 
     return this.db.mysql.campaign.findMany({
       where,
@@ -71,12 +71,11 @@ export class CampaignService {
   }
 
   async getWhatsAppCampaigns(tenantId: string, user?: any) {
-    const isSystem = user?.role === 'SYSTEM' || user?.role === 'ADMIN';
+    // Only the explicit "global"/"all" sentinel bypasses tenant scoping.
     const isGlobal = tenantId === 'global' || tenantId === 'all';
-    const where =
-      isSystem || isGlobal
-        ? { channel: 'WHATSAPP' as any }
-        : { tenantId, channel: 'WHATSAPP' as any };
+    const where = isGlobal
+      ? { channel: 'WHATSAPP' as any }
+      : { tenantId, channel: 'WHATSAPP' as any };
 
     return this.db.mysql.campaign.findMany({
       where,
