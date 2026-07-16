@@ -43,7 +43,7 @@ export function OperationsManager() {
   // Forms state
   const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
   const [newScriptForm, setNewScriptForm] = useState({ name: '', language: 'NODEJS', content: '' });
-  const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '' });
+  const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '', isActive: false });
   const [editJob, setEditJob] = useState<any>(null);
   const [editJobForm, setEditJobForm] = useState({ name: '', jobType: '', cronExpression: '' });
   const [isEditJobModalOpen, setIsEditJobModalOpen] = useState(false);
