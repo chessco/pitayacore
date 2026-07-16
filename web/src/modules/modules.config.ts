@@ -21,7 +21,8 @@ import {
   Trophy,
   FolderOpen,
   Layers,
-  Palette
+  Palette,
+  Server
 } from 'lucide-react';
 import { WorkspaceView } from './workspace/WorkspaceView';
 import { Inbox } from './inbox/Inbox';
@@ -53,6 +54,7 @@ import { ModuleManager } from './system/ModuleManager';
 import SocialSuiteView from './social/SocialSuiteView';
 import { IdentityPlatform } from './identity/IdentityPlatform';
 import { AppearanceDashboard } from './design/AppearanceDashboard';
+import { OperationsManager } from './operations/OperationsManager';
 
 export interface ModuleConfig {
   id: string;           
@@ -324,6 +326,14 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     icon: Package,
     component: ModuleManager,
     description: 'Activación dinámica de capacidades SaaS.',
+    category: 'sistema'
+  },
+  {
+    id: 'operations_suite',
+    label: 'Runtime Operations',
+    icon: Server,
+    component: OperationsManager,
+    description: 'Gestión de Workers Deterministas y Orquestación de Trabajos.',
     category: 'sistema'
   },
 
