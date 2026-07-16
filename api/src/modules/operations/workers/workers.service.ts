@@ -14,7 +14,11 @@ export class WorkersService {
   async heartbeat(workerId: string, status: string, health: any) {
     return this.db.mysql.worker.updateMany({
       where: { id: workerId },
-      data: { status, health: typeof health === 'string' ? health : JSON.stringify(health), lastHeartbeat: new Date() },
+      data: {
+        status,
+        health: typeof health === 'string' ? health : JSON.stringify(health),
+        lastHeartbeat: new Date(),
+      },
     });
   }
 
@@ -26,8 +30,8 @@ export class WorkersService {
         type: data.workerType || 'WINDOWS_NATIVE',
         tenantId,
         status: 'OFFLINE',
-        version: '1.0.0'
-      }
+        version: '1.0.0',
+      },
     });
   }
 }

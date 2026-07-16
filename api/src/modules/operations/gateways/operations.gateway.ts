@@ -31,7 +31,9 @@ export class OperationsGateway {
     if (tenantId) {
       const activeJobs = await this.jobsService.findActiveCronJobs(tenantId);
       if (activeJobs.length > 0) {
-        this.logger.log(`Auto-starting ${activeJobs.length} active cron jobs for tenant ${tenantId}`);
+        this.logger.log(
+          `Auto-starting ${activeJobs.length} active cron jobs for tenant ${tenantId}`,
+        );
         for (const job of activeJobs) {
           client.emit('job.execute', {
             jobId: job.id,
@@ -64,9 +66,7 @@ export class OperationsGateway {
   }
 
   @SubscribeMessage('job.cron_tick')
-  async handleCronTick(
-    @MessageBody() data: any,
-  ) {
+  async handleCronTick(@MessageBody() data: any) {
     if (data.jobId) {
       await this.jobsService.updateLastRun(data.jobId);
       this.server.emit('job_updated', { jobId: data.jobId });
@@ -76,7 +76,10 @@ export class OperationsGateway {
   @SubscribeMessage('job.execution_completed')
   async handleExecutionCompleted(@MessageBody() data: any) {
     if (data.executionId && data.workerId) {
-      await this.executionEngine.completeExecution(data.executionId, data.workerId);
+      await this.executionEngine.completeExecution(
+        data.executionId,
+        data.workerId,
+      );
       this.server.emit('job_updated', { executionId: data.executionId });
     }
   }
@@ -84,7 +87,11 @@ export class OperationsGateway {
   @SubscribeMessage('job.execution_failed')
   async handleExecutionFailed(@MessageBody() data: any) {
     if (data.executionId && data.workerId) {
-      await this.executionEngine.failExecution(data.executionId, data.workerId, data.error);
+      await this.executionEngine.failExecution(
+        data.executionId,
+        data.workerId,
+        data.error,
+      );
       this.server.emit('job_updated', { executionId: data.executionId });
     }
   }

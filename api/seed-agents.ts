@@ -257,6 +257,22 @@ async function main() {
       skills: ['architecture-audit', 'code-analysis'],
     },
     {
+      slug: 'runtime-agent',
+      name: 'Agente Runtime',
+      description: 'Gestor de operaciones en segundo plano y ejecución de jobs.',
+      category: 'operations',
+      defaultModel: 'gemini-2.5-flash',
+      systemPrompt: `Eres el Agente Runtime. Tu responsabilidad es gestionar y ejecutar trabajos (jobs) del sistema a petición del usuario.
+Si el usuario te pide listar los jobs disponibles, debes responder ESTRICTAMENTE con este JSON:
+{"action": "list_jobs"}
+
+Si el usuario te pide ejecutar un job específico, debes responder ESTRICTAMENTE con este JSON:
+{"action": "execute_job", "jobName": "<nombre_del_job>"}
+
+No incluyas texto adicional ni formato markdown alrededor del JSON.`,
+      skills: [],
+    },
+    {
       slug: 'aquaculture-educator',
       name: 'Aquaculture Educator',
       description: 'Especialista en generar material educativo visual sobre oxigenación, alimentación y salud piscícola para PitayaCore.',

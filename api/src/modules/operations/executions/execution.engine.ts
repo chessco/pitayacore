@@ -38,8 +38,8 @@ export class ExecutionEngine {
       await this.db.mysql.job.update({
         where: { id: job.id },
         data: {
-          isActive: true
-        }
+          isActive: true,
+        },
       });
     }
 
@@ -66,8 +66,8 @@ export class ExecutionEngine {
     await this.db.mysql.job.update({
       where: { id: job.id },
       data: {
-        isActive: false
-      }
+        isActive: false,
+      },
     });
 
     this.logger.log(`Emitting stop signal for Job ${job.name}`);
@@ -83,12 +83,16 @@ export class ExecutionEngine {
         data: {
           status: 'COMPLETED',
           endAt: new Date(),
-          workerId
-        }
+          workerId,
+        },
       });
-      this.logger.log(`Execution ${executionId} marked as COMPLETED by worker ${workerId}`);
+      this.logger.log(
+        `Execution ${executionId} marked as COMPLETED by worker ${workerId}`,
+      );
     } catch (e) {
-      this.logger.error(`Error completing execution ${executionId}: ${e.message}`);
+      this.logger.error(
+        `Error completing execution ${executionId}: ${e.message}`,
+      );
     }
   }
 
@@ -101,10 +105,12 @@ export class ExecutionEngine {
           status: 'FAILED',
           endAt: new Date(),
           workerId,
-          errors: { message: errorMsg }
-        }
+          errors: { message: errorMsg },
+        },
       });
-      this.logger.log(`Execution ${executionId} marked as FAILED by worker ${workerId}`);
+      this.logger.log(
+        `Execution ${executionId} marked as FAILED by worker ${workerId}`,
+      );
     } catch (e) {
       this.logger.error(`Error failing execution ${executionId}: ${e.message}`);
     }

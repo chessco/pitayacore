@@ -8,9 +8,9 @@ export class JobsService {
 
   async findAll() {
     const tenantId = getTenantId();
-    return this.db.mysql.job.findMany({ 
+    return this.db.mysql.job.findMany({
       where: { tenantId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -19,8 +19,8 @@ export class JobsService {
       where: {
         tenantId,
         isActive: true,
-        cronExpression: { not: null }
-      }
+        cronExpression: { not: null },
+      },
     });
   }
 
@@ -28,7 +28,10 @@ export class JobsService {
     const tenantId = getTenantId();
     let plan = {};
     if (data.executionPlan) {
-      plan = typeof data.executionPlan === 'string' ? JSON.parse(data.executionPlan) : data.executionPlan;
+      plan =
+        typeof data.executionPlan === 'string'
+          ? JSON.parse(data.executionPlan)
+          : data.executionPlan;
     } else if (data.payload) {
       plan = JSON.parse(data.payload);
     }
@@ -39,8 +42,8 @@ export class JobsService {
         tenantId,
         version: '1.0',
         executionPlan: plan,
-        cronExpression: data.cronExpression || null
-      }
+        cronExpression: data.cronExpression || null,
+      },
     });
   }
 
@@ -51,9 +54,11 @@ export class JobsService {
       data: {
         ...(data.name && { name: data.name }),
         ...(data.jobType && { category: data.jobType }),
-        ...(data.cronExpression !== undefined && { cronExpression: data.cronExpression || null }),
-        ...(data.isActive !== undefined && { isActive: data.isActive })
-      }
+        ...(data.cronExpression !== undefined && {
+          cronExpression: data.cronExpression || null,
+        }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
     });
   }
 
@@ -61,17 +66,17 @@ export class JobsService {
     const tenantId = getTenantId();
     // Delete related executions first
     await this.db.mysql.jobExecution.deleteMany({
-      where: { jobId: id, tenantId }
+      where: { jobId: id, tenantId },
     });
     return this.db.mysql.job.delete({
-      where: { id, tenantId }
+      where: { id, tenantId },
     });
   }
 
   async updateLastRun(id: string) {
     return this.db.mysql.job.update({
       where: { id },
-      data: { lastRunAt: new Date() }
+      data: { lastRunAt: new Date() },
     });
   }
 }

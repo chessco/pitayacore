@@ -8,6 +8,7 @@ import { AiRouterService } from '../../ai/ai-router.service';
 import { WhatsappWebProvider } from '../providers/whatsapp-web/whatsapp-web.provider';
 import { DatabaseService } from '../../../common/database/database.service';
 import { AgentInboxGateway } from '../gateways/agent-inbox.gateway';
+import { ExecutionEngine } from '../../operations/executions/execution.engine';
 
 @Injectable()
 export class AgentRouterService {
@@ -19,6 +20,7 @@ export class AgentRouterService {
     private readonly db: DatabaseService,
     private readonly inboxGateway: AgentInboxGateway,
     private readonly eventEmitter: EventEmitter2,
+    private readonly executionEngine: ExecutionEngine,
   ) {}
 
   @OnEvent(COMMUNICATION_EVENTS.MESSAGE_RECEIVED)
@@ -190,8 +192,51 @@ export class AgentRouterService {
 
       // 5. Send back via provider
       if (response && event.provider === 'whatsapp') {
-        const responseText =
-          typeof response === 'string' ? response : JSON.stringify(response);
+        let responseText =
+          typeof response === 'string'
+            ? response
+            : (response as any).content || JSON.stringify(response);
+
+        // --- NEW INTERCEPTOR LOGIC ---
+        try {
+          const cleanedStr = responseText
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim();
+          if (cleanedStr.startsWith('{') && cleanedStr.endsWith('}')) {
+            const parsed = JSON.parse(cleanedStr);
+            if (parsed.action === 'list_jobs') {
+              const jobs = await this.db.mysql.job.findMany({
+                where: { tenantId: event.tenantId, cronExpression: null },
+              });
+              if (jobs.length === 0) {
+                responseText =
+                  'No hay trabajos manuales configurados en este momento.';
+              } else {
+                const list = jobs
+                  .map(
+                    (j) => `- ${j.name}: ${j.description || 'Sin descripción'}`,
+                  )
+                  .join('\n');
+                responseText = `Trabajos disponibles:\n${list}`;
+              }
+            } else if (parsed.action === 'execute_job' && parsed.jobName) {
+              const job = await this.db.mysql.job.findFirst({
+                where: {
+                  tenantId: event.tenantId,
+                  name: { contains: parsed.jobName },
+                },
+              });
+              if (job) {
+                await this.executionEngine.executeJob(job.id);
+                responseText = `✅ Iniciando ejecución del trabajo "${job.name}".`;
+              } else {
+                responseText = `❌ No pude encontrar un trabajo llamado "${parsed.jobName}".`;
+              }
+            }
+          }
+        } catch (e) {}
+        // --- END NEW INTERCEPTOR LOGIC ---
 
         await this.whatsappProvider.sendMessage(
           event.tenantId,

@@ -21,6 +21,7 @@ import { AiModule } from '../ai/ai.module';
 import { DatabaseModule } from '../../common/database/database.module';
 import { VectorSearchModule } from '../vector-search/vector-search.module';
 import { ChannelsModule } from './channels/channels.module';
+import { OperationsModule } from '../operations/operations.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ChannelsModule } from './channels/channels.module';
     AiModule,
     VectorSearchModule,
     ChannelsModule,
+    OperationsModule,
   ],
   providers: [
     FilesystemSessionStorageProvider,
