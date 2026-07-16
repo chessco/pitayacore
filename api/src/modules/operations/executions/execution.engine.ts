@@ -46,4 +46,16 @@ export class ExecutionEngine {
 
     return execution;
   }
+
+  async stopJob(jobId: string) {
+    const tenantId = getTenantId();
+    const job = await this.db.mysql.job.findUnique({
+      where: { id: jobId, tenantId },
+    });
+    if (!job) throw new Error('Job not found');
+
+    this.logger.log(`Emitting stop signal for Job ${job.name}`);
+    this.gateway.server.emit('job.stop', { jobId: job.id });
+    return { status: 'stopped' };
+  }
 }

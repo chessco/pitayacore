@@ -14,4 +14,9 @@ export class ExecutionsController {
   async executeJob(@Param('jobId') jobId: string) {
     return this.executionEngine.executeJob(jobId);
   }
+
+  @Post(':jobId/stop')
+  async stopJob(@Param('jobId') jobId: string) {
+    return this.executionEngine.stopJob(jobId);
+  }
 }

@@ -18,7 +18,8 @@ import {
   XCircle,
   AlertCircle,
   Plus,
-  Code
+  Code,
+  Square
 } from 'lucide-react';
 
 export function OperationsManager() {
@@ -194,6 +195,23 @@ export function OperationsManager() {
     }
   };
 
+  const handleStopJob = async (jobId: string) => {
+    if (!window.confirm('¿Seguro que deseas detener el cron automático de este Job en el Worker?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${apiUrl}/api/operations/executions/${jobId}/stop`, {}, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const fetchWorkers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -269,6 +287,19 @@ export function OperationsManager() {
     if (activeTab === 'executions') await fetchExecutions();
     setIsLoading(false);
   };
+
+
+  useEffect(() => {
+    let interval: any;
+    if (activeTab === 'jobs' && selectedTenant) {
+      interval = setInterval(() => {
+        fetchJobs();
+      }, 60000); // 1 minuto
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    }
+  }, [activeTab, selectedTenant]);
 
   useEffect(() => {
     loadData();
@@ -535,6 +566,11 @@ export function OperationsManager() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex justify-end gap-1">
+                                {job.cronExpression && (
+                                  <button onClick={() => handleStopJob(job.id)} className="text-amber-600 hover:text-amber-800 p-1 bg-amber-50 rounded" title="Detener Cron">
+                                    <Square className="w-4 h-4" />
+                                  </button>
+                                )}
                                 <button onClick={() => handleExecuteJob(job.id)} className="text-emerald-600 hover:text-emerald-800 p-1 bg-emerald-50 rounded" title="Ejecutar ahora">
                                   <Play className="w-4 h-4" />
                                 </button>

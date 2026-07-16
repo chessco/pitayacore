@@ -138,21 +138,27 @@ socket.on('job.execute', async (payload) => {
     }
 
     let isRunning = false;
-    const job = new CronJob(cronExpression, async () => {
-      if (isRunning) {
-        console.log(chalk.magenta(`   [CRON] Saltando ejecución porque la anterior aún no termina...`));
-        return;
-      }
-      isRunning = true;
-      console.log(chalk.magenta(`\n⏰ [CRON TICK] Ejecutando Job: ${jobId}...`));
-      
-      await executeScript();
-      
-      // Emit tick to update lastRunAt
-      socket.emit('job.cron_tick', { jobId });
-      
-      isRunning = false;
-    });
+    let job;
+    try {
+      job = new CronJob(cronExpression, async () => {
+        if (isRunning) {
+          console.log(chalk.magenta(`   [CRON] Saltando ejecución porque la anterior aún no termina...`));
+          return;
+        }
+        isRunning = true;
+        console.log(chalk.magenta(`\n⏰ [CRON TICK] Ejecutando Job: ${jobId}...`));
+        
+        await executeScript();
+        
+        // Emit tick to update lastRunAt
+        socket.emit('job.cron_tick', { jobId });
+        
+        isRunning = false;
+      });
+    } catch (err) {
+      console.error(chalk.red(`   [CRON ERROR] Expresión Cron inválida "${cronExpression}": ${err.message}`));
+      return;
+    }
     
     activeJobs.set(jobId, { job, isRunning: false });
     job.start();
@@ -168,5 +174,19 @@ socket.on('job.execute', async (payload) => {
   } else {
     // Execute once
     await executeScript();
+  }
+});
+
+socket.on('job.stop', (payload) => {
+  const { jobId } = payload;
+  console.log(chalk.yellow(`\n🛑 Recibida orden de detención - Job: ${jobId}`));
+  
+  if (activeJobs.has(jobId)) {
+    const jobState = activeJobs.get(jobId);
+    jobState.job.stop();
+    activeJobs.delete(jobId);
+    console.log(chalk.yellow(`   [CRON] Cron detenido exitosamente para el Job: ${jobId}`));
+  } else {
+    console.log(chalk.gray(`   [CRON] No se encontró un cron activo para el Job: ${jobId}`));
   }
 });
