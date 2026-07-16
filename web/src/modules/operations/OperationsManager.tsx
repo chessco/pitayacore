@@ -13,7 +13,8 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react';
 
 export function OperationsManager() {
@@ -26,6 +27,52 @@ export function OperationsManager() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [executions, setExecutions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Modals state
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  
+  // Forms state
+  const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
+  const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
+
+  const handleCreateWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${apiUrl}/api/operations/workers`, newWorkerForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsWorkerModalOpen(false);
+      setNewWorkerForm({ name: '', workerType: 'WINDOWS_NATIVE' });
+      fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${apiUrl}/api/operations/jobs`, newJobForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsJobModalOpen(false);
+      setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchWorkers = async () => {
     try {
@@ -110,40 +157,66 @@ export function OperationsManager() {
           </button>
         </div>
         
-        <div className="flex items-center gap-4 mt-6 max-w-6xl mx-auto w-full">
-          <button
-            onClick={() => setActiveTab('workers')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'workers' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            Workers
-          </button>
-          <button
-            onClick={() => setActiveTab('jobs')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'jobs' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <ListTodo className="w-4 h-4" />
-            Jobs
-          </button>
-          <button
-            onClick={() => setActiveTab('executions')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'executions' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            Ejecuciones
-          </button>
+        <div className="flex items-center justify-between mt-6 max-w-6xl mx-auto w-full">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setActiveTab('workers')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'workers' 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Workers
+            </button>
+            <button
+              onClick={() => setActiveTab('jobs')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'jobs' 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <ListTodo className="w-4 h-4" />
+              Jobs
+            </button>
+            <button
+              onClick={() => setActiveTab('executions')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'executions' 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              Ejecuciones
+            </button>
+          </div>
+          <div>
+            {activeTab === 'workers' && (
+              <button 
+                onClick={() => setIsWorkerModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium">
+                <Plus className="w-4 h-4" />
+                Registrar Worker
+              </button>
+            )}
+            {activeTab === 'jobs' && (
+              <button 
+                onClick={() => setIsJobModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                <Plus className="w-4 h-4" />
+                Crear Job
+              </button>
+            )}
+            {activeTab === 'executions' && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors font-medium">
+                <Play className="w-4 h-4" />
+                Forzar Ejecución
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -320,6 +393,138 @@ export function OperationsManager() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      {isWorkerModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="font-semibold text-slate-800">Registrar Worker de Prueba</h2>
+              <button onClick={() => setIsWorkerModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateWorker} className="p-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Worker</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newWorkerForm.name}
+                    onChange={(e) => setNewWorkerForm({...newWorkerForm, name: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="ej. DESKTOP-HQ123"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Worker</label>
+                  <select 
+                    value={newWorkerForm.workerType}
+                    onChange={(e) => setNewWorkerForm({...newWorkerForm, workerType: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="WINDOWS_NATIVE">Windows Native (C#)</option>
+                    <option value="NODEJS">Node.js (Puppeteer/Playwright)</option>
+                    <option value="PYTHON_CLI">Python CLI</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsWorkerModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Registrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isJobModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="font-semibold text-slate-800">Crear Nuevo Job</h2>
+              <button onClick={() => setIsJobModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateJob} className="p-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Job</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newJobForm.name}
+                    onChange={(e) => setNewJobForm({...newJobForm, name: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="ej. Descarga masiva SAT"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Trabajo</label>
+                  <select 
+                    value={newJobForm.jobType}
+                    onChange={(e) => setNewJobForm({...newJobForm, jobType: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="SCRAPING">Web Scraping (Selenium/Puppeteer)</option>
+                    <option value="FILE_PROCESSING">Procesamiento de Archivos</option>
+                    <option value="API_SYNC">Sincronización API</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Prioridad (1-100)</label>
+                  <input 
+                    type="number" 
+                    min="1" max="100"
+                    required 
+                    value={newJobForm.priority}
+                    onChange={(e) => setNewJobForm({...newJobForm, priority: parseInt(e.target.value) || 1})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Payload (JSON)</label>
+                  <textarea 
+                    rows={4}
+                    value={newJobForm.payload}
+                    onChange={(e) => setNewJobForm({...newJobForm, payload: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="{}"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsJobModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Crear Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

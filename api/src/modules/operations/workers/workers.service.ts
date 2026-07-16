@@ -18,4 +18,17 @@ export class WorkersService {
       data: { status, health, lastHeartbeat: new Date() },
     });
   }
+
+  async create(data: any) {
+    const tenantId = getTenantId();
+    return this.db.mysql.worker.create({
+      data: {
+        ...data,
+        tenantId,
+        status: 'OFFLINE',
+        health: 'UNKNOWN',
+        version: '1.0.0'
+      }
+    });
+  }
 }

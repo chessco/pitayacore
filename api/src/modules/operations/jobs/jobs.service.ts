@@ -8,6 +8,20 @@ export class JobsService {
 
   async findAll() {
     const tenantId = getTenantId();
-    return this.db.mysql.job.findMany({ where: { tenantId } });
+    return this.db.mysql.job.findMany({ 
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async create(data: any) {
+    const tenantId = getTenantId();
+    return this.db.mysql.job.create({
+      data: {
+        ...data,
+        tenantId,
+        status: 'PENDING'
+      }
+    });
   }
 }
