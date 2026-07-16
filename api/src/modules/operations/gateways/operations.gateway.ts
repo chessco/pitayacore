@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { WorkersService } from '../workers/workers.service';
+import { JobsService } from '../jobs/jobs.service';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/operations' })
 export class OperationsGateway {
@@ -16,7 +17,10 @@ export class OperationsGateway {
 
   private readonly logger = new Logger(OperationsGateway.name);
 
-  constructor(private readonly workersService: WorkersService) {}
+  constructor(
+    private readonly workersService: WorkersService,
+    private readonly jobsService: JobsService,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -38,6 +42,16 @@ export class OperationsGateway {
         data.health,
       );
       this.server.emit('worker_updated', { workerId: data.workerId });
+    }
+  }
+
+  @SubscribeMessage('job.cron_tick')
+  async handleCronTick(
+    @MessageBody() data: any,
+  ) {
+    if (data.jobId) {
+      await this.jobsService.updateLastRun(data.jobId);
+      this.server.emit('job_updated', { jobId: data.jobId });
     }
   }
 }

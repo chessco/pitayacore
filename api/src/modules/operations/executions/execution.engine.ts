@@ -41,6 +41,7 @@ export class ExecutionEngine {
       jobId: job.id,
       executionId: execution.id,
       executionPlan: job.executionPlan,
+      cronExpression: job.cronExpression,
     });
 
     return execution;

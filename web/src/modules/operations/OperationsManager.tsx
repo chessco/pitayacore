@@ -13,6 +13,7 @@ import {
   Clock,
   Edit3,
   Save,
+  Trash2,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -41,7 +42,10 @@ export function OperationsManager() {
   // Forms state
   const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
   const [newScriptForm, setNewScriptForm] = useState({ name: '', language: 'NODEJS', content: '' });
-  const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
+  const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '' });
+  const [editJob, setEditJob] = useState<any>(null);
+  const [editJobForm, setEditJobForm] = useState({ name: '', jobType: '', cronExpression: '' });
+  const [isEditJobModalOpen, setIsEditJobModalOpen] = useState(false);
   const [editScript, setEditScript] = useState<any>(null);
   const [editScriptForm, setEditScriptForm] = useState({ name: '', language: '', content: '' });
   const [isSavingScript, setIsSavingScript] = useState(false);
@@ -77,7 +81,50 @@ export function OperationsManager() {
         }
       });
       setIsJobModalOpen(false);
-      setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
+      setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '' });
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenEditJob = (job: any) => {
+    setEditJob(job);
+    setEditJobForm({ name: job.name, jobType: job.jobType, cronExpression: job.cronExpression || '' });
+    setIsEditJobModalOpen(true);
+  };
+
+  const handleSaveJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editJob) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${apiUrl}/api/operations/jobs/${editJob.id}`, editJobForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsEditJobModalOpen(false);
+      setEditJob(null);
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este Job?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${apiUrl}/api/operations/jobs/${jobId}`, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
       fetchJobs();
     } catch (err) {
       console.error(err);
@@ -452,7 +499,7 @@ export function OperationsManager() {
                         <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
                           <th className="p-4 font-medium">Nombre</th>
                           <th className="p-4 font-medium">Tipo</th>
-                          <th className="p-4 font-medium">Prioridad</th>
+                          <th className="p-4 font-medium">Última Ejecución</th>
                           <th className="p-4 font-medium">Estado</th>
                           <th className="p-4 font-medium text-right">Acciones</th>
                         </tr>
@@ -461,13 +508,22 @@ export function OperationsManager() {
                         {jobs.map((job) => (
                           <tr key={job.id} className="border-b border-slate-100 hover:bg-slate-50">
                             <td className="p-4">
-                              <p className="font-medium text-slate-800">{job.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-slate-800">{job.name}</p>
+                                {job.cronExpression && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold" title="Automático (Cron)">
+                                    Cron: {job.cronExpression}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-500">{job.id.substring(0, 8)}...</p>
                             </td>
                             <td className="p-4 text-slate-600 text-sm">
                               <span className="px-2 py-1 bg-slate-100 rounded text-xs">{job.jobType}</span>
                             </td>
-                            <td className="p-4 text-slate-600 text-sm">{job.priority}</td>
+                            <td className="p-4 text-slate-600 text-sm">
+                              {job.lastRunAt ? new Date(job.lastRunAt).toLocaleString() : 'Nunca'}
+                            </td>
                             <td className="p-4">
                               <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                 job.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
@@ -478,9 +534,17 @@ export function OperationsManager() {
                               </span>
                             </td>
                             <td className="p-4 text-right">
-                              <button onClick={() => handleExecuteJob(job.id)} className="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded" title="Ejecutar ahora">
-                                <Play className="w-4 h-4" />
-                              </button>
+                              <div className="flex justify-end gap-1">
+                                <button onClick={() => handleExecuteJob(job.id)} className="text-emerald-600 hover:text-emerald-800 p-1 bg-emerald-50 rounded" title="Ejecutar ahora">
+                                  <Play className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleOpenEditJob(job)} className="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded" title="Editar">
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDeleteJob(job.id)} className="text-red-600 hover:text-red-800 p-1 bg-red-50 rounded" title="Eliminar">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -681,6 +745,17 @@ export function OperationsManager() {
                     placeholder="{}"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Cron Expression (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={newJobForm.cronExpression}
+                    onChange={(e) => setNewJobForm({...newJobForm, cronExpression: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                    placeholder="ej. * * * * *"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">El worker lo ejecutará automáticamente (ej. cada minuto: * * * * *)</p>
+                </div>
               </div>
               <div className="mt-6 flex justify-end gap-2">
                 <button 
@@ -695,6 +770,58 @@ export function OperationsManager() {
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Crear Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditJobModalOpen && editJob && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="font-semibold text-slate-800">Editar Job</h2>
+              <button onClick={() => setIsEditJobModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveJob} className="p-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editJobForm.name}
+                    onChange={(e) => setEditJobForm({...editJobForm, name: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Cron Expression (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={editJobForm.cronExpression}
+                    onChange={(e) => setEditJobForm({...editJobForm, cronExpression: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Dejar vacío para ejecución manual.</p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditJobModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Guardar
                 </button>
               </div>
             </form>

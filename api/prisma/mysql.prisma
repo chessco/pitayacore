@@ -868,6 +868,8 @@ model Job {
   triggers            Json?
   runtimeRequirements Json?
   executionPlan       Json?
+  cronExpression      String?
+  lastRunAt           DateTime?
   approvalRequired    Boolean        @default(false)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt

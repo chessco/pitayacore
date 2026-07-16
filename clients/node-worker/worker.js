@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { CronJob } from 'cron';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -34,6 +35,7 @@ const socket = io(WS_URL, {
 });
 
 let heartbeatInterval;
+const activeJobs = new Map();
 
 socket.on('connect', () => {
   console.log(chalk.green.bold('\n✓ Conectado exitosamente al servidor PitayaCore'));
@@ -59,7 +61,7 @@ socket.on('disconnect', () => {
 });
 
 socket.on('job.execute', async (payload) => {
-  const { jobId, executionId, executionPlan } = payload;
+  const { jobId, executionId, executionPlan, cronExpression } = payload;
   console.log(chalk.cyan(`\n⚡ Recibida orden de ejecución - Job: ${jobId}`));
   console.log(chalk.cyan(`   Execution ID: ${executionId}`));
 
@@ -94,28 +96,77 @@ socket.on('job.execute', async (payload) => {
     fs.mkdirSync(tmpDir);
   }
   
-  const scriptPath = path.join(tmpDir, `exec_${executionId}.cjs`);
-  fs.writeFileSync(scriptPath, scriptContent);
-  console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
+  const executeScript = () => {
+    return new Promise((resolve) => {
+      // Use jobId in filename to avoid conflicts if it's a cron job, or executionId if it's manual
+      const runId = cronExpression ? jobId : executionId;
+      const scriptPath = path.join(tmpDir, `exec_${runId}.cjs`);
+      fs.writeFileSync(scriptPath, scriptContent);
+      console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
 
-  console.log(chalk.yellow(`   [>>] Iniciando ejecución...`));
-  const child = spawn('node', [scriptPath]);
+      console.log(chalk.yellow(`   [>>] Iniciando ejecución...`));
+      const child = spawn('node', [scriptPath]);
 
-  child.stdout.on('data', (data) => {
-    const text = data.toString();
-    console.log(chalk.white(text.trimEnd()));
-  });
+      child.stdout.on('data', (data) => {
+        const text = data.toString();
+        console.log(chalk.white(text.trimEnd()));
+      });
 
-  child.stderr.on('data', (data) => {
-    const text = data.toString();
-    console.error(chalk.red(text.trimEnd()));
-  });
+      child.stderr.on('data', (data) => {
+        const text = data.toString();
+        console.error(chalk.red(text.trimEnd()));
+      });
 
-  child.on('close', (code) => {
-    if (code === 0) {
-      console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
-    } else {
-      console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
+      child.on('close', (code) => {
+        if (code === 0) {
+          console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
+        } else {
+          console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
+        }
+        resolve(code);
+      });
+    });
+  };
+
+  if (cronExpression) {
+    console.log(chalk.magenta(`   [CRON] Configurando bucle automático: ${cronExpression}`));
+    
+    // Stop old cron if exists
+    if (activeJobs.has(jobId)) {
+      console.log(chalk.magenta(`   [CRON] Deteniendo cron anterior para este Job`));
+      activeJobs.get(jobId).job.stop();
     }
-  });
+
+    let isRunning = false;
+    const job = new CronJob(cronExpression, async () => {
+      if (isRunning) {
+        console.log(chalk.magenta(`   [CRON] Saltando ejecución porque la anterior aún no termina...`));
+        return;
+      }
+      isRunning = true;
+      console.log(chalk.magenta(`\n⏰ [CRON TICK] Ejecutando Job: ${jobId}...`));
+      
+      await executeScript();
+      
+      // Emit tick to update lastRunAt
+      socket.emit('job.cron_tick', { jobId });
+      
+      isRunning = false;
+    });
+    
+    activeJobs.set(jobId, { job, isRunning: false });
+    job.start();
+    
+    // Execute immediately on registration to avoid waiting for the first tick
+    const jobState = activeJobs.get(jobId);
+    if (!jobState.isRunning) {
+      jobState.isRunning = true;
+      await executeScript();
+      socket.emit('job.cron_tick', { jobId });
+      jobState.isRunning = false;
+    }
+  } else {
+    // Execute once
+    await executeScript();
+  }
 });

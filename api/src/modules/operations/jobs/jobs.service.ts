@@ -28,8 +28,39 @@ export class JobsService {
         category: data.jobType || 'SCRAPING',
         tenantId,
         version: '1.0',
-        executionPlan: plan
+        executionPlan: plan,
+        cronExpression: data.cronExpression || null
       }
+    });
+  }
+
+  async update(id: string, data: any) {
+    const tenantId = getTenantId();
+    return this.db.mysql.job.update({
+      where: { id, tenantId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.jobType && { category: data.jobType }),
+        ...(data.cronExpression !== undefined && { cronExpression: data.cronExpression || null })
+      }
+    });
+  }
+
+  async remove(id: string) {
+    const tenantId = getTenantId();
+    // Delete related executions first
+    await this.db.mysql.jobExecution.deleteMany({
+      where: { jobId: id, tenantId }
+    });
+    return this.db.mysql.job.delete({
+      where: { id, tenantId }
+    });
+  }
+
+  async updateLastRun(id: string) {
+    return this.db.mysql.job.update({
+      where: { id },
+      data: { lastRunAt: new Date() }
     });
   }
 }
