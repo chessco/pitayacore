@@ -14,6 +14,16 @@ export class JobsService {
     });
   }
 
+  async findActiveCronJobs(tenantId: string) {
+    return this.db.mysql.job.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+        cronExpression: { not: null }
+      }
+    });
+  }
+
   async create(data: any) {
     const tenantId = getTenantId();
     let plan = {};
@@ -41,7 +51,8 @@ export class JobsService {
       data: {
         ...(data.name && { name: data.name }),
         ...(data.jobType && { category: data.jobType }),
-        ...(data.cronExpression !== undefined && { cronExpression: data.cronExpression || null })
+        ...(data.cronExpression !== undefined && { cronExpression: data.cronExpression || null }),
+        ...(data.isActive !== undefined && { isActive: data.isActive })
       }
     });
   }

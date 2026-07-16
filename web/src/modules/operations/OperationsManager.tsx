@@ -74,7 +74,10 @@ export function OperationsManager() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${apiUrl}/api/operations/jobs`, newJobForm, {
+      await axios.post(`${apiUrl}/api/operations/jobs`, {
+        ...newJobForm,
+        isActive: newJobForm.isActive || false
+      }, {
         headers: { 
           'x-tenant-id': selectedTenant?.id || '',
           'x-api-key': flowApiKey,
@@ -82,7 +85,7 @@ export function OperationsManager() {
         }
       });
       setIsJobModalOpen(false);
-      setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '' });
+      setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '', isActive: false });
       fetchJobs();
     } catch (err) {
       console.error(err);
@@ -206,6 +209,34 @@ export function OperationsManager() {
           'Authorization': `Bearer ${token}`
         }
       });
+      fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleActive = async (job: any) => {
+    const newActive = !job.isActive;
+    try {
+      const token = localStorage.getItem('token');
+      // Update the state
+      await axios.patch(`${apiUrl}/api/operations/jobs/${job.id}`, { isActive: newActive }, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      // Also emit start/stop to worker
+      if (newActive) {
+        await axios.post(`${apiUrl}/api/operations/executions/${job.id}/execute`, {}, {
+          headers: { 'x-tenant-id': selectedTenant?.id || '', 'x-api-key': flowApiKey, 'Authorization': `Bearer ${token}` }
+        });
+      } else {
+        await axios.post(`${apiUrl}/api/operations/executions/${job.id}/stop`, {}, {
+          headers: { 'x-tenant-id': selectedTenant?.id || '', 'x-api-key': flowApiKey, 'Authorization': `Bearer ${token}` }
+        });
+      }
       fetchJobs();
     } catch (err) {
       console.error(err);
@@ -566,9 +597,17 @@ export function OperationsManager() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex justify-end gap-1">
-                                {job.cronExpression && (job.runtimeRequirements as any)?.isCronActive ? (
-                                  <button onClick={() => handleStopJob(job.id)} className="text-amber-600 hover:text-amber-800 p-1 bg-amber-50 rounded" title="Detener Cron">
-                                    <Square className="w-4 h-4" />
+                                {job.cronExpression ? (
+                                  <button 
+                                    onClick={() => handleToggleActive(job)} 
+                                    className={`p-1 rounded text-xs font-medium px-2 flex items-center gap-1 ${
+                                      job.isActive 
+                                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                    title={job.isActive ? "Desactivar Cron" : "Activar Cron"}
+                                  >
+                                    {job.isActive ? 'Activo' : 'Inactivo'}
                                   </button>
                                 ) : (
                                   <button onClick={() => handleExecuteJob(job.id)} className="text-emerald-600 hover:text-emerald-800 p-1 bg-emerald-50 rounded" title="Ejecutar ahora">

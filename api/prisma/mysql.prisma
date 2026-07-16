@@ -869,6 +869,7 @@ model Job {
   runtimeRequirements Json?
   executionPlan       Json?
   cronExpression      String?
+  isActive            Boolean        @default(false)
   lastRunAt           DateTime?
   approvalRequired    Boolean        @default(false)
   createdAt           DateTime       @default(now())

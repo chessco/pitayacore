@@ -38,10 +38,7 @@ export class ExecutionEngine {
       await this.db.mysql.job.update({
         where: { id: job.id },
         data: {
-          runtimeRequirements: {
-            ...(job.runtimeRequirements as any || {}),
-            isCronActive: true
-          }
+          isActive: true
         }
       });
     }
@@ -69,10 +66,7 @@ export class ExecutionEngine {
     await this.db.mysql.job.update({
       where: { id: job.id },
       data: {
-        runtimeRequirements: {
-          ...(job.runtimeRequirements as any || {}),
-          isCronActive: false
-        }
+        isActive: false
       }
     });
 

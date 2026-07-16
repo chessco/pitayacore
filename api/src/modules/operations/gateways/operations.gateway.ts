@@ -22,8 +22,23 @@ export class OperationsGateway {
     private readonly jobsService: JobsService,
   ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
+    const tenantId = client.handshake.headers['x-tenant-id'] as string;
+    if (tenantId) {
+      const activeJobs = await this.jobsService.findActiveCronJobs(tenantId);
+      if (activeJobs.length > 0) {
+        this.logger.log(`Auto-starting ${activeJobs.length} active cron jobs for tenant ${tenantId}`);
+        for (const job of activeJobs) {
+          client.emit('job.execute', {
+            jobId: job.id,
+            executionId: `auto-${Date.now()}`,
+            executionPlan: job.executionPlan,
+            cronExpression: job.cronExpression,
+          });
+        }
+      }
+    }
   }
 
   handleDisconnect(client: Socket) {
