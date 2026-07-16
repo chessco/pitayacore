@@ -38,6 +38,7 @@ export function InboxChatHeader({
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
+  const [copiedId, setCopiedId] = useState(false);
   
   if (!activeConversation) {
     return (
@@ -121,14 +122,32 @@ export function InboxChatHeader({
             {activeConversation.metadata?.channelId && (
               <>
                 <span className="text-[#667781]">•</span>
-                <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" title="Línea WhatsApp vinculada">
+                <span
+                  className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded"
+                  title={`Línea WhatsApp vinculada · ${activeConversation.metadata.channelId}`}
+                >
                   <Smartphone className="w-3 h-3" />
-                  {activeConversation.metadata.channelId}
+                  Línea WhatsApp
                 </span>
               </>
             )}
-            <span className="text-[#667781]">•</span>
-            <span>{activeConversation.id}</span>
+            {activeConversation.id && (
+              <>
+                <span className="text-[#667781]">•</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(activeConversation.id));
+                    setCopiedId(true);
+                    setTimeout(() => setCopiedId(false), 1500);
+                  }}
+                  className="font-mono text-[10px] text-[#8696a0] hover:text-[#667781] transition-colors"
+                  title={`ID de conversación: ${activeConversation.id} (click para copiar)`}
+                >
+                  {copiedId ? '¡Copiado!' : `#${String(activeConversation.id).slice(0, 8)}`}
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>
