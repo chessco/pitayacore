@@ -14,26 +14,30 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Plus
+  Plus,
+  Code
 } from 'lucide-react';
 
 export function OperationsManager() {
   const { selectedTenant, flowApiKey } = useTenant();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
   
-  const [activeTab, setActiveTab] = useState<'workers' | 'jobs' | 'executions'>('workers');
+  const [activeTab, setActiveTab] = useState<'workers' | 'jobs' | 'executions' | 'scripts'>('workers');
   
   const [workers, setWorkers] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [executions, setExecutions] = useState<any[]>([]);
+  const [scripts, setScripts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modals state
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   
   // Forms state
   const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
+  const [newScriptForm, setNewScriptForm] = useState({ name: '', language: 'NODEJS', content: '' });
   const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
 
   const handleCreateWorker = async (e: React.FormEvent) => {
@@ -69,6 +73,41 @@ export function OperationsManager() {
       setIsJobModalOpen(false);
       setNewJobForm({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
       fetchJobs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateScript = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${apiUrl}/api/operations/scripts`, newScriptForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsScriptModalOpen(false);
+      setNewScriptForm({ name: '', language: 'NODEJS', content: '' });
+      fetchScripts();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleExecuteJob = async (jobId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${apiUrl}/api/operations/executions/${jobId}/execute`, {}, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setActiveTab('executions');
     } catch (err) {
       console.error(err);
     }
@@ -122,10 +161,30 @@ export function OperationsManager() {
     }
   };
 
+  const fetchScripts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${apiUrl}/api/operations/scripts`, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setScripts(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     if (activeTab === 'workers') await fetchWorkers();
-    if (activeTab === 'jobs') await fetchJobs();
+    if (activeTab === 'scripts') await fetchScripts();
+    if (activeTab === 'jobs') {
+      await fetchJobs();
+      await fetchScripts();
+    }
     if (activeTab === 'executions') await fetchExecutions();
     setIsLoading(false);
   };
@@ -182,6 +241,17 @@ export function OperationsManager() {
               Jobs
             </button>
             <button
+              onClick={() => setActiveTab('scripts')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'scripts' 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Code className="w-4 h-4" />
+              Scripts
+            </button>
+            <button
               onClick={() => setActiveTab('executions')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'executions' 
@@ -208,6 +278,14 @@ export function OperationsManager() {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 <Plus className="w-4 h-4" />
                 Crear Job
+              </button>
+            )}
+            {activeTab === 'scripts' && (
+              <button 
+                onClick={() => setIsScriptModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                <Plus className="w-4 h-4" />
+                Crear Script
               </button>
             )}
             {activeTab === 'executions' && (
@@ -278,6 +356,48 @@ export function OperationsManager() {
                 </div>
               )}
 
+              {activeTab === 'scripts' && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  {scripts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Code className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <h3 className="text-lg font-medium text-slate-800">No hay Scripts</h3>
+                      <p className="text-slate-500 mt-1">Crea un script para que tus workers puedan ejecutarlo.</p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                          <th className="p-4 font-medium">Nombre</th>
+                          <th className="p-4 font-medium">Lenguaje</th>
+                          <th className="p-4 font-medium">Versión</th>
+                          <th className="p-4 font-medium">Fecha</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scripts.map((script) => (
+                          <tr key={script.id} className="border-b border-slate-100 hover:bg-slate-50">
+                            <td className="p-4">
+                              <p className="font-medium text-slate-800">{script.name}</p>
+                              <p className="text-xs text-slate-500 font-mono">{script.id.substring(0, 8)}...</p>
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600 font-medium">
+                                {script.language}
+                              </span>
+                            </td>
+                            <td className="p-4 text-slate-600 text-sm">v{script.version}</td>
+                            <td className="p-4 text-slate-600 text-sm">
+                              {new Date(script.createdAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
               {activeTab === 'jobs' && (
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   {jobs.length === 0 ? (
@@ -318,7 +438,7 @@ export function OperationsManager() {
                               </span>
                             </td>
                             <td className="p-4 text-right">
-                              <button className="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded" title="Ejecutar ahora">
+                              <button onClick={() => handleExecuteJob(job.id)} className="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded" title="Ejecutar ahora">
                                 <Play className="w-4 h-4" />
                               </button>
                             </td>
@@ -485,6 +605,22 @@ export function OperationsManager() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Vincular a Script (Opcional)</label>
+                  <select 
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setNewJobForm({...newJobForm, payload: JSON.stringify({ scriptId: e.target.value }, null, 2)});
+                      }
+                    }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Sin Script (usar JSON) --</option>
+                    {scripts.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.language})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Prioridad (1-100)</label>
                   <input 
                     type="number" 
@@ -519,6 +655,75 @@ export function OperationsManager() {
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Crear Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isScriptModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Code className="w-5 h-5 text-purple-600" />
+                Registrar Nuevo Script
+              </h2>
+              <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateScript} className="p-4 flex-1 overflow-y-auto flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Script</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newScriptForm.name}
+                    onChange={(e) => setNewScriptForm({...newScriptForm, name: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="ej. Login SAT"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Lenguaje</label>
+                  <select 
+                    value={newScriptForm.language}
+                    onChange={(e) => setNewScriptForm({...newScriptForm, language: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="NODEJS">Node.js</option>
+                    <option value="PYTHON">Python</option>
+                    <option value="POWERSHELL">PowerShell</option>
+                    <option value="BASH">Bash</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1 min-h-[300px] flex flex-col">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Código Fuente</label>
+                <textarea 
+                  required
+                  value={newScriptForm.content}
+                  onChange={(e) => setNewScriptForm({...newScriptForm, content: e.target.value})}
+                  className="w-full flex-1 border border-slate-300 rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50 whitespace-pre"
+                  placeholder={`// Escribe aquí tu código en ${newScriptForm.language}\nconsole.log("Iniciando script...");`}
+                />
+              </div>
+              <div className="mt-2 flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setIsScriptModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Guardar Script
                 </button>
               </div>
             </form>

@@ -840,6 +840,7 @@ model Worker {
 model Script {
   id          String   @id @default(uuid())
   tenantId    String
+  name        String
   version     String   @default("1.0")
   checksum    String?
   language    String   // POWERSHELL, PYTHON, NODEJS, BASH, SQL, CSHARP
