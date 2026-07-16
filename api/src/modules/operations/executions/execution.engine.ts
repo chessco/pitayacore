@@ -74,4 +74,39 @@ export class ExecutionEngine {
     this.gateway.server.emit('job.stop', { jobId: job.id });
     return { status: 'stopped' };
   }
+
+  async completeExecution(executionId: string, workerId: string) {
+    if (executionId.startsWith('auto-')) return;
+    try {
+      await this.db.mysql.jobExecution.update({
+        where: { id: executionId },
+        data: {
+          status: 'COMPLETED',
+          endAt: new Date(),
+          workerId
+        }
+      });
+      this.logger.log(`Execution ${executionId} marked as COMPLETED by worker ${workerId}`);
+    } catch (e) {
+      this.logger.error(`Error completing execution ${executionId}: ${e.message}`);
+    }
+  }
+
+  async failExecution(executionId: string, workerId: string, errorMsg: string) {
+    if (executionId.startsWith('auto-')) return;
+    try {
+      await this.db.mysql.jobExecution.update({
+        where: { id: executionId },
+        data: {
+          status: 'FAILED',
+          endAt: new Date(),
+          workerId,
+          errors: { message: errorMsg }
+        }
+      });
+      this.logger.log(`Execution ${executionId} marked as FAILED by worker ${workerId}`);
+    } catch (e) {
+      this.logger.error(`Error failing execution ${executionId}: ${e.message}`);
+    }
+  }
 }

@@ -660,11 +660,11 @@ export function OperationsManager() {
                             <td className="p-4 text-sm text-slate-600">
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-slate-400" />
-                                {new Date(exec.startedAt).toLocaleString()}
+                                {exec.startAt ? new Date(exec.startAt).toLocaleString() : 'N/A'}
                               </div>
-                              {exec.completedAt && (
+                              {exec.endAt && (
                                 <div className="text-xs text-slate-500 mt-1">
-                                  Terminado: {new Date(exec.completedAt).toLocaleTimeString()}
+                                  Terminado: {new Date(exec.endAt).toLocaleTimeString()}
                                 </div>
                               )}
                             </td>

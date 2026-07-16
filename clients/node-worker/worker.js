@@ -96,37 +96,41 @@ socket.on('job.execute', async (payload) => {
     fs.mkdirSync(tmpDir);
   }
   
-  const executeScript = () => {
-    return new Promise((resolve) => {
-      // Use jobId in filename to avoid conflicts if it's a cron job, or executionId if it's manual
-      const runId = cronExpression ? jobId : executionId;
-      const scriptPath = path.join(tmpDir, `exec_${runId}.cjs`);
-      fs.writeFileSync(scriptPath, scriptContent);
-      console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
+    const executeScript = () => {
+      return new Promise((resolve) => {
+        // Use jobId in filename to avoid conflicts if it's a cron job, or executionId if it's manual
+        const runId = cronExpression ? jobId : executionId;
+        const scriptPath = path.join(tmpDir, `exec_${runId}.cjs`);
+        fs.writeFileSync(scriptPath, scriptContent);
+        console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
 
-      console.log(chalk.yellow(`   [>>] Iniciando ejecución...`));
-      const child = spawn('node', [scriptPath]);
+        console.log(chalk.yellow(`   [>>] Iniciando ejecución...`));
+        const child = spawn('node', [scriptPath]);
 
-      child.stdout.on('data', (data) => {
-        const text = data.toString();
-        console.log(chalk.white(text.trimEnd()));
+        child.stdout.on('data', (data) => {
+          const text = data.toString();
+          console.log(chalk.white(text.trimEnd()));
+        });
+
+        let errorLog = '';
+        child.stderr.on('data', (data) => {
+          const text = data.toString();
+          errorLog += text;
+          console.error(chalk.red(text.trimEnd()));
+        });
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
+            socket.emit('job.execution_completed', { executionId, workerId: WORKER_ID });
+          } else {
+            console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
+            socket.emit('job.execution_failed', { executionId, workerId: WORKER_ID, error: errorLog });
+          }
+          resolve(code);
+        });
       });
-
-      child.stderr.on('data', (data) => {
-        const text = data.toString();
-        console.error(chalk.red(text.trimEnd()));
-      });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
-        } else {
-          console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
-        }
-        resolve(code);
-      });
-    });
-  };
+    };
 
   if (cronExpression) {
     console.log(chalk.magenta(`   [CRON] Configurando bucle automático: ${cronExpression}`));

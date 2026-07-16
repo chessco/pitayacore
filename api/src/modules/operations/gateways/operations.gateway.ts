@@ -6,9 +6,10 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { WorkersService } from '../workers/workers.service';
 import { JobsService } from '../jobs/jobs.service';
+import { ExecutionEngine } from '../executions/execution.engine';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/operations' })
 export class OperationsGateway {
@@ -20,6 +21,8 @@ export class OperationsGateway {
   constructor(
     private readonly workersService: WorkersService,
     private readonly jobsService: JobsService,
+    @Inject(forwardRef(() => ExecutionEngine))
+    private readonly executionEngine: ExecutionEngine,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -67,6 +70,22 @@ export class OperationsGateway {
     if (data.jobId) {
       await this.jobsService.updateLastRun(data.jobId);
       this.server.emit('job_updated', { jobId: data.jobId });
+    }
+  }
+
+  @SubscribeMessage('job.execution_completed')
+  async handleExecutionCompleted(@MessageBody() data: any) {
+    if (data.executionId && data.workerId) {
+      await this.executionEngine.completeExecution(data.executionId, data.workerId);
+      this.server.emit('job_updated', { executionId: data.executionId });
+    }
+  }
+
+  @SubscribeMessage('job.execution_failed')
+  async handleExecutionFailed(@MessageBody() data: any) {
+    if (data.executionId && data.workerId) {
+      await this.executionEngine.failExecution(data.executionId, data.workerId, data.error);
+      this.server.emit('job_updated', { executionId: data.executionId });
     }
   }
 }
