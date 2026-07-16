@@ -16,13 +16,19 @@ export class JobsService {
 
   async create(data: any) {
     const tenantId = getTenantId();
+    let plan = {};
+    if (data.executionPlan) {
+      plan = typeof data.executionPlan === 'string' ? JSON.parse(data.executionPlan) : data.executionPlan;
+    } else if (data.payload) {
+      plan = JSON.parse(data.payload);
+    }
     return this.db.mysql.job.create({
       data: {
         name: data.name,
         category: data.jobType || 'SCRAPING',
         tenantId,
         version: '1.0',
-        executionPlan: data.payload ? JSON.parse(data.payload) : {}
+        executionPlan: plan
       }
     });
   }
