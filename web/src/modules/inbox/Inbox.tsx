@@ -62,6 +62,7 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
   const [leadJourney, setLeadJourney] = useState<any[]>([]);
   const [quickReplies, setQuickReplies] = useState<any[]>([]);
   const [operators, setOperators] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
   
   const [kbData, setKbData] = useState({ title: '', content: '' });
   const [isSavingKb, setIsSavingKb] = useState(false);
@@ -180,6 +181,14 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
   // Initial Fetch & WebSocket Setup
   useEffect(() => {
     const tid = selectedTenant?.id || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
+
+    // Fetch Agents
+    fetch(`${apiUrl}/api/agents`, {
+      headers: { 'x-tenant-id': tid, 'x-api-key': flowApiKey }
+    })
+      .then(res => res.json())
+      .then(data => setAgents(Array.isArray(data) ? data : []))
+      .catch(err => console.error("[Inbox] Error cargando agentes:", err));
 
     // Fetch Omnichannel Conversations
     fetch(`${apiUrl}/api/agent-inbox/conversations`, {
@@ -386,6 +395,21 @@ export function Inbox({ setActiveTab }: { setActiveTab: (tab: string) => void })
             }
           }}
           handleToggleCopilot={() => setIsAiAnalysisOpen(!isAiAnalysisOpen)}
+          agents={agents}
+          onChangeAgent={async (agentId) => {
+            if (!activeConversation) return;
+            const tid = selectedTenant?.id || 'edd1ac37-5ff9-4e46-bc7f-fff3c414d718';
+            try {
+              await fetch(`${apiUrl}/api/agent-inbox/conversations/${activeConversation.id}/assign`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-tenant-id': tid, 'x-api-key': flowApiKey },
+                body: JSON.stringify({ agentId })
+              });
+              setConversations(prev => prev.map(c => c.id === activeConversation.id ? { ...c, assignedAgentId: agentId } : c));
+            } catch (err) {
+              console.error("Error assigning agent", err);
+            }
+          }}
           handleToggleAutopilot={async () => {
             if (!activeConversation) return;
             const isCurrentlyAi = !!(activeConversation.metadata?.humanActiveUntil && new Date(activeConversation.metadata.humanActiveUntil) <= new Date());

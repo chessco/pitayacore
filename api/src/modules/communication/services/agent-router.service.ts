@@ -80,6 +80,7 @@ export class AgentRouterService {
           reason: isGroup
             ? 'Group chat default OFF'
             : 'Default OFF per user request',
+          channelId: event.channelId,
         };
 
         conversation = await this.db.mysql.conversation.create({
@@ -91,6 +92,16 @@ export class AgentRouterService {
             metadata: defaultMetadata,
           },
         });
+      } else {
+        // Ensure channelId is in metadata
+        const metadata = (conversation.metadata as any) || {};
+        if (metadata.channelId !== event.channelId) {
+          metadata.channelId = event.channelId;
+          conversation = await this.db.mysql.conversation.update({
+            where: { id: conversation.id },
+            data: { metadata },
+          });
+        }
       }
 
       let finalContent = event.content;
@@ -188,7 +199,8 @@ export class AgentRouterService {
       }
 
       // 5. Route to Agent Runtime (AI Router)
-      const response = await this.aiRouter.route(event.content, event.tenantId);
+      const agentSlug = conversation.assignedAgentId && !conversation.assignedAgentId.startsWith('usr_') ? conversation.assignedAgentId : undefined;
+      const response = await this.aiRouter.route(event.content, event.tenantId, undefined, agentSlug);
 
       // 5. Send back via provider
       if (response && event.provider === 'whatsapp') {

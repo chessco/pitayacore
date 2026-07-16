@@ -18,6 +18,8 @@ interface InboxChatHeaderProps {
   handleToggleCopilot?: () => void;
   handleToggleAutopilot?: () => void;
   handleUpdateContactName?: (name: string) => void;
+  agents?: any[];
+  onChangeAgent?: (agentId: string) => void;
 }
 
 import { useState } from 'react';
@@ -29,7 +31,9 @@ export function InboxChatHeader({
   isAiAnalysisOpen,
   handleToggleCopilot,
   handleToggleAutopilot,
-  handleUpdateContactName
+  handleUpdateContactName,
+  agents = [],
+  onChangeAgent
 }: InboxChatHeaderProps) {
   
   const [isEditingName, setIsEditingName] = useState(false);
@@ -114,6 +118,15 @@ export function InboxChatHeader({
               {isHumanAssigned ? <User className="w-3 h-3 text-blue-400" /> : <Bot className="w-3 h-3 text-purple-400" />}
               {isHumanAssigned ? 'Atendiendo Operador' : 'Agente IA (Mando)'}
             </span>
+            {activeConversation.metadata?.channelId && (
+              <>
+                <span className="text-[#667781]">•</span>
+                <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" title="Línea WhatsApp vinculada">
+                  <Smartphone className="w-3 h-3" />
+                  {activeConversation.metadata.channelId}
+                </span>
+              </>
+            )}
             <span className="text-[#667781]">•</span>
             <span>{activeConversation.id}</span>
           </p>
@@ -121,6 +134,21 @@ export function InboxChatHeader({
       </div>
       
       <div className="flex items-center gap-2">
+        {isAiActive && onChangeAgent && agents && agents.length > 0 && (
+          <select
+            value={activeConversation.assignedAgentId || ''}
+            onChange={(e) => onChangeAgent(e.target.value)}
+            className="text-xs bg-white border border-emerald-200 text-emerald-700 px-2 py-1.5 rounded-full outline-none hover:border-emerald-400 transition-colors cursor-pointer mr-1"
+            title="Seleccionar agente para autopiloto"
+          >
+            <option value="" disabled>Selecciona un Agente</option>
+            {agents.map(agent => (
+              <option key={agent.slug || agent.id} value={agent.slug || agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </select>
+        )}
         {handleToggleAutopilot && (
           <button 
             onClick={handleToggleAutopilot}

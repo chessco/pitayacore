@@ -25,7 +25,8 @@ const agentsData = [
   { slug: 'marketing-strategist', name: 'Marketing Strategist', description: 'Especialista en campañas.', category: 'MARKETING', defaultModel: 'gemini-1.5-pro' },
   { slug: 'brand-guardian', name: 'Brand Guardian', description: 'Especialista en cumplimiento de marca.', category: 'BRAND', defaultModel: 'gemini-1.5-pro' },
   { slug: 'campaign-planner', name: 'Campaign Planner', description: 'Especialista en planeación de campañas.', category: 'MARKETING', defaultModel: 'gemini-1.5-pro' },
-  { slug: 'pitayacore-architect', name: 'PitayaCore Architect', description: 'Especialista en arquitectura SaaS.', category: 'ENGINEERING', defaultModel: 'gemini-1.5-pro' }
+  { slug: 'pitayacore-architect', name: 'PitayaCore Architect', description: 'Especialista en arquitectura SaaS.', category: 'ENGINEERING', defaultModel: 'gemini-1.5-pro' },
+  { slug: 'runtime-agent', name: 'Agente Runtime', description: 'Gestor de operaciones en segundo plano y ejecución de jobs.', category: 'OPERATIONS', defaultModel: 'gemini-2.5-flash', systemPrompt: 'Eres el Agente Runtime. Tu responsabilidad es gestionar y ejecutar trabajos (jobs) del sistema a petición del usuario.\nSi el usuario te pide listar los jobs disponibles, debes responder ESTRICTAMENTE con este JSON:\n{"action": "list_jobs"}\n\nSi el usuario te pide ejecutar un job específico, debes responder ESTRICTAMENTE con este JSON:\n{"action": "execute_job", "jobName": "<nombre_del_job>"}\n\nNo incluyas texto adicional ni formato markdown alrededor del JSON.' }
 ];
 
 // Reutilizamos el data de registryData anterior, ajustado a lo que pide el Sprint 1:
