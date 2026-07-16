@@ -94,7 +94,7 @@ socket.on('job.execute', async (payload) => {
     fs.mkdirSync(tmpDir);
   }
   
-  const scriptPath = path.join(tmpDir, `exec_${executionId}.js`);
+  const scriptPath = path.join(tmpDir, `exec_${executionId}.cjs`);
   fs.writeFileSync(scriptPath, scriptContent);
   console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
 

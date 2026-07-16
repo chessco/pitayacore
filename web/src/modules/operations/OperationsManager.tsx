@@ -11,6 +11,8 @@ import {
   Play,
   RefreshCw,
   Clock,
+  Edit3,
+  Save,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -34,11 +36,15 @@ export function OperationsManager() {
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isEditScriptModalOpen, setIsEditScriptModalOpen] = useState(false);
   
   // Forms state
   const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
   const [newScriptForm, setNewScriptForm] = useState({ name: '', language: 'NODEJS', content: '' });
   const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}' });
+  const [editScript, setEditScript] = useState<any>(null);
+  const [editScriptForm, setEditScriptForm] = useState({ name: '', language: '', content: '' });
+  const [isSavingScript, setIsSavingScript] = useState(false);
 
   const handleCreateWorker = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +100,34 @@ export function OperationsManager() {
       fetchScripts();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleOpenEditScript = (script: any) => {
+    setEditScript(script);
+    setEditScriptForm({ name: script.name, language: script.language, content: script.content || '' });
+    setIsEditScriptModalOpen(true);
+  };
+
+  const handleSaveScript = async () => {
+    if (!editScript) return;
+    setIsSavingScript(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${apiUrl}/api/operations/scripts/${editScript.id}`, editScriptForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsEditScriptModalOpen(false);
+      setEditScript(null);
+      fetchScripts();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingScript(false);
     }
   };
 
@@ -372,11 +406,12 @@ export function OperationsManager() {
                           <th className="p-4 font-medium">Lenguaje</th>
                           <th className="p-4 font-medium">Versión</th>
                           <th className="p-4 font-medium">Fecha</th>
+                          <th className="p-4 font-medium text-right">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
                         {scripts.map((script) => (
-                          <tr key={script.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <tr key={script.id} className="border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors" onClick={() => handleOpenEditScript(script)}>
                             <td className="p-4">
                               <p className="font-medium text-slate-800">{script.name}</p>
                               <p className="text-xs text-slate-500 font-mono">{script.id.substring(0, 8)}...</p>
@@ -389,6 +424,11 @@ export function OperationsManager() {
                             <td className="p-4 text-slate-600 text-sm">v{script.version}</td>
                             <td className="p-4 text-slate-600 text-sm">
                               {new Date(script.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="p-4 text-right">
+                              <button className="text-purple-600 hover:text-purple-800 p-1 bg-purple-50 rounded" title="Editar Script">
+                                <Edit3 className="w-4 h-4" />
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -727,6 +767,77 @@ export function OperationsManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isEditScriptModalOpen && editScript && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-purple-600" />
+                Editar Script: {editScript.name}
+              </h2>
+              <button onClick={() => setIsEditScriptModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-y-auto flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                  <input 
+                    type="text" 
+                    value={editScriptForm.name}
+                    onChange={(e) => setEditScriptForm({...editScriptForm, name: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Lenguaje</label>
+                  <select 
+                    value={editScriptForm.language}
+                    onChange={(e) => setEditScriptForm({...editScriptForm, language: e.target.value})}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="NODEJS">Node.js</option>
+                    <option value="PYTHON">Python</option>
+                    <option value="POWERSHELL">PowerShell</option>
+                    <option value="BASH">Bash</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1 min-h-[400px] flex flex-col">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Código Fuente</label>
+                <textarea 
+                  value={editScriptForm.content}
+                  onChange={(e) => setEditScriptForm({...editScriptForm, content: e.target.value})}
+                  className="w-full flex-1 border border-slate-300 rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-900 text-green-400 whitespace-pre"
+                  style={{ minHeight: '400px', tabSize: 2 }}
+                  spellCheck={false}
+                />
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-500">ID: {editScript.id}</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setIsEditScriptModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleSaveScript}
+                    disabled={isSavingScript}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSavingScript ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
