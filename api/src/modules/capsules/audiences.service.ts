@@ -391,4 +391,133 @@ export class AudiencesService {
       failed,
     };
   }
+
+  /**
+   * Imports a batch of leads (e.g. from the PitayaMapLeads Chrome extension)
+   * into an audience for the tenant. The audience is reused if one already
+   * exists with the same name, otherwise it is created. Core fields
+   * (name/email/phone) are mapped to columns; every other field (website,
+   * address, instagram, category, rating, …) is preserved in `metadata`.
+   */
+  async importLeads(
+    tenantId: string,
+    body: { leads: any[]; campaign?: string },
+  ) {
+    const leads = body?.leads;
+    if (!Array.isArray(leads) || leads.length === 0) {
+      throw new BadRequestException('No hay leads para importar');
+    }
+
+    const name =
+      body.campaign?.trim() ||
+      `Google Maps ${new Date().toISOString().slice(0, 10)}`;
+
+    // Reuse an audience with the same name for this tenant, or create it.
+    let audience = await this.db.mysql.audience.findFirst({
+      where: { tenantId, name },
+    });
+    if (!audience) {
+      audience = await this.db.mysql.audience.create({
+        data: {
+          tenantId,
+          name,
+          description: 'Importado desde PitayaMapLeads',
+        },
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Field names treated as core (excluded from metadata), case-insensitive.
+    const reserved = new Set([
+      'name',
+      'nombre',
+      'email',
+      'correo',
+      'phone',
+      'telefono',
+      'teléfono',
+      'tel',
+    ]);
+
+    let imported = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const lead of leads) {
+      if (!lead || typeof lead !== 'object') {
+        skipped++;
+        continue;
+      }
+
+      const firstName =
+        (lead.name || lead.Name || lead.nombre || lead.Nombre || '')
+          .toString()
+          .trim() || null;
+
+      const rawPhone = (
+        lead.phone ||
+        lead.Phone ||
+        lead.telefono ||
+        ''
+      ).toString();
+      const phone = rawPhone.trim()
+        ? rawPhone.split(',')[0].replace(/[^\d+]/g, '')
+        : null;
+
+      const rawEmail = (lead.email || lead.Email || lead.correo || '')
+        .toString()
+        .trim();
+      let email =
+        rawEmail && emailRegex.test(rawEmail) ? rawEmail.toLowerCase() : null;
+
+      if (!email && !phone) {
+        skipped++;
+        continue;
+      }
+      if (!email && phone) {
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        email = `${cleanPhone || Math.random().toString(36).substring(7)}@no-email.whatsapp`;
+      }
+
+      // Everything that isn't a core field is preserved as metadata.
+      const metadata: Record<string, any> = {};
+      for (const [k, v] of Object.entries(lead)) {
+        if (v === null || v === undefined || v === '') continue;
+        if (reserved.has(k.toLowerCase())) continue;
+        metadata[k] = v;
+      }
+
+      try {
+        await this.db.mysql.audienceMember.upsert({
+          where: { audienceId_email: { audienceId: audience.id, email } },
+          create: {
+            audienceId: audience.id,
+            email,
+            firstName,
+            phone,
+            metadata: Object.keys(metadata).length > 0 ? metadata : null,
+          },
+          update: {
+            firstName: firstName || undefined,
+            phone: phone || undefined,
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+          },
+        });
+        imported++;
+      } catch {
+        errors.push(`Error al guardar ${email}`);
+      }
+    }
+
+    return {
+      success: true,
+      message: `${imported} contacto(s) importados/actualizados${
+        skipped ? `, ${skipped} omitidos` : ''
+      }.`,
+      audienceId: audience.id,
+      imported,
+      skipped,
+      errors,
+    };
+  }
 }

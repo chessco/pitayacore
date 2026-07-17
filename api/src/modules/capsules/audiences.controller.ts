@@ -26,6 +26,14 @@ export class AudiencesController {
     return this.audiencesService.createAudience(req.user.tenantId, data);
   }
 
+  @Post('import-leads')
+  async importLeads(
+    @Request() req: any,
+    @Body() body: { leads: any[]; campaign?: string },
+  ) {
+    return this.audiencesService.importLeads(req.user.tenantId, body);
+  }
+
   @Get()
   async getAudiences(@Request() req: any) {
     return this.audiencesService.getAudiences(req.user.tenantId);
