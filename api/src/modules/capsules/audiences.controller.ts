@@ -115,4 +115,9 @@ export class AudiencesController {
   ) {
     return this.audiencesService.checkWhatsApp(req.user.tenantId, id, memberId);
   }
+
+  @Post(':id/check-whatsapp')
+  async checkWhatsAppBulk(@Request() req: any, @Param('id') id: string) {
+    return this.audiencesService.checkWhatsAppBulk(req.user.tenantId, id);
+  }
 }

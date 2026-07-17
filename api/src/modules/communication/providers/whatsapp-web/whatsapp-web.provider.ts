@@ -238,14 +238,22 @@ export class WhatsappWebProvider
       );
     }
 
-    const digits = phone.replace(/\D/g, '');
+    let digits = phone.replace(/\D/g, '');
     if (!digits) {
       throw new Error('Invalid phone number');
     }
 
+    // Contacts are usually stored as bare 10-digit Mexican nationals
+    // (e.g. 6622125390) with no country code, which WhatsApp can't resolve.
+    // Prepend Mexico's country code (52). Numbers that already include a
+    // country code (52..., legacy 521...) are left untouched.
+    if (digits.length === 10) {
+      digits = `52${digits}`;
+    }
+
     // getNumberId resolves the real WhatsApp WID (or null if not registered),
-    // handling country-specific quirks (e.g. the MX "1" prefix) better than a
-    // raw isRegisteredUser check.
+    // and normalizes country-specific quirks (e.g. the legacy MX "1" mobile
+    // prefix) better than a raw isRegisteredUser check.
     const numberId = await client.getNumberId(digits);
     return numberId
       ? { registered: true, serialized: numberId._serialized }

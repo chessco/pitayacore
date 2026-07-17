@@ -320,4 +320,75 @@ export class AudiencesService {
 
     return { registered, serialized, status: updated.status };
   }
+
+  /**
+   * Validates every member of an audience that has a phone number against
+   * WhatsApp, sequentially (to avoid overloading the single live session),
+   * applying the same status rules as the per-member check. Returns a summary.
+   */
+  async checkWhatsAppBulk(tenantId: string, audienceId: string) {
+    await this.getAudience(tenantId, audienceId);
+
+    const channelId = this.whatsapp.getFirstReadyChannel(tenantId);
+    if (!channelId) {
+      throw new BadRequestException(
+        'No hay una línea de WhatsApp conectada. Conecta una línea antes de validar.',
+      );
+    }
+
+    const members = await this.db.mysql.audienceMember.findMany({
+      where: { audienceId },
+    });
+
+    let registered = 0;
+    let invalid = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const member of members) {
+      if (!member.phone?.trim()) {
+        skipped++;
+        continue;
+      }
+
+      let isRegistered: boolean;
+      try {
+        ({ registered: isRegistered } = await this.whatsapp.getNumberId(
+          tenantId,
+          channelId,
+          member.phone,
+        ));
+      } catch {
+        failed++;
+        continue;
+      }
+
+      let status = member.status;
+      if (!isRegistered) {
+        status = 'WA_INVALID';
+      } else if (member.status === 'WA_INVALID') {
+        status = 'SUBSCRIBED';
+      }
+
+      // Only write when the status actually changes.
+      if (status !== member.status) {
+        await this.db.mysql.audienceMember.update({
+          where: { id: member.id },
+          data: { status },
+        });
+      }
+
+      if (isRegistered) registered++;
+      else invalid++;
+    }
+
+    return {
+      total: members.length,
+      checked: registered + invalid,
+      registered,
+      invalid,
+      skipped,
+      failed,
+    };
+  }
 }

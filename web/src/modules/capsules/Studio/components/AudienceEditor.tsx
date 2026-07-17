@@ -28,6 +28,8 @@ export const AudienceEditor: React.FC<AudienceEditorProps> = ({ audience, onBack
 
   // WhatsApp validation state (per member)
   const [checkingWaId, setCheckingWaId] = useState<string | null>(null);
+  // Bulk WhatsApp validation state
+  const [isCheckingAllWa, setIsCheckingAllWa] = useState(false);
 
   const getApiContext = () => {
     let apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
@@ -145,6 +147,42 @@ export const AudienceEditor: React.FC<AudienceEditorProps> = ({ audience, onBack
     }
   };
 
+  const handleCheckAllWhatsApp = async () => {
+    const withPhone = members.filter((m) => m.phone && String(m.phone).trim());
+    if (withPhone.length === 0) {
+      alert('No hay contactos con teléfono para verificar.');
+      return;
+    }
+    if (!window.confirm(
+      `Se verificarán ${withPhone.length} número(s) contra WhatsApp. Esto puede tardar unos segundos. ¿Continuar?`
+    )) {
+      return;
+    }
+    try {
+      setIsCheckingAllWa(true);
+      const { apiUrl, headers } = getApiContext();
+      const res = await axios.post(
+        `${apiUrl}/api/capsule-studio/audiences/${audience.id}/check-whatsapp`,
+        {},
+        { headers }
+      );
+      await fetchMembers();
+      const r = res.data || {};
+      alert(
+        'Verificación completada:\n' +
+        `✓ Con WhatsApp: ${r.registered ?? 0}\n` +
+        `✗ Sin WhatsApp (Solo Correo): ${r.invalid ?? 0}` +
+        (r.skipped ? `\n– Sin teléfono (omitidos): ${r.skipped}` : '') +
+        (r.failed ? `\n⚠ No verificados por error: ${r.failed}` : '')
+      );
+    } catch (err: any) {
+      console.error('Error checking all WhatsApp', err);
+      alert(err?.response?.data?.message || 'Error al verificar los números en WhatsApp');
+    } finally {
+      setIsCheckingAllWa(false);
+    }
+  };
+
   const startEditing = (member: any) => {
     setEditingMemberId(member.id);
     setEditForm({
@@ -192,6 +230,17 @@ export const AudienceEditor: React.FC<AudienceEditorProps> = ({ audience, onBack
           </div>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleCheckAllWhatsApp}
+            disabled={isCheckingAllWa}
+            className="px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Verificar en WhatsApp todos los contactos con teléfono"
+          >
+            {isCheckingAllWa
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <MessageCircle className="w-4 h-4" />}
+            {isCheckingAllWa ? 'Verificando...' : 'Verificar WhatsApp'}
+          </button>
           <button
             onClick={() => { setShowImport(false); setShowManualAdd(!showManualAdd); }}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${showManualAdd ? 'bg-slate-200 text-slate-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'}`}
