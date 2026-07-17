@@ -358,12 +358,23 @@ export class AudiencesService {
 
     let registered = 0;
     let invalid = 0;
-    let skipped = 0;
+    let noPhone = 0;
     let failed = 0;
 
     for (const member of members) {
+      // Never override explicit opt-outs / bounces.
+      const locked =
+        member.status === 'UNSUBSCRIBED' || member.status === 'EMAIL_BOUNCED';
+
+      // A contact without a phone cannot be on WhatsApp -> email only.
       if (!member.phone?.trim()) {
-        skipped++;
+        if (!locked && member.status !== 'WA_INVALID') {
+          await this.db.mysql.audienceMember.update({
+            where: { id: member.id },
+            data: { status: 'WA_INVALID' },
+          });
+        }
+        noPhone++;
         continue;
       }
 
@@ -380,7 +391,9 @@ export class AudiencesService {
       }
 
       let status = member.status;
-      if (!isRegistered) {
+      if (locked) {
+        // keep as-is
+      } else if (!isRegistered) {
         status = 'WA_INVALID';
       } else if (member.status === 'WA_INVALID') {
         status = 'SUBSCRIBED';
@@ -403,7 +416,7 @@ export class AudiencesService {
       checked: registered + invalid,
       registered,
       invalid,
-      skipped,
+      noPhone,
       failed,
     };
   }

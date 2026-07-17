@@ -172,7 +172,7 @@ export const AudienceEditor: React.FC<AudienceEditorProps> = ({ audience, onBack
         'Verificación completada:\n' +
         `✓ Con WhatsApp: ${r.registered ?? 0}\n` +
         `✗ Sin WhatsApp (Solo Correo): ${r.invalid ?? 0}` +
-        (r.skipped ? `\n– Sin teléfono (omitidos): ${r.skipped}` : '') +
+        (r.noPhone ? `\n📵 Sin teléfono → Solo Correo: ${r.noPhone}` : '') +
         (r.failed ? `\n⚠ No verificados por error: ${r.failed}` : '')
       );
     } catch (err: any) {
