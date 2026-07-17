@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Mail, 
   Plus, 
@@ -434,6 +434,10 @@ export const CampaignManager: React.FC = () => {
     const [newWaAudienceId, setNewWaAudienceId] = useState('');
     const [newWaLoading, setNewWaLoading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    // Sequential "send all" (warm-up) state
+    const [waSending, setWaSending] = useState(false);
+    const [waSendProgress, setWaSendProgress] = useState(0);
+    const waStopRef = useRef(false);
 
     const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
     const headers = {
@@ -536,6 +540,46 @@ export const CampaignManager: React.FC = () => {
       if (!withPhone.length) { alert('Ningún contacto tiene teléfono registrado.'); return; }
       if (!window.confirm(`¿Abrir ${withPhone.length} conversaciones de WhatsApp en nuevas pestañas?`)) return;
       withPhone.forEach((l, i) => setTimeout(() => window.open(l.waUrl, '_blank'), i * 500));
+    };
+
+    // Opens each conversation one-by-one with a random 3-7s pause between them
+    // to "warm up" the campaign. Cancelable; clicking again while running stops it.
+    const handleSendAllSequential = async () => {
+      if (waSending) {
+        waStopRef.current = true; // request stop
+        return;
+      }
+      const withPhone = waLinks.filter(l => l.hasPhone);
+      if (!withPhone.length) { alert('Ningún contacto tiene teléfono registrado.'); return; }
+      if (!window.confirm(
+        `Se abrirán ${withPhone.length} conversaciones de WhatsApp UNA POR UNA, con una pausa aleatoria de 3-7 s entre cada una (para calentar la campaña).\n\n` +
+        `• No cierres esta pestaña durante el proceso.\n` +
+        `• Permite las ventanas emergentes si el navegador las bloquea.\n` +
+        `• Puedes detenerlo en cualquier momento con el mismo botón.\n\n¿Continuar?`
+      )) return;
+
+      waStopRef.current = false;
+      setWaSending(true);
+      try {
+        for (let i = 0; i < withPhone.length; i++) {
+          if (waStopRef.current) break;
+          setWaSendProgress(i + 1);
+          window.open(withPhone[i].waUrl, '_blank');
+          // Random 3-7s pause before the next one (not after the last).
+          if (i < withPhone.length - 1) {
+            const delay = 3000 + Math.random() * 4000;
+            const step = 100;
+            for (let waited = 0; waited < delay; waited += step) {
+              if (waStopRef.current) break;
+              await new Promise(r => setTimeout(r, step));
+            }
+          }
+        }
+      } finally {
+        setWaSending(false);
+        setWaSendProgress(0);
+        waStopRef.current = false;
+      }
     };
 
     const handleCreateWaCampaign = async (e: React.FormEvent) => {
@@ -859,9 +903,22 @@ export const CampaignManager: React.FC = () => {
                     {waLinks.length > 0 && (
                       <button
                         onClick={handleOpenAll}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 transition-all"
+                        disabled={waSending}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 transition-all disabled:opacity-50"
                       >
                         <ExternalLink size={14} /> Abrir todos ({linksWithPhone})
+                      </button>
+                    )}
+                    {waLinks.length > 0 && linksWithPhone > 0 && (
+                      <button
+                        onClick={handleSendAllSequential}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black text-white shadow-md transition-all ${waSending ? 'bg-red-500 hover:bg-red-600' : 'hover:opacity-90'}`}
+                        style={waSending ? undefined : { background: '#128C7E', boxShadow: '0 4px 12px #128C7E40' }}
+                        title="Abre cada chat uno por uno con pausa aleatoria de 3-7s para calentar la campaña"
+                      >
+                        {waSending
+                          ? <><X size={14} /> Detener ({waSendProgress}/{linksWithPhone})</>
+                          : <><Zap size={14} /> Enviar todos ({linksWithPhone})</>}
                       </button>
                     )}
                   </div>
