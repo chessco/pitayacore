@@ -45,6 +45,22 @@ export class AudiencesService {
     return audience;
   }
 
+  async updateAudience(
+    tenantId: string,
+    id: string,
+    data: { name?: string; description?: string },
+  ) {
+    const audience = await this.getAudience(tenantId, id);
+    return this.db.mysql.audience.update({
+      where: { id: audience.id },
+      data: {
+        name: data.name?.trim() ? data.name.trim() : undefined,
+        description:
+          data.description !== undefined ? data.description : undefined,
+      },
+    });
+  }
+
   async deleteAudience(tenantId: string, id: string) {
     const audience = await this.getAudience(tenantId, id);
     return this.db.mysql.audience.delete({

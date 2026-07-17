@@ -13,6 +13,11 @@ export const AudienceManager: React.FC = () => {
   const [newAudienceName, setNewAudienceName] = useState('');
   const [newAudienceDesc, setNewAudienceDesc] = useState('');
 
+  // Inline rename state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
   const getApiContext = () => {
     let apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') apiUrl = `http://${window.location.hostname}:3014`;
@@ -58,6 +63,29 @@ export const AudienceManager: React.FC = () => {
       fetchAudiences();
     } catch (err) {
       console.error('Error creating audience', err);
+    }
+  };
+
+  const startEdit = (aud: any) => {
+    setEditingId(aud.id);
+    setEditName(aud.name || '');
+    setEditDesc(aud.description || '');
+  };
+
+  const handleRename = async (id: string) => {
+    if (!editName.trim()) return;
+    try {
+      const { apiUrl, headers } = getApiContext();
+      await axios.patch(
+        `${apiUrl}/api/capsule-studio/audiences/${id}`,
+        { name: editName.trim(), description: editDesc },
+        { headers }
+      );
+      setEditingId(null);
+      fetchAudiences();
+    } catch (err) {
+      console.error('Error renaming audience', err);
+      alert('No se pudo renombrar la lista.');
     }
   };
 
@@ -159,30 +187,87 @@ export const AudienceManager: React.FC = () => {
             {audiences.map(aud => (
               <div key={aud.id} className="border border-slate-200 rounded-2xl p-5 hover:border-blue-300 hover:shadow-md transition-all group bg-white relative">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-slate-800 text-lg mb-1 truncate">{aud.name}</h3>
-                    <p className="text-slate-500 text-sm h-10 overflow-hidden">{aud.description || 'Sin descripción'}</p>
-                  </div>
+                  {editingId === aud.id ? (
+                    <div className="flex-1 flex flex-col gap-2 pr-3">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Nombre de la lista"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(aud.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="text"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        placeholder="Descripción (opcional)"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(aud.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-slate-800 text-lg mb-1 truncate">{aud.name}</h3>
+                      <p className="text-slate-500 text-sm h-10 overflow-hidden">{aud.description || 'Sin descripción'}</p>
+                    </div>
+                  )}
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 font-bold">
                     {aud._count?.members || 0}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                  <button 
-                    onClick={() => handleDelete(aud.id)}
-                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                    title="Eliminar Lista"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setSelectedAudience(aud)}
-                    className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-800 transition group-hover:translate-x-1"
-                  >
-                    Gestionar Contactos
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  {editingId === aud.id ? (
+                    <>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleRename(aud.id)}
+                        disabled={!editName.trim()}
+                        className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50"
+                      >
+                        Guardar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(aud.id)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Eliminar Lista"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => startEdit(aud)}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Renombrar Lista"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setSelectedAudience(aud)}
+                        className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-800 transition group-hover:translate-x-1"
+                      >
+                        Gestionar Contactos
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

@@ -44,6 +44,15 @@ export class AudiencesController {
     return this.audiencesService.getAudience(req.user.tenantId, id);
   }
 
+  @Patch(':id')
+  async updateAudience(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: { name?: string; description?: string },
+  ) {
+    return this.audiencesService.updateAudience(req.user.tenantId, id, data);
+  }
+
   @Delete(':id')
   async deleteAudience(@Request() req: any, @Param('id') id: string) {
     return this.audiencesService.deleteAudience(req.user.tenantId, id);
