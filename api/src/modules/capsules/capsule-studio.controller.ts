@@ -201,6 +201,7 @@ export class CapsuleStudioController {
       imageUrl?: string;
       minDelayMs?: number;
       maxDelayMs?: number;
+      dailyLimit?: number;
     },
   ) {
     return this.campaignService.startWhatsAppSend(req.user.tenantId, id, body);

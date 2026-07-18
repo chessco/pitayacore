@@ -444,6 +444,10 @@ export const CampaignManager: React.FC = () => {
     const [waServerStarting, setWaServerStarting] = useState(false);
     const [waServerStatus, setWaServerStatus] = useState<any>(null);
     const waPollRef = useRef<any>(null);
+    // Configurable throttle (persisted in localStorage)
+    const [waDailyLimit, setWaDailyLimit] = useState<number>(() => Number(localStorage.getItem('wa_daily_limit')) || 30);
+    const [waMinDelay, setWaMinDelay] = useState<number>(() => Number(localStorage.getItem('wa_min_delay')) || 4);
+    const [waMaxDelay, setWaMaxDelay] = useState<number>(() => Number(localStorage.getItem('wa_max_delay')) || 9);
     // Manual per-contact send (via library)
     const [waSendingOneId, setWaSendingOneId] = useState<string | null>(null);
     const [waSentOneIds, setWaSentOneIds] = useState<string[]>([]);
@@ -626,8 +630,18 @@ export const CampaignManager: React.FC = () => {
     const handleServerSend = async () => {
       const withPhone = waLinks.filter(l => l.hasPhone);
       if (!withPhone.length) { alert('Ningún contacto tiene teléfono registrado. Genera los links primero.'); return; }
+
+      // Normalize + persist config.
+      const minS = Math.max(1, Number(waMinDelay) || 4);
+      const maxS = Math.max(minS, Number(waMaxDelay) || minS);
+      const limit = Math.max(0, Math.floor(Number(waDailyLimit) || 0));
+      localStorage.setItem('wa_daily_limit', String(limit));
+      localStorage.setItem('wa_min_delay', String(minS));
+      localStorage.setItem('wa_max_delay', String(maxS));
+
       if (!window.confirm(
-        `Se enviará el mensaje${waImage ? ' + imagen' : ''} a ${withPhone.length} contacto(s) DIRECTAMENTE desde el servidor (la línea de WhatsApp conectada), uno por uno con pausa aleatoria de 3-7 s.\n\n` +
+        `Se enviará el mensaje${waImage ? ' + imagen' : ''} a ${withPhone.length} contacto(s) DIRECTAMENTE desde el servidor (la línea conectada), con pausa aleatoria de ${minS}-${maxS} s.\n\n` +
+        `Límite diario por línea: ${limit > 0 ? limit + ' mensajes (cuenta envíos de las últimas 24 h)' : 'sin límite'}.\n\n` +
         `⚠️ El envío automático masivo puede provocar que WhatsApp bloquee la línea. Úsalo con volúmenes controlados.\n\n¿Continuar?`
       )) return;
 
@@ -636,12 +650,20 @@ export const CampaignManager: React.FC = () => {
         const res = await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: waImage || undefined })
+          body: JSON.stringify({
+            imageBase64: waImage || undefined,
+            minDelayMs: minS * 1000,
+            maxDelayMs: maxS * 1000,
+            dailyLimit: limit,
+          })
         });
         const data = await res.json();
         if (!res.ok || !data.started) {
           alert(data.message || 'No se pudo iniciar el envío.');
           return;
+        }
+        if (data.cappedByLimit) {
+          alert(`Nota: por el límite diario, se enviará solo a ${data.total} contacto(s); ${data.cappedByLimit} quedaron para después.`);
         }
         startPolling();
       } catch {
@@ -1103,6 +1125,34 @@ export const CampaignManager: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Throttle config */}
+                    <div className="flex items-center gap-4 flex-wrap text-[11px] font-bold text-teal-800">
+                      <label className="flex items-center gap-1.5">
+                        Límite diario
+                        <input
+                          type="number" min={0} value={waDailyLimit}
+                          onChange={(e) => setWaDailyLimit(Number(e.target.value))}
+                          className="w-16 px-2 py-1 rounded-lg border border-teal-200 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-teal-400"
+                        />
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        Pausa
+                        <input
+                          type="number" min={1} value={waMinDelay}
+                          onChange={(e) => setWaMinDelay(Number(e.target.value))}
+                          className="w-12 px-2 py-1 rounded-lg border border-teal-200 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-teal-400"
+                        />
+                        <span>–</span>
+                        <input
+                          type="number" min={1} value={waMaxDelay}
+                          onChange={(e) => setWaMaxDelay(Number(e.target.value))}
+                          className="w-12 px-2 py-1 rounded-lg border border-teal-200 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-teal-400"
+                        />
+                        s
+                      </label>
+                      <span className="text-teal-500/70 font-medium">0 = sin límite · cuenta envíos de 24 h de la línea</span>
+                    </div>
+
                     {waImage && (
                       <div className="flex items-center gap-3">
                         <img src={waImage} alt="preview" className="w-16 h-16 object-cover rounded-lg border border-teal-200" />
@@ -1129,6 +1179,7 @@ export const CampaignManager: React.FC = () => {
                             ? `Enviando a ${waServerStatus.current || '...'} — ✓ ${waServerStatus.sent} · ✗ ${waServerStatus.failed} de ${waServerStatus.total}`
                             : `Terminado — ✓ ${waServerStatus.sent} enviados · ✗ ${waServerStatus.failed} fallidos de ${waServerStatus.total}`}
                           {waServerStatus.skippedRecently ? ` · ⏭ ${waServerStatus.skippedRecently} omitidos (24h)` : ''}
+                          {waServerStatus.cappedByLimit ? ` · 🚦 ${waServerStatus.cappedByLimit} diferidos (límite diario)` : ''}
                         </p>
                       </div>
                     )}

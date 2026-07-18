@@ -18,6 +18,7 @@ interface WaSendJob {
   sent: number;
   failed: number;
   skippedRecently: number;
+  cappedByLimit: number;
   current: string;
   errors: string[];
   startedAt: number;
@@ -834,6 +835,7 @@ export class CampaignService {
       imageUrl?: string;
       minDelayMs?: number;
       maxDelayMs?: number;
+      dailyLimit?: number;
     },
   ) {
     const existing = this.waSendJobs.get(campaignId);
@@ -856,7 +858,7 @@ export class CampaignService {
 
     // Skip contacts already messaged in the last 24h (dedup window).
     const skippedRecently = withPhone.filter((l) => l.sentRecently).length;
-    const recipients = withPhone
+    let recipients = withPhone
       .filter((l) => !l.sentRecently)
       .map((l) => ({
         email: l.email,
@@ -874,6 +876,24 @@ export class CampaignService {
       );
     }
 
+    // Enforce a daily send limit per line (counts ALL server sends for the
+    // tenant in the last 24h — manual "Lib" and automatic alike).
+    let cappedByLimit = 0;
+    const dailyLimit = opts.dailyLimit ?? 0;
+    if (dailyLimit > 0) {
+      const sentLast24h = await this.countSentLast24hForTenant(tenantId);
+      const remaining = Math.max(0, dailyLimit - sentLast24h);
+      if (remaining === 0) {
+        throw new BadRequestException(
+          `Alcanzaste el límite diario de ${dailyLimit} mensajes para esta línea (${sentLast24h} enviados en las últimas 24 h). Intenta más tarde.`,
+        );
+      }
+      if (recipients.length > remaining) {
+        cappedByLimit = recipients.length - remaining;
+        recipients = recipients.slice(0, remaining);
+      }
+    }
+
     const job: WaSendJob = {
       running: true,
       done: false,
@@ -882,6 +902,7 @@ export class CampaignService {
       sent: 0,
       failed: 0,
       skippedRecently,
+      cappedByLimit,
       current: '',
       errors: [],
       startedAt: Date.now(),
@@ -891,7 +912,30 @@ export class CampaignService {
     // Fire-and-forget; progress is polled via getWhatsAppSendStatus.
     void this.runWhatsAppSend(tenantId, channelId, campaignId, recipients, opts, job);
 
-    return { started: true, total: recipients.length, skippedRecently };
+    return {
+      started: true,
+      total: recipients.length,
+      skippedRecently,
+      cappedByLimit,
+    };
+  }
+
+  /** Counts server WhatsApp sends across all of the tenant's campaigns in 24h. */
+  private async countSentLast24hForTenant(tenantId: string): Promise<number> {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const campaigns = await this.db.mysql.campaign.findMany({
+      where: { tenantId },
+      select: { id: true },
+    });
+    const ids = campaigns.map((c) => c.id);
+    if (ids.length === 0) return 0;
+    return this.db.mysql.campaignEvent.count({
+      where: {
+        campaignId: { in: ids },
+        type: 'WHATSAPP_SENT',
+        createdAt: { gte: since },
+      },
+    });
   }
 
   private async runWhatsAppSend(
@@ -961,6 +1005,7 @@ export class CampaignService {
       sent: job.sent,
       failed: job.failed,
       skippedRecently: job.skippedRecently,
+      cappedByLimit: job.cappedByLimit,
       current: job.current,
       errors: job.errors.slice(0, 20),
     };
