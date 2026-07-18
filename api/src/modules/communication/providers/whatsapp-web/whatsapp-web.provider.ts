@@ -187,12 +187,14 @@ export class WhatsappWebProvider
     }
 
     try {
-      // Ensure the 'to' number has the correct format (e.g. appending @c.us if no domain is present)
-      const formattedTo = to.includes('@') ? to : `${to}@c.us`;
-      const message = await client.sendMessage(formattedTo, content);
+      // Resolve the real WhatsApp id (WID/LID) instead of building "<n>@c.us"
+      // by hand — recent WhatsApp Web versions reject unresolved ids with
+      // "No LID for user".
+      const chatId = await this.resolveChatId(client, to);
+      const message = await client.sendMessage(chatId, content);
 
       this.logger.debug(
-        `Message sent to ${formattedTo} for tenant ${tenantId}, channel ${channelId}`,
+        `Message sent to ${chatId} for tenant ${tenantId}, channel ${channelId}`,
       );
 
       // Optionally publish a MESSAGE_SENT event here
@@ -205,6 +207,22 @@ export class WhatsappWebProvider
       );
       throw error;
     }
+  }
+
+  /**
+   * Resolves the addressable chat id for a recipient. If it already contains a
+   * domain (e.g. "…@c.us"/"…@lid") it is used as-is; otherwise the real WID is
+   * looked up via getNumberId so WhatsApp can route the message.
+   */
+  private async resolveChatId(client: Client, to: string): Promise<string> {
+    if (to.includes('@')) return to;
+    const digits = to.replace(/\D/g, '');
+    if (!digits) throw new Error('Número de teléfono inválido');
+    const numberId = await client.getNumberId(digits);
+    if (!numberId) {
+      throw new Error(`El número ${to} no está registrado en WhatsApp`);
+    }
+    return numberId._serialized;
   }
 
   /**
@@ -226,8 +244,6 @@ export class WhatsappWebProvider
       );
     }
 
-    const formattedTo = to.includes('@') ? to : `${to}@c.us`;
-
     let media: MessageMedia;
     if (opts.imageUrl) {
       media = await MessageMedia.fromUrl(opts.imageUrl, { unsafeMime: true });
@@ -243,7 +259,8 @@ export class WhatsappWebProvider
       throw new Error('No image provided');
     }
 
-    return client.sendMessage(formattedTo, media, {
+    const chatId = await this.resolveChatId(client, to);
+    return client.sendMessage(chatId, media, {
       caption: opts.caption || undefined,
     });
   }
