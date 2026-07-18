@@ -7,7 +7,7 @@ import {
   MessageReceivedEvent,
   SessionStatusEvent,
 } from '../../events/communication.events';
-import { Client, LocalAuth, Message } from 'whatsapp-web.js';
+import { Client, LocalAuth, Message, MessageMedia } from 'whatsapp-web.js';
 import * as qrcode from 'qrcode-terminal';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -205,6 +205,47 @@ export class WhatsappWebProvider
       );
       throw error;
     }
+  }
+
+  /**
+   * Sends an image (with optional caption) to a number using the given
+   * channel's live session. Accepts either a data URL / raw base64 payload
+   * (imageBase64) or a public URL (imageUrl).
+   */
+  async sendMedia(
+    tenantId: string,
+    channelId: string,
+    to: string,
+    opts: { imageBase64?: string; imageUrl?: string; caption?: string },
+  ): Promise<any> {
+    const clientKey = `${tenantId}:${channelId}`;
+    const client = this.clients.get(clientKey);
+    if (!client) {
+      throw new Error(
+        `No active WhatsApp client for tenant ${tenantId}, channel ${channelId}`,
+      );
+    }
+
+    const formattedTo = to.includes('@') ? to : `${to}@c.us`;
+
+    let media: MessageMedia;
+    if (opts.imageUrl) {
+      media = await MessageMedia.fromUrl(opts.imageUrl, { unsafeMime: true });
+    } else if (opts.imageBase64) {
+      // Accept "data:<mime>;base64,<data>" or raw base64 (assume png).
+      const match = /^data:([^;]+);base64,(.*)$/s.exec(opts.imageBase64);
+      if (match) {
+        media = new MessageMedia(match[1], match[2]);
+      } else {
+        media = new MessageMedia('image/png', opts.imageBase64);
+      }
+    } else {
+      throw new Error('No image provided');
+    }
+
+    return client.sendMessage(formattedTo, media, {
+      caption: opts.caption || undefined,
+    });
   }
 
   /**

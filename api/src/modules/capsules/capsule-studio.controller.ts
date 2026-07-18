@@ -190,4 +190,29 @@ export class CapsuleStudioController {
   getWhatsAppLinks(@Request() req: any, @Param('id') id: string) {
     return this.campaignService.getWhatsAppLinks(req.user.tenantId, id);
   }
+
+  @Post('campaigns/:id/send-whatsapp')
+  startWhatsAppSend(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      imageBase64?: string;
+      imageUrl?: string;
+      minDelayMs?: number;
+      maxDelayMs?: number;
+    },
+  ) {
+    return this.campaignService.startWhatsAppSend(req.user.tenantId, id, body);
+  }
+
+  @Get('campaigns/:id/send-whatsapp/status')
+  getWhatsAppSendStatus(@Request() req: any, @Param('id') id: string) {
+    return this.campaignService.getWhatsAppSendStatus(req.user.tenantId, id);
+  }
+
+  @Post('campaigns/:id/send-whatsapp/stop')
+  stopWhatsAppSend(@Request() req: any, @Param('id') id: string) {
+    return this.campaignService.stopWhatsAppSend(req.user.tenantId, id);
+  }
 }

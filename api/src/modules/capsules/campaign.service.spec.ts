@@ -4,6 +4,7 @@ import { DatabaseService } from '../../common/database/database.service';
 import { MailService } from '../../common/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { WhatsappWebProvider } from '../communication/providers/whatsapp-web/whatsapp-web.provider';
 
 jest.mock('marked', () => ({
   marked: {
@@ -30,6 +31,7 @@ describe('CampaignService (Unit Tests)', () => {
         { provide: DatabaseService, useValue: dbMock },
         { provide: MailService, useValue: {} },
         { provide: ConfigService, useValue: {} },
+        { provide: WhatsappWebProvider, useValue: {} },
       ],
     }).compile();
 

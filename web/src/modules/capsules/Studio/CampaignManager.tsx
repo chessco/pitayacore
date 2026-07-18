@@ -438,6 +438,12 @@ export const CampaignManager: React.FC = () => {
     const [waSending, setWaSending] = useState(false);
     const [waSendProgress, setWaSendProgress] = useState(0);
     const waStopRef = useRef(false);
+    // Server-side send (image + text) state
+    const [waImage, setWaImage] = useState<string | null>(null);
+    const [waImageName, setWaImageName] = useState('');
+    const [waServerStarting, setWaServerStarting] = useState(false);
+    const [waServerStatus, setWaServerStatus] = useState<any>(null);
+    const waPollRef = useRef<any>(null);
 
     const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
     const headers = {
@@ -581,6 +587,87 @@ export const CampaignManager: React.FC = () => {
         waStopRef.current = false;
       }
     };
+
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('Selecciona un archivo de imagen.'); return; }
+      if (file.size > 8 * 1024 * 1024) { alert('La imagen es muy grande (máx. 8 MB).'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setWaImage(reader.result as string);
+        setWaImageName(file.name);
+      };
+      reader.readAsDataURL(file);
+    };
+
+    const pollServerStatus = async () => {
+      if (!selectedWaCampaign) return;
+      try {
+        const res = await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp/status`, { headers });
+        const data = await res.json();
+        setWaServerStatus(data);
+        if (data.exists && !data.running && data.done && waPollRef.current) {
+          clearInterval(waPollRef.current);
+          waPollRef.current = null;
+        }
+      } catch { /* ignore transient poll errors */ }
+    };
+
+    const startPolling = () => {
+      if (waPollRef.current) clearInterval(waPollRef.current);
+      pollServerStatus();
+      waPollRef.current = setInterval(pollServerStatus, 2000);
+    };
+
+    const handleServerSend = async () => {
+      const withPhone = waLinks.filter(l => l.hasPhone);
+      if (!withPhone.length) { alert('Ningún contacto tiene teléfono registrado. Genera los links primero.'); return; }
+      if (!window.confirm(
+        `Se enviará el mensaje${waImage ? ' + imagen' : ''} a ${withPhone.length} contacto(s) DIRECTAMENTE desde el servidor (la línea de WhatsApp conectada), uno por uno con pausa aleatoria de 3-7 s.\n\n` +
+        `⚠️ El envío automático masivo puede provocar que WhatsApp bloquee la línea. Úsalo con volúmenes controlados.\n\n¿Continuar?`
+      )) return;
+
+      setWaServerStarting(true);
+      try {
+        const res = await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: waImage || undefined })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.started) {
+          alert(data.message || 'No se pudo iniciar el envío.');
+          return;
+        }
+        startPolling();
+      } catch {
+        alert('Error al iniciar el envío por servidor.');
+      } finally {
+        setWaServerStarting(false);
+      }
+    };
+
+    const handleStopServerSend = async () => {
+      try {
+        await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp/stop`, { method: 'POST', headers });
+      } catch { /* ignore */ }
+    };
+
+    // Resume progress display if a job is already running, and clean up polling.
+    useEffect(() => {
+      pollServerStatus();
+      return () => {
+        if (waPollRef.current) { clearInterval(waPollRef.current); waPollRef.current = null; }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedWaCampaign?.id]);
+
+    // Keep polling active while a resumed job is running.
+    useEffect(() => {
+      if (waServerStatus?.running && !waPollRef.current) startPolling();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [waServerStatus?.running]);
 
     const handleCreateWaCampaign = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -947,6 +1034,75 @@ export const CampaignManager: React.FC = () => {
                       <p className="text-xl font-black text-amber-500">{linksNoPhone}</p>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sin Teléfono</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Server-side automatic send (image + text) */}
+                {waLinks.length > 0 && linksWithPhone > 0 && (
+                  <div className="p-4 border border-teal-200 bg-teal-50/50 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs font-black text-teal-800">
+                        <Zap size={14} /> Envío automático por servidor (imagen + texto)
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-white border border-teal-300 text-teal-700 cursor-pointer hover:bg-teal-50">
+                          <ExternalLink size={14} />
+                          {waImageName ? 'Cambiar imagen' : 'Adjuntar imagen'}
+                          <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                        </label>
+                        {waServerStatus?.running ? (
+                          <button
+                            onClick={handleStopServerSend}
+                            className="px-4 py-2 rounded-xl text-xs font-black text-white bg-red-500 hover:bg-red-600 flex items-center gap-2"
+                          >
+                            <X size={14} /> Detener
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleServerSend}
+                            disabled={waServerStarting}
+                            className="px-4 py-2 rounded-xl text-xs font-black text-white flex items-center gap-2 disabled:opacity-50"
+                            style={{ background: '#128C7E', boxShadow: '0 4px 12px #128C7E40' }}
+                          >
+                            {waServerStarting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                            Enviar automático ({linksWithPhone})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {waImage && (
+                      <div className="flex items-center gap-3">
+                        <img src={waImage} alt="preview" className="w-16 h-16 object-cover rounded-lg border border-teal-200" />
+                        <span className="text-xs text-slate-500 truncate flex-1">{waImageName}</span>
+                        <button
+                          onClick={() => { setWaImage(null); setWaImageName(''); }}
+                          className="text-xs text-red-500 hover:underline font-semibold"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    )}
+
+                    {waServerStatus?.exists && (
+                      <div className="space-y-1">
+                        <div className="w-full bg-white rounded-full h-2 overflow-hidden border border-teal-100">
+                          <div
+                            className="h-full bg-teal-500 transition-all"
+                            style={{ width: `${waServerStatus.total ? Math.round(((waServerStatus.sent + waServerStatus.failed) / waServerStatus.total) * 100) : 0}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] font-semibold text-slate-600">
+                          {waServerStatus.running
+                            ? `Enviando a ${waServerStatus.current || '...'} — ✓ ${waServerStatus.sent} · ✗ ${waServerStatus.failed} de ${waServerStatus.total}`
+                            : `Terminado — ✓ ${waServerStatus.sent} enviados · ✗ ${waServerStatus.failed} fallidos de ${waServerStatus.total}`}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-slate-400">
+                      Envía directo desde la línea de WhatsApp conectada, con pausa 3-7 s entre cada uno. Úsalo con volúmenes controlados para evitar bloqueos de WhatsApp.
+                    </p>
                   </div>
                 )}
 
