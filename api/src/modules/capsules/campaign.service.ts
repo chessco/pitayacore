@@ -1039,14 +1039,28 @@ export class CampaignService {
     const phone = (target.phone || '').replace(/\D/g, '');
     const hasImage = !!(opts.imageBase64 || opts.imageUrl);
 
-    if (hasImage) {
-      await this.whatsapp.sendMedia(tenantId, channelId, phone, {
-        imageBase64: opts.imageBase64,
-        imageUrl: opts.imageUrl,
-        caption: target.message,
-      });
-    } else {
-      await this.whatsapp.sendMessage(tenantId, channelId, phone, target.message);
+    try {
+      if (hasImage) {
+        await this.whatsapp.sendMedia(tenantId, channelId, phone, {
+          imageBase64: opts.imageBase64,
+          imageUrl: opts.imageUrl,
+          caption: target.message,
+        });
+      } else {
+        await this.whatsapp.sendMessage(
+          tenantId,
+          channelId,
+          phone,
+          target.message,
+        );
+      }
+    } catch (e: any) {
+      // Graceful failure (e.g. number not on WhatsApp) instead of a 500.
+      return {
+        sent: false,
+        name: target.name,
+        error: e?.message || 'No se pudo enviar el mensaje.',
+      };
     }
 
     await this.recordWhatsAppSent(campaignId, target.email);

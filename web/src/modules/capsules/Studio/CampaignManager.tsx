@@ -675,7 +675,7 @@ export const CampaignManager: React.FC = () => {
           return;
         }
         if (!res.ok || !data.sent) {
-          alert(data.message || 'No se pudo enviar por la librería.');
+          alert(data.error || data.message || 'No se pudo enviar por la librería.');
           return;
         }
         setWaSentOneIds(prev => prev.includes(link.memberId) ? prev : [...prev, link.memberId]);

@@ -218,11 +218,23 @@ export class WhatsappWebProvider
     if (to.includes('@')) return to;
     const digits = to.replace(/\D/g, '');
     if (!digits) throw new Error('Número de teléfono inválido');
-    const numberId = await client.getNumberId(digits);
-    if (!numberId) {
-      throw new Error(`El número ${to} no está registrado en WhatsApp`);
+
+    // Mexican numbers may be registered on WhatsApp with or without the mobile
+    // "1" after the country code (52 vs 521). getNumberId only resolves one of
+    // them, so try both formats before giving up.
+    const candidates = [digits];
+    if (/^52\d{10}$/.test(digits)) candidates.push('521' + digits.slice(2));
+    else if (/^521\d{10}$/.test(digits)) candidates.push('52' + digits.slice(3));
+
+    for (const candidate of candidates) {
+      try {
+        const numberId = await client.getNumberId(candidate);
+        if (numberId) return numberId._serialized;
+      } catch {
+        /* try the next candidate */
+      }
     }
-    return numberId._serialized;
+    throw new Error(`El número ${to} no está registrado en WhatsApp`);
   }
 
   /**
