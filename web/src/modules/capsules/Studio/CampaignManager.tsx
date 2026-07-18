@@ -444,6 +444,9 @@ export const CampaignManager: React.FC = () => {
     const [waServerStarting, setWaServerStarting] = useState(false);
     const [waServerStatus, setWaServerStatus] = useState<any>(null);
     const waPollRef = useRef<any>(null);
+    // Manual per-contact send (via library)
+    const [waSendingOneId, setWaSendingOneId] = useState<string | null>(null);
+    const [waSentOneIds, setWaSentOneIds] = useState<string[]>([]);
 
     const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3014`;
     const headers = {
@@ -652,6 +655,29 @@ export const CampaignManager: React.FC = () => {
       try {
         await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp/stop`, { method: 'POST', headers });
       } catch { /* ignore */ }
+    };
+
+    // Manual send of a single contact via the library (server).
+    const handleSendOne = async (link: any) => {
+      if (!link.hasPhone) { alert('Este contacto no tiene teléfono.'); return; }
+      setWaSendingOneId(link.memberId);
+      try {
+        const res = await fetch(`${apiUrl}/api/capsule-studio/campaigns/${selectedWaCampaign.id}/send-whatsapp-one`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId: link.memberId, imageBase64: waImage || undefined })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sent) {
+          alert(data.message || 'No se pudo enviar por la librería.');
+          return;
+        }
+        setWaSentOneIds(prev => prev.includes(link.memberId) ? prev : [...prev, link.memberId]);
+      } catch {
+        alert('Error al enviar por la librería.');
+      } finally {
+        setWaSendingOneId(null);
+      }
     };
 
     // Resume progress display if a job is already running, and clean up polling.
@@ -1164,11 +1190,27 @@ export const CampaignManager: React.FC = () => {
                             >
                               {copiedId === link.memberId ? <CheckCheck size={14} className="text-green-500" /> : <Copy size={14} />}
                             </button>
+                            {link.hasPhone && (
+                              <button
+                                onClick={() => handleSendOne(link)}
+                                disabled={waSendingOneId === link.memberId}
+                                title="Enviar este contacto por el servidor (librería), incluye la imagen si adjuntaste una"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-60"
+                                style={{ background: '#128C7E' }}
+                              >
+                                {waSendingOneId === link.memberId
+                                  ? <Loader2 size={12} className="animate-spin" />
+                                  : waSentOneIds.includes(link.memberId)
+                                    ? <CheckCheck size={12} />
+                                    : <Send size={12} />}
+                                {waSendingOneId === link.memberId ? 'Enviando' : waSentOneIds.includes(link.memberId) ? 'Enviado' : 'Lib'}
+                              </button>
+                            )}
                             <a
                               href={link.waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title={link.hasPhone ? 'Abrir WhatsApp' : 'Abrir WhatsApp Web'}
+                              title={link.hasPhone ? 'Abrir WhatsApp (wa.me)' : 'Abrir WhatsApp Web'}
                               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-white shadow-sm transition-all hover:opacity-90"
                               style={{ background: link.hasPhone ? '#25D366' : '#64748b' }}
                             >

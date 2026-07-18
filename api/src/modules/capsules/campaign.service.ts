@@ -950,6 +950,48 @@ export class CampaignService {
     return { stopped: true };
   }
 
+  /**
+   * Sends the personalized campaign message (optionally with an image) to a
+   * single audience member via the library — manual, one at a time.
+   */
+  async sendWhatsAppOne(
+    tenantId: string,
+    campaignId: string,
+    memberId: string,
+    opts: { imageBase64?: string; imageUrl?: string },
+  ) {
+    const channelId = this.whatsapp.getFirstReadyChannel(tenantId);
+    if (!channelId) {
+      throw new BadRequestException(
+        'No hay una línea de WhatsApp conectada. Conecta una línea antes de enviar.',
+      );
+    }
+
+    const linkData = await this.getWhatsAppLinks(tenantId, campaignId);
+    const target = linkData.links.find((l) => l.memberId === memberId);
+    if (!target) {
+      throw new NotFoundException('Contacto no encontrado en la campaña.');
+    }
+    if (!target.hasPhone) {
+      throw new BadRequestException('El contacto no tiene teléfono válido.');
+    }
+
+    const phone = (target.phone || '').replace(/\D/g, '');
+    const hasImage = !!(opts.imageBase64 || opts.imageUrl);
+
+    if (hasImage) {
+      await this.whatsapp.sendMedia(tenantId, channelId, phone, {
+        imageBase64: opts.imageBase64,
+        imageUrl: opts.imageUrl,
+        caption: target.message,
+      });
+    } else {
+      await this.whatsapp.sendMessage(tenantId, channelId, phone, target.message);
+    }
+
+    return { sent: true, name: target.name };
+  }
+
   async recordWhatsAppEvent(campaignId: string, email: string, metadata?: any) {
     // Reuse existing recordEvent for CLICK (WhatsApp link click = engagement)
     return this.recordEvent(campaignId, 'CLICK', email, {
