@@ -1,8 +1,22 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+
+// Keep the API alive when background integrations (e.g. the whatsapp-web.js
+// puppeteer session) throw on teardown/logout. Without this, an unhandled
+// puppeteer ProtocolError on a WhatsApp LOGOUT crashes the whole process.
+const processLogger = new Logger('Process');
+process.on('unhandledRejection', (reason: any) => {
+  processLogger.error(
+    `Unhandled promise rejection: ${reason?.message || reason}`,
+    reason?.stack,
+  );
+});
+process.on('uncaughtException', (err: any) => {
+  processLogger.error(`Uncaught exception: ${err?.message || err}`, err?.stack);
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
