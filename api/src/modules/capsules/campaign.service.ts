@@ -17,6 +17,7 @@ interface WaSendJob {
   total: number;
   sent: number;
   failed: number;
+  skippedRecently: number;
   current: string;
   errors: string[];
   startedAt: number;
@@ -748,6 +749,21 @@ export class CampaignService {
       });
     }
 
+    // Emails already sent (via server) in the last 24h — used to prevent
+    // re-sending the same campaign message within the 24h window.
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentSent = await this.db.mysql.campaignEvent.findMany({
+      where: {
+        campaignId,
+        type: 'WHATSAPP_SENT',
+        createdAt: { gte: since24h },
+      },
+      select: { email: true },
+    });
+    const sentRecentlyEmails = new Set(
+      recentSent.map((e) => e.email).filter(Boolean),
+    );
+
     const links = members.map((member) => {
       // Build the tracking URL for this member (uses email as identifier)
       const trackingRedirect = encodeURIComponent(
@@ -785,6 +801,7 @@ export class CampaignService {
         waUrl,
         trackingUrl,
         message: personalizedMessage,
+        sentRecently: sentRecentlyEmails.has(member.email),
       };
     });
 
@@ -835,9 +852,14 @@ export class CampaignService {
 
     // Reuse the link builder for personalized message + normalized phone.
     const linkData = await this.getWhatsAppLinks(tenantId, campaignId);
-    const recipients = linkData.links
-      .filter((l) => l.hasPhone)
+    const withPhone = linkData.links.filter((l) => l.hasPhone);
+
+    // Skip contacts already messaged in the last 24h (dedup window).
+    const skippedRecently = withPhone.filter((l) => l.sentRecently).length;
+    const recipients = withPhone
+      .filter((l) => !l.sentRecently)
       .map((l) => ({
+        email: l.email,
         name: l.name,
         phone: (l.phone || '').replace(/\D/g, ''),
         message: l.message as string,
@@ -846,7 +868,9 @@ export class CampaignService {
 
     if (recipients.length === 0) {
       throw new BadRequestException(
-        'No hay contactos con teléfono en la audiencia de esta campaña.',
+        skippedRecently > 0
+          ? 'Todos los contactos con teléfono ya recibieron este mensaje en las últimas 24 horas.'
+          : 'No hay contactos con teléfono en la audiencia de esta campaña.',
       );
     }
 
@@ -857,6 +881,7 @@ export class CampaignService {
       total: recipients.length,
       sent: 0,
       failed: 0,
+      skippedRecently,
       current: '',
       errors: [],
       startedAt: Date.now(),
@@ -864,21 +889,16 @@ export class CampaignService {
     this.waSendJobs.set(campaignId, job);
 
     // Fire-and-forget; progress is polled via getWhatsAppSendStatus.
-    void this.runWhatsAppSend(
-      tenantId,
-      channelId,
-      recipients,
-      opts,
-      job,
-    );
+    void this.runWhatsAppSend(tenantId, channelId, campaignId, recipients, opts, job);
 
-    return { started: true, total: recipients.length };
+    return { started: true, total: recipients.length, skippedRecently };
   }
 
   private async runWhatsAppSend(
     tenantId: string,
     channelId: string,
-    recipients: { name: string; phone: string; message: string }[],
+    campaignId: string,
+    recipients: { email: string; name: string; phone: string; message: string }[],
     opts: { imageBase64?: string; imageUrl?: string; minDelayMs?: number; maxDelayMs?: number },
     job: WaSendJob,
   ) {
@@ -907,6 +927,7 @@ export class CampaignService {
             );
           }
           job.sent++;
+          await this.recordWhatsAppSent(campaignId, r.email);
         } catch (e: any) {
           job.failed++;
           if (job.errors.length < 50) {
@@ -939,9 +960,38 @@ export class CampaignService {
       total: job.total,
       sent: job.sent,
       failed: job.failed,
+      skippedRecently: job.skippedRecently,
       current: job.current,
       errors: job.errors.slice(0, 20),
     };
+  }
+
+  /**
+   * Records a WHATSAPP_SENT event (used for the 24h dedup window). Non-fatal.
+   */
+  private async recordWhatsAppSent(campaignId: string, email: string) {
+    if (!email) return;
+    try {
+      await this.db.mysql.campaignEvent.create({
+        data: { campaignId, type: 'WHATSAPP_SENT', email },
+      });
+    } catch {
+      /* non-fatal: dedup log failure shouldn't block sending */
+    }
+  }
+
+  /** True if this campaign already sent to `email` (server) within 24h. */
+  private async wasSentWithin24h(campaignId: string, email: string) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const hit = await this.db.mysql.campaignEvent.findFirst({
+      where: {
+        campaignId,
+        email,
+        type: 'WHATSAPP_SENT',
+        createdAt: { gte: since },
+      },
+    });
+    return !!hit;
   }
 
   stopWhatsAppSend(tenantId: string, campaignId: string) {
@@ -976,6 +1026,16 @@ export class CampaignService {
       throw new BadRequestException('El contacto no tiene teléfono válido.');
     }
 
+    // 24h dedup: don't re-send the same campaign message within the window.
+    if (await this.wasSentWithin24h(campaignId, target.email)) {
+      return {
+        sent: false,
+        skipped: true,
+        name: target.name,
+        reason: 'Ya se envió a este contacto en las últimas 24 horas.',
+      };
+    }
+
     const phone = (target.phone || '').replace(/\D/g, '');
     const hasImage = !!(opts.imageBase64 || opts.imageUrl);
 
@@ -989,6 +1049,7 @@ export class CampaignService {
       await this.whatsapp.sendMessage(tenantId, channelId, phone, target.message);
     }
 
+    await this.recordWhatsAppSent(campaignId, target.email);
     return { sent: true, name: target.name };
   }
 

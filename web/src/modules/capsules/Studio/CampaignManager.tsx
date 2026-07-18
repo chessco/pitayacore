@@ -668,6 +668,12 @@ export const CampaignManager: React.FC = () => {
           body: JSON.stringify({ memberId: link.memberId, imageBase64: waImage || undefined })
         });
         const data = await res.json();
+        if (res.ok && data.skipped) {
+          // Already sent within the 24h window — treat as sent, inform.
+          setWaSentOneIds(prev => prev.includes(link.memberId) ? prev : [...prev, link.memberId]);
+          alert(data.reason || 'Ya se envió a este contacto en las últimas 24 horas.');
+          return;
+        }
         if (!res.ok || !data.sent) {
           alert(data.message || 'No se pudo enviar por la librería.');
           return;
@@ -1122,6 +1128,7 @@ export const CampaignManager: React.FC = () => {
                           {waServerStatus.running
                             ? `Enviando a ${waServerStatus.current || '...'} — ✓ ${waServerStatus.sent} · ✗ ${waServerStatus.failed} de ${waServerStatus.total}`
                             : `Terminado — ✓ ${waServerStatus.sent} enviados · ✗ ${waServerStatus.failed} fallidos de ${waServerStatus.total}`}
+                          {waServerStatus.skippedRecently ? ` · ⏭ ${waServerStatus.skippedRecently} omitidos (24h)` : ''}
                         </p>
                       </div>
                     )}
@@ -1190,22 +1197,28 @@ export const CampaignManager: React.FC = () => {
                             >
                               {copiedId === link.memberId ? <CheckCheck size={14} className="text-green-500" /> : <Copy size={14} />}
                             </button>
-                            {link.hasPhone && (
-                              <button
-                                onClick={() => handleSendOne(link)}
-                                disabled={waSendingOneId === link.memberId}
-                                title="Enviar este contacto por el servidor (librería), incluye la imagen si adjuntaste una"
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-60"
-                                style={{ background: '#128C7E' }}
-                              >
-                                {waSendingOneId === link.memberId
-                                  ? <Loader2 size={12} className="animate-spin" />
-                                  : waSentOneIds.includes(link.memberId)
-                                    ? <CheckCheck size={12} />
-                                    : <Send size={12} />}
-                                {waSendingOneId === link.memberId ? 'Enviando' : waSentOneIds.includes(link.memberId) ? 'Enviado' : 'Lib'}
-                              </button>
-                            )}
+                            {link.hasPhone && (() => {
+                              const isSending = waSendingOneId === link.memberId;
+                              const alreadySent = waSentOneIds.includes(link.memberId) || link.sentRecently;
+                              return (
+                                <button
+                                  onClick={() => handleSendOne(link)}
+                                  disabled={isSending || alreadySent}
+                                  title={alreadySent
+                                    ? 'Ya se envió a este contacto en las últimas 24 horas'
+                                    : 'Enviar este contacto por el servidor (librería), incluye la imagen si adjuntaste una'}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                  style={{ background: alreadySent ? '#94a3b8' : '#128C7E' }}
+                                >
+                                  {isSending
+                                    ? <Loader2 size={12} className="animate-spin" />
+                                    : alreadySent
+                                      ? <CheckCheck size={12} />
+                                      : <Send size={12} />}
+                                  {isSending ? 'Enviando' : alreadySent ? 'Enviado 24h' : 'Lib'}
+                                </button>
+                              );
+                            })()}
                             <a
                               href={link.waUrl}
                               target="_blank"
