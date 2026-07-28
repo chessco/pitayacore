@@ -1792,3 +1792,110 @@ model AppearanceManager {
 
   @@index([tenantId])
 }
+
+// ============================================================================
+// Social Intelligence Suite (SIS) — ADDITIVE, DECOUPLED MODULE.
+//
+// These models are fully self-contained. They intentionally use a SCALAR
+// `tenantId` column with an index but NO Prisma relation to `Tenant`, so this
+// block introduces ZERO changes to any existing model (the `Tenant` model is
+// left untouched). Trade-off: no cross-table FK/cascade — acceptable for a
+// decoupled suite and documented in the SIS README.
+// ============================================================================
+
+model SocialConnectorAccount {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  provider           String // 'FACEBOOK' (future: INSTAGRAM, X, TIKTOK, YOUTUBE, RSS, ...)
+  externalAccountId  String // external page / account / channel id
+  name               String? // human-readable label
+  accessToken        String    @db.Text // AES-256-GCM encrypted (see TokenCryptoService)
+  status             String    @default("ACTIVE") // ACTIVE | DISABLED | ERROR
+  lastSyncAt         DateTime?
+  lastError          String?   @db.Text
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([tenantId, provider, externalAccountId])
+  @@index([tenantId])
+  @@index([tenantId, provider])
+}
+
+model SocialContentItem {
+  id                 String    @id @default(uuid())
+  tenantId           String
+  connectorAccountId String?
+  source             String // 'FACEBOOK', ...
+  type               String // 'POST' | 'COMMENT' | 'REACTION' | 'ARTICLE' | ...
+  externalId         String
+  authorId           String?
+  author             String?
+  publishedAt        DateTime?
+  content            String    @db.Text
+  mediaUrls          Json?
+  url                String?   @db.Text
+  metadata           Json?
+  analysisStatus     String    @default("PENDING") // PENDING | ANALYZED | FAILED
+  collectedAt        DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([tenantId, source, externalId])
+  @@index([tenantId])
+  @@index([tenantId, source])
+  @@index([tenantId, analysisStatus])
+}
+
+model SocialContentAnalysis {
+  id              String   @id @default(uuid())
+  tenantId        String
+  contentItemId   String   @unique
+  language        String?
+  summary         String?  @db.Text
+  sentiment       String? // POSITIVE | NEGATIVE | NEUTRAL | MIXED
+  sentimentScore  Float?
+  topics          Json?
+  entities        Json?
+  riskLevel       String? // LOW | MEDIUM | HIGH | CRITICAL
+  recommendations Json?
+  model           String?
+  analyzedAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, sentiment])
+  @@index([tenantId, riskLevel])
+}
+
+model SocialAlertRule {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  type      String // MENTION_SPIKE | NEGATIVE_SENTIMENT | EMERGING_TOPIC | COMMENT_VOLUME | CRITICAL_KEYWORDS
+  params    Json?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, enabled])
+}
+
+model SocialAlert {
+  id            String   @id @default(uuid())
+  tenantId      String
+  ruleId        String?
+  type          String
+  severity      String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
+  title         String
+  description   String?  @db.Text
+  contentItemId String?
+  status        String   @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, severity])
+}
