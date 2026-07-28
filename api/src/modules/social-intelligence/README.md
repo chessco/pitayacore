@@ -17,7 +17,7 @@ to any vertical (Mando, AcuaCore, LuxuryOS…).
 | PR1 | Foundation, schema, event bus, token crypto       | ✅    |
 | PR2 | Facebook connector, connector CRUD, collector     | ✅    |
 | PR3 | 7-agent AI pipeline, embeddings, content read API | ✅    |
-| PR4 | Alert engine                                       | ⏳ planned |
+| PR4 | Alert engine (configurable rules + generated alerts) | ✅  |
 | PR5 | Analytics + Knowledge Suite integration           | ⏳ planned |
 | PR6 | Sentinel AI dashboard (frontend)                  | ⏳ planned |
 | PR7 | Mando adapter                                      | ⏳ planned |
@@ -69,6 +69,14 @@ All routes live under `/social-intelligence` and are tenant-scoped via the
 | GET    | `/social-intelligence/content`             | List collected content (+analysis). Query: `source`, `status`, `limit`. |
 | GET    | `/social-intelligence/content/:id`         | Get one item with its analysis.          |
 | POST   | `/social-intelligence/content/:id/analyze` | (Re)run the AI pipeline for one item.    |
+| POST   | `/social-intelligence/alert-rules`         | Create an alert rule.                     |
+| GET    | `/social-intelligence/alert-rules`         | List alert rules.                         |
+| GET    | `/social-intelligence/alert-rules/:id`     | Get one alert rule.                       |
+| PATCH  | `/social-intelligence/alert-rules/:id`     | Update an alert rule.                     |
+| DELETE | `/social-intelligence/alert-rules/:id`     | Delete an alert rule.                     |
+| GET    | `/social-intelligence/alerts`              | List generated alerts. Query: `status`, `severity`, `limit`. |
+| GET    | `/social-intelligence/alerts/:id`          | Get one alert.                            |
+| PATCH  | `/social-intelligence/alerts/:id/status`   | Set status: `OPEN`/`ACKNOWLEDGED`/`RESOLVED`. |
 
 A `@Cron` job (`CollectorService.pollActiveConnectors`, every 30 min) collects
 from every `ACTIVE` connector; failures are isolated per account.
@@ -83,7 +91,7 @@ Import `SocialIntelligenceModule` and inject `SisEventBus` to subscribe.
 | `CONTENT_COLLECTED`      | `social-intelligence.content.collected` | A new item is persisted.        |
 | `CONTENT_ANALYZED`       | `social-intelligence.content.analyzed`  | Analysis completes.             |
 | `TOPIC_DETECTED`         | `social-intelligence.topic.detected`    | A topic is found on an item.    |
-| `ALERT_GENERATED`        | `social-intelligence.alert.generated`   | (PR4) An alert fires.           |
+| `ALERT_GENERATED`        | `social-intelligence.alert.generated`   | An alert rule fires.            |
 | `TREND_DETECTED`         | `social-intelligence.trend.detected`    | (PR5) A trend is detected.      |
 | `RECOMMENDATION_GENERATED`| `social-intelligence.recommendation.generated` | (PR5) Recommendations produced. |
 
@@ -100,6 +108,32 @@ cost/latency (organized per-agent so any agent can be split out later):
 Embeddings are generated via `AiService.getEmbedding` and stored in the existing
 `VectorRecord` (`refType='SOCIAL'`). Embedding storage is best-effort and never
 blocks analysis.
+
+## Alert engine (PR4)
+
+Rules are fully configurable per tenant. **Per-item** rules evaluate reactively
+when an item is analyzed (via the `CONTENT_ANALYZED` event); **windowed** rules
+evaluate every 15 minutes (`@Cron`) across tenants. Every firing creates a
+`SocialAlert` and emits `ALERT_GENERATED`. Alerts are de-duplicated
+(one per rule+item; one per rule+topic/window for windowed rules).
+
+| `type`               | Mode      | `params`                                   | Fires when |
+| -------------------- | --------- | ------------------------------------------ | ---------- |
+| `CRITICAL_KEYWORDS`  | per-item  | `{ keywords: string[], severity? }`        | Content/summary contains any keyword. |
+| `NEGATIVE_SENTIMENT` | per-item  | `{ scoreThreshold?, severity? }`           | Sentiment is NEGATIVE or score ≤ threshold (default -0.3). |
+| `COMMENT_VOLUME`     | per-item  | `{ threshold, severity? }`                 | A post's public comment count ≥ threshold. |
+| `MENTION_SPIKE`      | windowed  | `{ windowMinutes?, threshold, source?, severity? }` | Items collected in the window ≥ threshold. |
+| `EMERGING_TOPIC`     | windowed  | `{ windowMinutes?, threshold, severity? }` | A topic appears ≥ threshold times in the window. |
+
+`severity` (LOW/MEDIUM/HIGH/CRITICAL) is optional; each type has a sensible
+default. Pure matching logic lives in `alerts/alert-matchers.ts` and is unit-tested.
+
+Example rule body:
+
+```json
+{ "name": "Palabras críticas", "type": "CRITICAL_KEYWORDS",
+  "params": { "keywords": ["corrupción", "fraude"], "severity": "CRITICAL" } }
+```
 
 ## Extending with a new network
 

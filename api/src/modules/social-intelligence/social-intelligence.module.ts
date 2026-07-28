@@ -18,6 +18,11 @@ import { ContentAnalyzer } from './ai/content-analyzer.service';
 import { PipelineService } from './ai/pipeline.service';
 import { ContentService } from './content/content.service';
 import { ContentController } from './content/content.controller';
+import { AlertRulesService } from './alerts/alert-rules.service';
+import { AlertsService } from './alerts/alerts.service';
+import { AlertEngineService } from './alerts/alert-engine.service';
+import { AlertRulesController } from './alerts/alert-rules.controller';
+import { AlertsController } from './alerts/alerts.controller';
 
 /**
  * Social Intelligence Suite (SIS).
@@ -37,6 +42,8 @@ import { ContentController } from './content/content.controller';
     SocialIntelligenceController,
     ConnectorsController,
     ContentController,
+    AlertRulesController,
+    AlertsController,
   ],
   providers: [
     SocialIntelligenceService,
@@ -60,6 +67,10 @@ import { ContentController } from './content/content.controller';
     PipelineService,
     // Read side
     ContentService,
+    // Alert engine (PR4)
+    AlertRulesService,
+    AlertsService,
+    AlertEngineService,
   ],
   exports: [SocialIntelligenceService, SisEventBus],
 })
