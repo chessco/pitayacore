@@ -89,6 +89,11 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
     WhatsAppStatusProvider,
     ApiKeyGuard,
     FacebookConnector,
+    {
+      provide: 'SIS_SOCIAL_CONNECTORS',
+      useFactory: (fb: FacebookConnector) => [fb],
+      inject: [FacebookConnector],
+    },
   ],
   exports: [
     SocialBrandsService,
