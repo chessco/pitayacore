@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Target, Megaphone, FileText, Send, BarChart3, Brain, Flame } from 'lucide-react';
+import { Palette, Target, Megaphone, FileText, Send, BarChart3, Brain, Flame, PlugZap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Sub Studios
@@ -11,6 +11,7 @@ import { PublisherStudio } from './components/PublisherStudio';
 import { AnalyticsStudio } from './components/AnalyticsStudio';
 import { OptimizationStudio } from './components/OptimizationStudio';
 import { TrendStudio } from './components/TrendStudio';
+import { ProviderSettings } from './components/ProviderSettings';
 
 export default function SocialSuiteView() {
   const [activeSubTab, setActiveSubTab] = useState('brand');
@@ -24,6 +25,7 @@ export default function SocialSuiteView() {
     { id: 'analytics', label: 'Analytics Studio', icon: BarChart3 },
     { id: 'optimization', label: 'Optimizer Studio', icon: Brain },
     { id: 'trends', label: 'Trend Studio', icon: Flame },
+    { id: 'providers', label: 'Providers', icon: PlugZap },
   ];
 
   const renderContent = () => {
@@ -44,6 +46,8 @@ export default function SocialSuiteView() {
         return <OptimizationStudio />;
       case 'trends':
         return <TrendStudio />;
+      case 'providers':
+        return <ProviderSettings />;
       default:
         return <BrandStudio />;
     }

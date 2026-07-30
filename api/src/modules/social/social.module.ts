@@ -49,6 +49,14 @@ import { WhatsAppStatusProvider } from './providers/whatsapp-status.provider';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { FacebookConnector } from './providers/facebook/facebook.connector';
 
+// OAuth & provider management (PR8)
+import { OAUTH_PROVIDERS } from './providers/oauth/provider-oauth.interface';
+import { FacebookOAuthProvider } from './providers/oauth/facebook-oauth.provider';
+import { ProviderOAuthRegistry } from './providers/oauth/provider-oauth-registry.service';
+import { OAuthSessionService } from './providers/oauth/oauth-session.service';
+import { SocialProvidersService } from './providers/oauth/social-providers.service';
+import { SocialProvidersController } from './providers/oauth/social-providers.controller';
+
 @Module({
   imports: [AiModule, OperationsModule, HttpModule],
   controllers: [
@@ -63,6 +71,7 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
     SocialAgentsController,
     CollectorController,
     SocialIntelligenceController,
+    SocialProvidersController,
   ],
   providers: [
     SocialBrandsService,
@@ -99,6 +108,16 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
       useFactory: (fb: FacebookConnector) => [fb],
       inject: [FacebookConnector],
     },
+    // OAuth & provider management (PR8)
+    FacebookOAuthProvider,
+    {
+      provide: OAUTH_PROVIDERS,
+      useFactory: (facebook: FacebookOAuthProvider) => [facebook],
+      inject: [FacebookOAuthProvider],
+    },
+    ProviderOAuthRegistry,
+    OAuthSessionService,
+    SocialProvidersService,
   ],
   exports: [
     SocialBrandsService,

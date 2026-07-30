@@ -16,6 +16,7 @@ import { LeadManager } from './modules/capsules/Studio/LeadManager'
 import { CapsuleAnalytics } from './modules/capsules/Studio/CapsuleAnalytics'
 import { AgentsManager } from './modules/agents/AgentsManager'
 import { Storefront } from './modules/ecommerce/storefront/Storefront'
+import { SelectAccounts } from './modules/social/SelectAccounts'
 
 function AppContent() {
   const { selectedTenant, setSelectedTenant, tenantLanguages, role, setRole, setPermissions } = useTenant();
@@ -99,6 +100,9 @@ function AppContent() {
       </Route>
 
       <Route path="/app/capsules/edit/:id" element={isAuthenticated ? <CapsuleEditor /> : <Navigate to="/" />} />
+
+      {/* Social OAuth — account selection after provider redirect */}
+      <Route path="/social/select-accounts" element={isAuthenticated ? <SelectAccounts /> : <Navigate to="/" />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

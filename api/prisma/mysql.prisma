@@ -1811,6 +1811,15 @@ model SocialConnectorAccount {
   name               String? // human-readable label
   accessToken        String    @db.Text // AES-256-GCM encrypted (see TokenCryptoService)
   status             String    @default("ACTIVE") // ACTIVE | DISABLED | ERROR
+  // --- OAuth / provider-management fields (all additive, nullable) ---
+  business           String? // owning Business/Manager, when applicable
+  page               String? // page/asset display name
+  permissions        Json? // granted OAuth scopes (string[])
+  oauthStatus        String? // VALID | EXPIRED | REVOKED
+  verificationStatus String? // VERIFIED | FAILED
+  expiresAt          DateTime? // token expiration, when known
+  refreshStatus      String? // OK | REFRESHING | FAILED
+  lastVerifiedAt     DateTime?
   lastSyncAt         DateTime?
   lastError          String?   @db.Text
   metadata           Json?
@@ -1820,6 +1829,30 @@ model SocialConnectorAccount {
   @@unique([tenantId, provider, externalAccountId])
   @@index([tenantId])
   @@index([tenantId, provider])
+}
+
+// Persistent registry of supported social providers and their capabilities.
+// Global catalog (not tenant-scoped). Seeded via prisma/seeds/seed-providers.ts.
+model SocialProvider {
+  id                       String   @id @default(uuid())
+  code                     String   @unique // 'FACEBOOK', 'INSTAGRAM', 'LINKEDIN', ...
+  displayName              String
+  category                 String
+  version                  String
+  status                   String   @default("ACTIVE")
+  oauthEnabled             Boolean  @default(false)
+  publishingEnabled        Boolean  @default(false)
+  analyticsEnabled         Boolean  @default(false)
+  realtimeEnabled          Boolean  @default(false)
+  webhookEnabled           Boolean  @default(false)
+  supportsRefreshToken     Boolean  @default(false)
+  supportsMultipleAccounts Boolean  @default(false)
+  documentationUrl         String?
+  icon                     String?
+  configuration            Json?
+  metadata                 Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 }
 
 model SocialContentItem {
