@@ -13,6 +13,7 @@ import { SocialTrendsController } from './trends/social-trends.controller';
 import { SocialMemoryController } from './memory/social-memory.controller';
 import { SocialAgentsController } from './agents/social-agents.controller';
 import { CollectorController } from './collection/collector.controller';
+import { SocialIntelligenceController } from './intelligence/social-intelligence.controller';
 
 // Services / Engines
 import { SocialBrandsService } from './brands/social-brands.service';
@@ -34,6 +35,7 @@ import { NormalizerService } from './intelligence/normalizer/normalizer.service'
 import { SisEventBus } from './events/social-intelligence.events';
 import { SocialJobsService } from './jobs/social-jobs.service';
 import { WebhookEngine } from './webhooks/webhook.engine';
+import { SocialIntelligenceService } from './intelligence/social-intelligence.service';
 import { OperationsModule } from '../operations/operations.module';
 
 // Providers
@@ -60,6 +62,7 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
     SocialMemoryController,
     SocialAgentsController,
     CollectorController,
+    SocialIntelligenceController,
   ],
   providers: [
     SocialBrandsService,
@@ -81,6 +84,7 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
     SisEventBus,
     SocialJobsService,
     WebhookEngine,
+    SocialIntelligenceService,
     ProviderRegistry,
     FacebookProvider,
     InstagramProvider,
@@ -110,6 +114,7 @@ import { FacebookConnector } from './providers/facebook/facebook.connector';
     CollectorService,
     SocialJobsService,
     WebhookEngine,
+    SocialIntelligenceService,
   ],
 })
 export class SocialModule {}
