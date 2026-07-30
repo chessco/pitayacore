@@ -864,7 +864,7 @@ export class CampaignService {
         email: l.email,
         name: l.name,
         phone: (l.phone || '').replace(/\D/g, ''),
-        message: l.message as string,
+        message: l.message,
       }))
       .filter((r) => r.phone);
 
@@ -910,7 +910,14 @@ export class CampaignService {
     this.waSendJobs.set(campaignId, job);
 
     // Fire-and-forget; progress is polled via getWhatsAppSendStatus.
-    void this.runWhatsAppSend(tenantId, channelId, campaignId, recipients, opts, job);
+    void this.runWhatsAppSend(
+      tenantId,
+      channelId,
+      campaignId,
+      recipients,
+      opts,
+      job,
+    );
 
     return {
       started: true,
@@ -942,8 +949,18 @@ export class CampaignService {
     tenantId: string,
     channelId: string,
     campaignId: string,
-    recipients: { email: string; name: string; phone: string; message: string }[],
-    opts: { imageBase64?: string; imageUrl?: string; minDelayMs?: number; maxDelayMs?: number },
+    recipients: {
+      email: string;
+      name: string;
+      phone: string;
+      message: string;
+    }[],
+    opts: {
+      imageBase64?: string;
+      imageUrl?: string;
+      minDelayMs?: number;
+      maxDelayMs?: number;
+    },
     job: WaSendJob,
   ) {
     const min = Math.max(0, opts.minDelayMs ?? 3000);

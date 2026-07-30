@@ -224,7 +224,8 @@ export class WhatsappWebProvider
     // them, so try both formats before giving up.
     const candidates = [digits];
     if (/^52\d{10}$/.test(digits)) candidates.push('521' + digits.slice(2));
-    else if (/^521\d{10}$/.test(digits)) candidates.push('52' + digits.slice(3));
+    else if (/^521\d{10}$/.test(digits))
+      candidates.push('52' + digits.slice(3));
 
     for (const candidate of candidates) {
       try {
