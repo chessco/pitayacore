@@ -19,7 +19,7 @@ to any vertical (Mando, AcuaCore, LuxuryOS…).
 | PR3 | 7-agent AI pipeline, embeddings, content read API | ✅    |
 | PR4 | Alert engine (configurable rules + generated alerts) | ✅  |
 | PR5 | Analytics API + Knowledge Suite integration + trends | ✅  |
-| PR6 | Sentinel AI dashboard (frontend)                  | ⏳ planned |
+| PR6 | Sentinel AI dashboard (frontend)                  | ✅    |
 | PR7 | Mando adapter                                      | ⏳ planned |
 
 ## Required environment variables
@@ -160,6 +160,19 @@ only (never writing KB tables directly). Analyzed items are ingested as KB
 documents (summary + topics + entities + source). Auto-feed is opt-in by risk
 level via `SIS_KB_AUTOFEED_RISK` (default `HIGH,CRITICAL`; `NONE` disables);
 manual ingestion is always available via `POST /knowledge/ingest/:contentItemId`.
+
+## Sentinel AI dashboard (PR6, frontend)
+
+Lives in the web app: `web/src/modules/sentinel/SentinelAI.tsx`, registered as a
+new **module** (id `sentinel`, category `avanzado`) in
+`web/src/modules/modules.config.ts` — the app's additive extension mechanism, so
+no existing dashboard is modified. It appears in the sidebar's "Inteligencia"
+group. Non-`system` users need `'sentinel'` in their `permissions.menus` to see it.
+
+It reads the `/social-intelligence/analytics/*` and `/alerts` endpoints (axios +
+`x-tenant-id` header, matching existing pages) and shows: collected/analyzed/alert
+KPIs, sentiment (donut), activity by source (bar), top topics, emerging trends,
+incidents/alerts, and suggested recommendations.
 
 ## Extending with a new network
 

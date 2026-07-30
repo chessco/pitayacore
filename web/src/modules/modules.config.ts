@@ -22,7 +22,8 @@ import {
   FolderOpen,
   Layers,
   Palette,
-  Server
+  Server,
+  ShieldAlert
 } from 'lucide-react';
 import { WorkspaceView } from './workspace/WorkspaceView';
 import { Inbox } from './inbox/Inbox';
@@ -55,6 +56,7 @@ import SocialSuiteView from './social/SocialSuiteView';
 import { IdentityPlatform } from './identity/IdentityPlatform';
 import { AppearanceDashboard } from './design/AppearanceDashboard';
 import { OperationsManager } from './operations/OperationsManager';
+import { SentinelAI } from './sentinel/SentinelAI';
 
 export interface ModuleConfig {
   id: string;           
@@ -362,5 +364,13 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     component: AppearanceDashboard,
     description: 'Personalización de marca blanca, temas dinámicos y tokens visuales.',
     category: 'sistema'
+  },
+  {
+    id: 'sentinel',
+    label: 'Sentinel AI',
+    icon: ShieldAlert,
+    component: SentinelAI,
+    description: 'Inteligencia social impulsada por IA: incidentes, tendencias, sentimiento y alertas.',
+    category: 'avanzado'
   }
 ];
