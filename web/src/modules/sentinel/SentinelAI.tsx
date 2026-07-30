@@ -113,13 +113,13 @@ export function SentinelAI() {
           'x-tenant-id': selectedTenant.id,
         };
         const [ov, tr, al, rec] = await Promise.all([
-          axios.get(`${apiUrl}/social-intelligence/analytics/overview`, { headers }),
-          axios.get(`${apiUrl}/social-intelligence/analytics/trends`, { headers }),
-          axios.get(`${apiUrl}/social-intelligence/alerts`, {
+          axios.get(`${apiUrl}/api/social-intelligence/analytics/overview`, { headers }),
+          axios.get(`${apiUrl}/api/social-intelligence/analytics/trends`, { headers }),
+          axios.get(`${apiUrl}/api/social-intelligence/alerts`, {
             headers,
             params: { limit: 8 },
           }),
-          axios.get(`${apiUrl}/social-intelligence/analytics/recommendations`, {
+          axios.get(`${apiUrl}/api/social-intelligence/analytics/recommendations`, {
             headers,
             params: { limit: 6 },
           }),

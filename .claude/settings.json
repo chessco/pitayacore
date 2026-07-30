@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/secret-scan.py\"",
+            "shell": "bash",
+            "timeout": 30,
+            "statusMessage": "Revisión de seguridad: escaneo de secretos…"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git push*)",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/secret-scan.py\"",
+            "shell": "bash",
+            "timeout": 30,
+            "statusMessage": "Revisión de seguridad: escaneo de secretos…"
+          }
+        ]
+      }
+    ]
+  }
+}

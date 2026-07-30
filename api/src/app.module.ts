@@ -51,7 +51,6 @@ import { CommunicationModule } from './modules/communication/communication.modul
 import { SocialModule } from './modules/social/social.module';
 import { DesignModule } from './modules/design/design.module';
 import { OperationsModule } from './modules/operations/operations.module';
-import { SocialIntelligenceModule } from './modules/social-intelligence/social-intelligence.module';
 
 @Module({
   imports: [
@@ -102,7 +101,6 @@ import { SocialIntelligenceModule } from './modules/social-intelligence/social-i
     SocialModule,
     DesignModule,
     OperationsModule,
-    SocialIntelligenceModule,
   ],
   controllers: [AppController],
   providers: [
