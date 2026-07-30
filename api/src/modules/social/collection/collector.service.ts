@@ -4,7 +4,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma, type SocialConnectorAccount } from '@prisma/mysql-client';
 import { DatabaseService } from '../../../common/database/database.service';
 import { ConnectorRegistry } from '../accounts/connector-registry.service';
@@ -173,7 +172,6 @@ export class CollectorService {
    * Periodic poll of every ACTIVE connector across all tenants. Failures are
    * isolated per account so one broken connector never blocks the others.
    */
-  @Cron(CronExpression.EVERY_30_MINUTES)
   async pollActiveConnectors(): Promise<void> {
     const accounts = await this.db.mysql.socialConnectorAccount.findMany({
       where: { status: 'ACTIVE' },
