@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { AiModule } from '../ai/ai.module';
 
 // Controllers
@@ -47,7 +48,7 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { FacebookConnector } from './providers/facebook/facebook.connector';
 
 @Module({
-  imports: [AiModule, OperationsModule],
+  imports: [AiModule, OperationsModule, HttpModule],
   controllers: [
     SocialBrandsController,
     SocialAudiencesController,
