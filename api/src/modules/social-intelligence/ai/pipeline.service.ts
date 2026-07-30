@@ -9,6 +9,7 @@ import {
   SocialContentAnalyzedEvent,
   SocialContentCollectedEvent,
   TopicDetectedEvent,
+  RecommendationGeneratedEvent,
 } from '../events/social-intelligence.events';
 import { errMessage } from '../util/errors';
 
@@ -116,6 +117,16 @@ export class PipelineService implements OnModuleInit {
         this.bus.publish(
           SIS_EVENTS.TOPIC_DETECTED,
           new TopicDetectedEvent(tenantId, topic, item.id),
+        );
+      }
+      if (result.recommendations?.length) {
+        this.bus.publish(
+          SIS_EVENTS.RECOMMENDATION_GENERATED,
+          new RecommendationGeneratedEvent(
+            tenantId,
+            item.id,
+            result.recommendations,
+          ),
         );
       }
     } catch (error) {

@@ -23,6 +23,12 @@ import { AlertsService } from './alerts/alerts.service';
 import { AlertEngineService } from './alerts/alert-engine.service';
 import { AlertRulesController } from './alerts/alert-rules.controller';
 import { AlertsController } from './alerts/alerts.controller';
+import { KnowledgeBaseModule } from '../knowledge-base/knowledge-base.module';
+import { AnalyticsService } from './analytics/analytics.service';
+import { TrendsService } from './analytics/trends.service';
+import { AnalyticsController } from './analytics/analytics.controller';
+import { KnowledgeAdapterService } from './knowledge/knowledge-adapter.service';
+import { KnowledgeController } from './knowledge/knowledge.controller';
 
 /**
  * Social Intelligence Suite (SIS).
@@ -37,13 +43,15 @@ import { AlertsController } from './alerts/alerts.controller';
  * SOCIAL_CONNECTORS factory below. Nothing else in the module changes.
  */
 @Module({
-  imports: [HttpModule, AiModule],
+  imports: [HttpModule, AiModule, KnowledgeBaseModule],
   controllers: [
     SocialIntelligenceController,
     ConnectorsController,
     ContentController,
     AlertRulesController,
     AlertsController,
+    AnalyticsController,
+    KnowledgeController,
   ],
   providers: [
     SocialIntelligenceService,
@@ -71,6 +79,10 @@ import { AlertsController } from './alerts/alerts.controller';
     AlertRulesService,
     AlertsService,
     AlertEngineService,
+    // Analytics + Knowledge integration (PR5)
+    AnalyticsService,
+    TrendsService,
+    KnowledgeAdapterService,
   ],
   exports: [SocialIntelligenceService, SisEventBus],
 })

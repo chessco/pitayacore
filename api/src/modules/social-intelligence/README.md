@@ -18,7 +18,7 @@ to any vertical (Mando, AcuaCore, LuxuryOS…).
 | PR2 | Facebook connector, connector CRUD, collector     | ✅    |
 | PR3 | 7-agent AI pipeline, embeddings, content read API | ✅    |
 | PR4 | Alert engine (configurable rules + generated alerts) | ✅  |
-| PR5 | Analytics + Knowledge Suite integration           | ⏳ planned |
+| PR5 | Analytics API + Knowledge Suite integration + trends | ✅  |
 | PR6 | Sentinel AI dashboard (frontend)                  | ⏳ planned |
 | PR7 | Mando adapter                                      | ⏳ planned |
 
@@ -33,6 +33,8 @@ Add these to `api/.env` (never commit real values — `.env` is gitignored):
 | `FACEBOOK_APP_ID`        | no       | —        | Meta App id (reserved for future token exchange).    |
 | `FACEBOOK_APP_SECRET`    | no       | —        | Meta App secret (reserved for future token exchange).|
 | `SIS_TOPIC_CATALOG`      | no       | brief default | Comma-separated topic catalog for classification. |
+| `SIS_KB_AUTOFEED_RISK`   | no       | `HIGH,CRITICAL` | Risk levels auto-fed to Knowledge Suite (`NONE` disables). |
+| `SIS_TREND_MIN_SCORE`    | no       | `3`      | Min rise (current−previous) to emit `TREND_DETECTED`. |
 
 \* Required as soon as a connector account is created (tokens cannot be encrypted without it). `GEMINI_API_KEY` (already used by PitayaCore) powers analysis + embeddings.
 
@@ -77,6 +79,14 @@ All routes live under `/social-intelligence` and are tenant-scoped via the
 | GET    | `/social-intelligence/alerts`              | List generated alerts. Query: `status`, `severity`, `limit`. |
 | GET    | `/social-intelligence/alerts/:id`          | Get one alert.                            |
 | PATCH  | `/social-intelligence/alerts/:id/status`   | Set status: `OPEN`/`ACKNOWLEDGED`/`RESOLVED`. |
+| GET    | `/social-intelligence/analytics/overview`  | Dashboard summary. Query: `windowDays`.   |
+| GET    | `/social-intelligence/analytics/sentiment` | Sentiment distribution.                   |
+| GET    | `/social-intelligence/analytics/topics`    | Top topics. Query: `windowDays`, `limit`. |
+| GET    | `/social-intelligence/analytics/trends`    | Rising topics (current vs previous window). |
+| GET    | `/social-intelligence/analytics/activity`  | Item counts by source.                    |
+| GET    | `/social-intelligence/analytics/recommendations` | Recent recommendations.             |
+| GET    | `/social-intelligence/analytics/alerts`    | Alert counts by severity/status.          |
+| POST   | `/social-intelligence/knowledge/ingest/:contentItemId` | Push an analyzed item into Knowledge Suite. |
 
 A `@Cron` job (`CollectorService.pollActiveConnectors`, every 30 min) collects
 from every `ACTIVE` connector; failures are isolated per account.
@@ -92,8 +102,8 @@ Import `SocialIntelligenceModule` and inject `SisEventBus` to subscribe.
 | `CONTENT_ANALYZED`       | `social-intelligence.content.analyzed`  | Analysis completes.             |
 | `TOPIC_DETECTED`         | `social-intelligence.topic.detected`    | A topic is found on an item.    |
 | `ALERT_GENERATED`        | `social-intelligence.alert.generated`   | An alert rule fires.            |
-| `TREND_DETECTED`         | `social-intelligence.trend.detected`    | (PR5) A trend is detected.      |
-| `RECOMMENDATION_GENERATED`| `social-intelligence.recommendation.generated` | (PR5) Recommendations produced. |
+| `TREND_DETECTED`         | `social-intelligence.trend.detected`    | A topic is rising (windowed).   |
+| `RECOMMENDATION_GENERATED`| `social-intelligence.recommendation.generated` | Analysis produced recommendations. |
 
 ## AI pipeline (7 agents)
 
@@ -134,6 +144,22 @@ Example rule body:
 { "name": "Palabras críticas", "type": "CRITICAL_KEYWORDS",
   "params": { "keywords": ["corrupción", "fraude"], "severity": "CRITICAL" } }
 ```
+
+## Analytics & Knowledge integration (PR5)
+
+**Analytics** (`/social-intelligence/analytics/*`) are read-only aggregations for
+the Sentinel dashboard (PR6) and Mando adapter (PR7). Scalar fields use Prisma
+`groupBy`; JSON fields (topics/entities/recommendations) are aggregated in memory
+over a bounded recent slice (cap 2000 rows, documented). `trends` compares a
+topic's frequency in the current window vs the previous equal-length window; a
+`@Cron` (every 3h) emits `TREND_DETECTED` for rising topics above
+`SIS_TREND_MIN_SCORE` (default 3).
+
+**Knowledge Suite** integration is via the public `KnowledgeIngestionService`
+only (never writing KB tables directly). Analyzed items are ingested as KB
+documents (summary + topics + entities + source). Auto-feed is opt-in by risk
+level via `SIS_KB_AUTOFEED_RISK` (default `HIGH,CRITICAL`; `NONE` disables);
+manual ingestion is always available via `POST /knowledge/ingest/:contentItemId`.
 
 ## Extending with a new network
 
