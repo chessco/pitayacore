@@ -29,6 +29,8 @@ import { TrendsService } from './analytics/trends.service';
 import { AnalyticsController } from './analytics/analytics.controller';
 import { KnowledgeAdapterService } from './knowledge/knowledge-adapter.service';
 import { KnowledgeController } from './knowledge/knowledge.controller';
+import { MandoAdapterService } from './mando/mando-adapter.service';
+import { MandoController } from './mando/mando.controller';
 
 /**
  * Social Intelligence Suite (SIS).
@@ -52,6 +54,7 @@ import { KnowledgeController } from './knowledge/knowledge.controller';
     AlertsController,
     AnalyticsController,
     KnowledgeController,
+    MandoController,
   ],
   providers: [
     SocialIntelligenceService,
@@ -83,7 +86,9 @@ import { KnowledgeController } from './knowledge/knowledge.controller';
     AnalyticsService,
     TrendsService,
     KnowledgeAdapterService,
+    // Mando adapter (PR7)
+    MandoAdapterService,
   ],
-  exports: [SocialIntelligenceService, SisEventBus],
+  exports: [SocialIntelligenceService, SisEventBus, MandoAdapterService],
 })
 export class SocialIntelligenceModule {}

@@ -20,7 +20,7 @@ to any vertical (Mando, AcuaCore, LuxuryOS…).
 | PR4 | Alert engine (configurable rules + generated alerts) | ✅  |
 | PR5 | Analytics API + Knowledge Suite integration + trends | ✅  |
 | PR6 | Sentinel AI dashboard (frontend)                  | ✅    |
-| PR7 | Mando adapter                                      | ⏳ planned |
+| PR7 | Mando read-only adapter (service + endpoints)     | ✅    |
 
 ## Required environment variables
 
@@ -87,6 +87,11 @@ All routes live under `/social-intelligence` and are tenant-scoped via the
 | GET    | `/social-intelligence/analytics/recommendations` | Recent recommendations.             |
 | GET    | `/social-intelligence/analytics/alerts`    | Alert counts by severity/status.          |
 | POST   | `/social-intelligence/knowledge/ingest/:contentItemId` | Push an analyzed item into Knowledge Suite. |
+| GET    | `/social-intelligence/mando/briefing`      | One-call Mando snapshot (summary+incidents+topics+recs). |
+| GET    | `/social-intelligence/mando/incidents`     | Open HIGH/CRITICAL alerts.                |
+| GET    | `/social-intelligence/mando/alerts`        | All open alerts.                          |
+| GET    | `/social-intelligence/mando/topics`        | Top + rising topics.                      |
+| GET    | `/social-intelligence/mando/recommendations` | Flattened recommendations.              |
 
 A `@Cron` job (`CollectorService.pollActiveConnectors`, every 30 min) collects
 from every `ACTIVE` connector; failures are isolated per account.
@@ -173,6 +178,16 @@ It reads the `/social-intelligence/analytics/*` and `/alerts` endpoints (axios +
 `x-tenant-id` header, matching existing pages) and shows: collected/analyzed/alert
 KPIs, sentiment (donut), activity by source (bar), top topics, emerging trends,
 incidents/alerts, and suggested recommendations.
+
+## Mando adapter (PR7)
+
+`MandoAdapterService` (`mando/mando-adapter.service.ts`) is a read-only mapper
+that reshapes SIS data for the Mando vertical (incidents, alerts, topics/trends,
+recommendations, and a one-call `briefing`). **SIS never depends on the
+vision/Mando module** — the adapter only reads SIS's own data. It is **exported**
+from the module, so a vertical can inject `MandoAdapterService` directly (DI) as
+well as calling the `/social-intelligence/mando/*` endpoints. No political
+business logic lives here; Mando is purely a consumer.
 
 ## Extending with a new network
 
