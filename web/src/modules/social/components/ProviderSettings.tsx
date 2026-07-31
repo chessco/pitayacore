@@ -60,8 +60,8 @@ export function ProviderSettings() {
     setError(null);
     try {
       const [p, a] = await Promise.all([
-        axios.get(`${apiUrl}/social/providers`, { headers: headers() }),
-        axios.get(`${apiUrl}/social/providers/accounts`, { headers: headers() }),
+        axios.get(`${apiUrl}/api/social/providers`, { headers: headers() }),
+        axios.get(`${apiUrl}/api/social/providers/accounts`, { headers: headers() }),
       ]);
       setProviders(Array.isArray(p.data) ? p.data : []);
       setAccounts(Array.isArray(a.data) ? a.data : []);
@@ -81,7 +81,7 @@ export function ProviderSettings() {
     setBusy(code);
     try {
       const res = await axios.post(
-        `${apiUrl}/social/providers/${code}/connect`,
+        `${apiUrl}/api/social/providers/${code}/connect`,
         {},
         { headers: headers() },
       );
@@ -96,7 +96,7 @@ export function ProviderSettings() {
     setBusy(id + action);
     try {
       await axios.post(
-        `${apiUrl}/social/providers/${id}/${action}`,
+        `${apiUrl}/api/social/providers/${id}/${action}`,
         {},
         { headers: headers() },
       );

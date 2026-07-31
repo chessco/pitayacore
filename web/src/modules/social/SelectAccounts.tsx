@@ -38,7 +38,7 @@ export function SelectAccounts() {
       }
       try {
         const res = await axios.get(
-          `${apiUrl}/social/providers/${provider}/pages`,
+          `${apiUrl}/api/social/providers/${provider}/pages`,
           { headers: headers(), params: { session } },
         );
         setPages(Array.isArray(res.data) ? res.data : []);
@@ -65,7 +65,7 @@ export function SelectAccounts() {
     setError(null);
     try {
       await axios.post(
-        `${apiUrl}/social/providers/${provider}/confirm`,
+        `${apiUrl}/api/social/providers/${provider}/confirm`,
         { sessionId: session, accountIds },
         { headers: headers() },
       );
