@@ -142,27 +142,43 @@ export class FacebookOAuthProvider implements IProviderOAuth {
   }
 
   async listAccounts(userAccessToken: string): Promise<ProviderAccount[]> {
-    const res = await firstValueFrom(
-      this.http.get<{ data?: FbAccount[] }>(`${this.graph}/me/accounts`, {
-        params: {
-          fields: 'id,name,access_token,category,followers_count,tasks,picture',
-          access_token: userAccessToken,
-          limit: 100,
-        },
-      }),
+    // Follow pagination so ALL administered pages are returned, not just the
+    // first batch. Cap the number of pages walked as a safety valve.
+    const all: FbAccount[] = [];
+    let url: string | null = `${this.graph}/me/accounts`;
+    let params: Record<string, string | number> | undefined = {
+      fields: 'id,name,access_token,category,followers_count,tasks,picture',
+      access_token: userAccessToken,
+      limit: 100,
+    };
+    let hops = 0;
+    while (url && hops < 20) {
+      const res = await firstValueFrom(
+        this.http.get<{ data?: FbAccount[]; paging?: { next?: string } }>(
+          url,
+          params ? { params } : undefined,
+        ),
+      );
+      all.push(...(res.data?.data ?? []));
+      url = res.data?.paging?.next ?? null; // next is a full URL with cursor
+      params = undefined;
+      hops += 1;
+    }
+
+    const withToken = all.filter((a) => a.access_token);
+    this.logger.log(
+      `Facebook /me/accounts: ${all.length} page(s) returned by Meta, ${withToken.length} with a page token (only these are selectable).`,
     );
-    const accounts = res.data?.data ?? [];
-    return accounts
-      .filter((a) => a.access_token)
-      .map((a) => ({
-        id: a.id,
-        name: a.name || a.id,
-        accessToken: a.access_token,
-        category: a.category,
-        followers: a.followers_count,
-        permissions: a.tasks,
-        pictureUrl: a.picture?.data?.url,
-      }));
+
+    return withToken.map((a) => ({
+      id: a.id,
+      name: a.name || a.id,
+      accessToken: a.access_token,
+      category: a.category,
+      followers: a.followers_count,
+      permissions: a.tasks,
+      pictureUrl: a.picture?.data?.url,
+    }));
   }
 
   // Facebook page tokens are long-lived; there is no refresh_token grant.
