@@ -57,8 +57,30 @@ import { OAuthSessionService } from './providers/oauth/oauth-session.service';
 import { SocialProvidersService } from './providers/oauth/social-providers.service';
 import { SocialProvidersController } from './providers/oauth/social-providers.controller';
 
+// SIS controllers/services that the refactor left unregistered (fix: 404s)
+import { KnowledgeBaseModule } from '../knowledge-base/knowledge-base.module';
+import { GeminiProvider } from '../../infrastructure/providers/ai/gemini.provider';
+import { ConnectorsController } from './accounts/connectors.controller';
+import { AnalyticsController } from './analytics/analytics.controller';
+import { AnalyticsService } from './analytics/analytics.service';
+import { TrendsService } from './analytics/trends.service';
+import { AlertRulesController } from './intelligence/alerts/alert-rules.controller';
+import { AlertRulesService } from './intelligence/alerts/alert-rules.service';
+import { AlertsController } from './intelligence/alerts/alerts.controller';
+import { AlertsService } from './intelligence/alerts/alerts.service';
+import { AlertEngineService } from './intelligence/alerts/alert-engine.service';
+import { ContentController } from './memory/collected-content/content.controller';
+import { ContentService } from './memory/collected-content/content.service';
+import { PipelineService } from './intelligence/ai/pipeline.service';
+import { ContentAnalyzer } from './intelligence/ai/content-analyzer.service';
+import { TopicCatalogService } from './intelligence/ai/topic-catalog.service';
+import { KnowledgeController } from './memory/knowledge/knowledge.controller';
+import { KnowledgeAdapterService } from './memory/knowledge/knowledge-adapter.service';
+import { MandoController } from './services/mando/mando.controller';
+import { MandoAdapterService } from './services/mando/mando-adapter.service';
+
 @Module({
-  imports: [AiModule, OperationsModule, HttpModule],
+  imports: [AiModule, OperationsModule, HttpModule, KnowledgeBaseModule],
   controllers: [
     SocialBrandsController,
     SocialAudiencesController,
@@ -72,6 +94,14 @@ import { SocialProvidersController } from './providers/oauth/social-providers.co
     CollectorController,
     SocialIntelligenceController,
     SocialProvidersController,
+    // SIS controllers (were unregistered -> 404 in prod)
+    ConnectorsController,
+    AnalyticsController,
+    AlertRulesController,
+    AlertsController,
+    ContentController,
+    KnowledgeController,
+    MandoController,
   ],
   providers: [
     SocialBrandsService,
@@ -118,6 +148,19 @@ import { SocialProvidersController } from './providers/oauth/social-providers.co
     ProviderOAuthRegistry,
     OAuthSessionService,
     SocialProvidersService,
+    // SIS services (were unregistered -> controllers 404)
+    GeminiProvider,
+    TopicCatalogService,
+    ContentAnalyzer,
+    PipelineService,
+    ContentService,
+    AnalyticsService,
+    TrendsService,
+    AlertRulesService,
+    AlertsService,
+    AlertEngineService,
+    KnowledgeAdapterService,
+    MandoAdapterService,
   ],
   exports: [
     SocialBrandsService,
