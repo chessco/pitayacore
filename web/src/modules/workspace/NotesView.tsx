@@ -2,7 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, Loader2, Check, Plus, Trash2, FileText, Calendar, Bold, Image as ImageIcon, Columns, Eye, Edit3, ChevronUp, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { useWorkspaceNotes } from './hooks/useWorkspaceNotes';
+
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  votes?: number;
+  userVote?: number;
+}
 
 export function NotesView() {
   const [title, setTitle] = useState('');
@@ -18,6 +27,7 @@ export function NotesView() {
   useEffect(() => {
     if (notes && notes.length > 0 && !currentNoteId && !isCreatingNew) {
       const latestNote = notes[0];
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentNoteId(latestNote.id);
       setTitle(latestNote.title || '');
       setContent(latestNote.content || '');
@@ -31,7 +41,7 @@ export function NotesView() {
     setIsCreatingNew(true);
   };
 
-  const handleSelectNote = (note: any) => {
+  const handleSelectNote = (note: Note) => {
     setCurrentNoteId(note.id);
     setTitle(note.title || '');
     setContent(note.content || '');
@@ -120,7 +130,7 @@ export function NotesView() {
               <p className="text-xs font-semibold">No hay notas creadas aún.</p>
             </div>
           ) : (
-            sortedNotesList.map((note: any) => {
+            (sortedNotesList as Note[]).map((note) => {
               const isSelected = currentNoteId === note.id;
               return (
                 <div
@@ -271,11 +281,15 @@ export function NotesView() {
           ) : (
             <div className="flex-1 w-full p-6 border border-slate-100 rounded-2xl bg-white overflow-y-auto custom-scrollbar prose prose-slate max-w-none">
               <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
-                  img: ({node, ...props}) => (
-                    <img {...props} referrerPolicy="no-referrer" className="rounded-xl shadow-sm border border-slate-100 max-w-full h-auto" />
-                  )
+                  img: ({ node, ...props }) => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const _unused = node;
+                    return (
+                      <img {...props} referrerPolicy="no-referrer" className="rounded-xl shadow-sm border border-slate-100 max-w-full h-auto" />
+                    );
+                  }
                 }}
               >
                 {content || '*No hay contenido todavía...*'}
