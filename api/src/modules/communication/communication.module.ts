@@ -12,6 +12,7 @@ import { ConversationService } from './conversations/conversation.service';
 import { MessageService } from './messages/message.service';
 import { InboxService } from './agent-inbox/inbox.service';
 import { InboxController } from './agent-inbox/inbox.controller';
+import { WhatsAppController } from './whatsapp.controller';
 import { CommunicationGateway } from './gateways/communication.gateway';
 import { AgentInboxGateway } from './gateways/agent-inbox.gateway';
 import { PresenceGateway } from './gateways/presence.gateway';
@@ -51,7 +52,7 @@ import { OperationsModule } from '../operations/operations.module';
     AgentInboxGateway,
     PresenceGateway,
   ],
-  controllers: [SessionController, InboxController],
+  controllers: [SessionController, InboxController, WhatsAppController],
   exports: [
     WhatsappWebProvider,
     CommunicationEventBusService,
