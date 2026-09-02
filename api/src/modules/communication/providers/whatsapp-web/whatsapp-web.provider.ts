@@ -219,13 +219,16 @@ export class WhatsappWebProvider
     const digits = to.replace(/\D/g, '');
     if (!digits) throw new Error('Número de teléfono inválido');
 
-    // Mexican numbers may be registered on WhatsApp with or without the mobile
-    // "1" after the country code (52 vs 521). getNumberId only resolves one of
-    // them, so try both formats before giving up.
-    const candidates = [digits];
-    if (/^52\d{10}$/.test(digits)) candidates.push('521' + digits.slice(2));
-    else if (/^521\d{10}$/.test(digits))
-      candidates.push('52' + digits.slice(3));
+    // Mexican numbers (country code 52): Prioritize 52 + 10 digits (current WA standard)
+    // before trying legacy 521 + 10 digits prefix.
+    const candidates: string[] = [];
+    if (/^521?\d{10}$/.test(digits)) {
+      const clean10 = digits.replace(/^521?/, '');
+      candidates.push(`52${clean10}`);
+      candidates.push(`521${clean10}`);
+    } else {
+      candidates.push(digits);
+    }
 
     for (const candidate of candidates) {
       try {
