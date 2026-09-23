@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import {
@@ -34,7 +35,8 @@ export class AgentRouterService {
     );
 
     try {
-      // 1. Get or create Contact
+      // 1. Get or create Contact (resolving @lid vs regular phone)
+      const senderPhone = (event as any).senderPhone;
       let contact = await this.db.mysql.contact.findFirst({
         where: {
           tenantId: event.tenantId,
@@ -43,9 +45,36 @@ export class AgentRouterService {
         },
       });
 
-      const cleanPhone = event.from.includes('@')
-        ? event.from.split('@')[0]
-        : event.from;
+      if (!contact && senderPhone) {
+        const clean10 = senderPhone.replace(/\D/g, '').replace(/^521?/, '');
+        contact = await this.db.mysql.contact.findFirst({
+          where: {
+            tenantId: event.tenantId,
+            provider: event.provider,
+            OR: [
+              { phone: senderPhone },
+              { phone: `52${clean10}` },
+              { phone: `521${clean10}` },
+              { phone: clean10 },
+              { externalId: senderPhone },
+              { externalId: `52${clean10}` },
+              { externalId: `521${clean10}` },
+              { externalId: `${senderPhone}@c.us` },
+            ],
+          },
+        });
+        if (contact) {
+          // Link this LID to the contact so future lookups are immediate
+          await this.db.mysql.contact.update({
+            where: { id: contact.id },
+            data: { externalId: event.from },
+          });
+        }
+      }
+
+      const cleanPhone =
+        senderPhone ||
+        (event.from.includes('@') ? event.from.split('@')[0] : event.from);
 
       if (!contact) {
         contact = await this.db.mysql.contact.create({
@@ -57,7 +86,7 @@ export class AgentRouterService {
             phone: cleanPhone,
           },
         });
-      } else if (contact.name?.includes('@')) {
+      } else if (contact.name?.includes('@') || (cleanPhone && contact.phone?.includes('@lid'))) {
         contact = await this.db.mysql.contact.update({
           where: { id: contact.id },
           data: { name: cleanPhone, phone: cleanPhone },
@@ -183,19 +212,84 @@ export class AgentRouterService {
         role: 'user',
       });
 
-      // 4. Check if human is active (Intervened / Autopilot OFF)
+      // Forward inbound message to iCellShop messages webhook
+      this.forwardMessageToProbuyer({
+        cleanPhone,
+        contactName: contact.name || cleanPhone,
+        content: finalContent,
+        timestamp: inboundMessage.createdAt,
+      }).catch((err) => {
+        this.logger.debug(`Forward to iCellShop skipped/failed: ${err?.message}`);
+      });
+
+      // 4. Check if human is active or if this is an authorization flow
       const convMetadata = (conversation.metadata as any) || {};
+      const trimmedContent = (finalContent || '').trim();
+
+      const isAuthKeyword =
+        /^(si|sí|ok|autorizo|autorizado|apruebo|aprobado|rechazo|rechazado|no)\b/i.test(
+          trimmedContent,
+        ) || /(autoriz|aprueb|rechaz)/i.test(trimmedContent);
+
+      // Look for pending authorization id in conversation metadata or previous messages
+      let pendingAuthId = convMetadata.authorizationId;
+      if (!pendingAuthId) {
+        let lastAuthMsg = await this.db.mysql.message.findFirst({
+          where: {
+            conversationId: conversation.id,
+            direction: 'OUTBOUND',
+            content: { contains: 'SOLICITUD DE AUTORIZACIÓN' },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (!lastAuthMsg) {
+          lastAuthMsg = await this.db.mysql.message.findFirst({
+            where: {
+              conversation: {
+                tenantId: event.tenantId,
+                contactId: contact.id,
+              },
+              direction: 'OUTBOUND',
+              content: { contains: 'SOLICITUD DE AUTORIZACIÓN' },
+              createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+
+        // 3. Fallback: Search across tenant for any recent outbound authorization request in the last 2 hours
+        if (!lastAuthMsg) {
+          lastAuthMsg = await this.db.mysql.message.findFirst({
+            where: {
+              conversation: {
+                tenantId: event.tenantId,
+              },
+              direction: 'OUTBOUND',
+              content: { contains: 'SOLICITUD DE AUTORIZACIÓN' },
+              createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+
+        if (lastAuthMsg) {
+          const match = lastAuthMsg.content.match(/ID:\s*([A-Za-z0-9-]+)/i);
+          if (match) pendingAuthId = match[1];
+        }
+      }
+
       const isAuthFlow =
         conversation.assignedAgentId === 'icellshop-autorizaciones' ||
         Boolean(convMetadata.isAuthRequest) ||
-        Boolean(convMetadata.authorizationId);
+        Boolean(pendingAuthId && isAuthKeyword);
 
       const humanActiveUntil = convMetadata.humanActiveUntil
         ? new Date(convMetadata.humanActiveUntil)
         : null;
 
       let shouldRouteToAi = false;
-      // Default is OFF, but if it is an authorization flow or humanActiveUntil <= now, enable AI
+      // Authorizations ALWAYS bypass humanActiveUntil
       if ((humanActiveUntil && humanActiveUntil <= new Date()) || isAuthFlow) {
         shouldRouteToAi = true;
       }
@@ -213,8 +307,8 @@ export class AgentRouterService {
 
       if (isAuthFlow && event.provider === 'whatsapp') {
         try {
-          // Identify authorizationId from conversation metadata or previous messages
-          let authId = convMetadata.authorizationId;
+          // Identify authorizationId from pendingAuthId or metadata
+          let authId = pendingAuthId || convMetadata.authorizationId;
           if (!authId) {
             const lastAuthMsg = await this.db.mysql.message.findFirst({
               where: {
@@ -257,7 +351,7 @@ export class AgentRouterService {
 
             if (decision.action !== 'AMBIGUOUS') {
               if (webhookUrl && !webhookUrl.includes('[TU-DOMINIO]')) {
-                const cleanPhone = event.from.replace(/\D/g, '');
+                const senderAuthorizedPhone = contact.phone || cleanPhone || event.from.replace(/\D/g, '');
                 const hookRes =
                   await this.probuyerWebhook.sendAuthorizationWebhook({
                     webhookUrl,
@@ -267,7 +361,7 @@ export class AgentRouterService {
                       action: decision.action,
                       partialAmount: decision.partialAmount,
                       responseNote: event.content,
-                      authorizedByPhone: cleanPhone,
+                      authorizedByPhone: senderAuthorizedPhone,
                     },
                   });
 
@@ -422,6 +516,54 @@ export class AgentRouterService {
       this.logger.error(
         `Failed to route message for tenant ${event.tenantId}`,
         error,
+      );
+    }
+  }
+  private async forwardMessageToProbuyer(params: {
+    cleanPhone: string;
+    contactName: string;
+    content: string;
+    timestamp: Date;
+  }) {
+    try {
+      const agent = await this.db.mysql.agent.findFirst({
+        where: {
+          slug: 'icellshop-autorizaciones',
+          isActive: true,
+        },
+      });
+
+      const agentConfig = (agent?.config as any) || {};
+      const webhookConfig = agentConfig.webhookConfig || {};
+      const webhookUrl = webhookConfig.url;
+      const webhookSecret = webhookConfig.secret;
+
+      if (webhookUrl && webhookUrl.startsWith('http')) {
+        const msgWebhookUrl = webhookUrl.replace(
+          /\/api\/sales\/authorizations\/webhook.*$/,
+          '/api/messages/webhook',
+        );
+
+        await axios.post(
+          msgWebhookUrl,
+          {
+            from: params.cleanPhone,
+            content: params.content,
+            senderName: params.contactName,
+            timestamp: params.timestamp.toISOString(),
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-pitayacore-secret': webhookSecret || '',
+            },
+            timeout: 5000,
+          },
+        );
+      }
+    } catch (err: any) {
+      this.logger.debug(
+        `[ForwardToProbuyer] Optional forward failed: ${err.message}`,
       );
     }
   }

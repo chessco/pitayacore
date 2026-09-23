@@ -13,6 +13,7 @@ export class MessageReceivedEvent {
     public readonly from: string,
     public readonly content: string,
     public readonly rawMessage: any,
+    public readonly senderPhone?: string,
   ) {}
 }
 

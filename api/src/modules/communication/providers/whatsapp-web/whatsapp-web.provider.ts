@@ -425,8 +425,20 @@ export class WhatsappWebProvider
     });
 
     client.on('message', async (message: Message) => {
+      let senderPhone: string | undefined;
+      try {
+        const contact = await message.getContact();
+        if (contact && contact.number) {
+          senderPhone = contact.number;
+        }
+      } catch (err) {
+        this.logger.debug(
+          `Could not resolve contact for ${message.from}: ${err}`,
+        );
+      }
+
       this.logger.debug(
-        `Received message for tenant ${tenantId}, channel ${channelId} from ${message.from}`,
+        `Received message for tenant ${tenantId}, channel ${channelId} from ${message.from} (phone: ${senderPhone || 'none'})`,
       );
 
       this.eventBus.publish(
@@ -438,6 +450,7 @@ export class WhatsappWebProvider
           message.from,
           message.body,
           message,
+          senderPhone,
         ),
       );
     });

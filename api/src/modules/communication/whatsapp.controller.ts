@@ -63,14 +63,19 @@ export class WhatsAppController {
 
       // 3. Persistir contacto, conversación y mensaje en DB para trazabilidad y flujo de agentes
       try {
+        const resolvedTarget = (result as any)?.to || body.to;
         const cleanPhone = body.to.includes('@')
           ? body.to.split('@')[0]
           : body.to;
         let contact = await this.db.mysql.contact.findFirst({
           where: {
             tenantId,
-            phone: cleanPhone,
             provider: 'whatsapp',
+            OR: [
+              { externalId: resolvedTarget },
+              { externalId: body.to },
+              { phone: cleanPhone },
+            ],
           },
         });
 
@@ -79,10 +84,15 @@ export class WhatsAppController {
             data: {
               tenantId,
               name: cleanPhone,
-              externalId: body.to,
+              externalId: resolvedTarget,
               provider: 'whatsapp',
               phone: cleanPhone,
             },
+          });
+        } else if (resolvedTarget && resolvedTarget.includes('@lid') && contact.externalId !== resolvedTarget) {
+          contact = await this.db.mysql.contact.update({
+            where: { id: contact.id },
+            data: { externalId: resolvedTarget },
           });
         }
 
