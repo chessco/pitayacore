@@ -5,10 +5,12 @@ import {
   MessageReceivedEvent,
 } from '../events/communication.events';
 import { AiRouterService } from '../../ai/ai-router.service';
+import { AiService } from '../../ai/ai.service';
 import { WhatsappWebProvider } from '../providers/whatsapp-web/whatsapp-web.provider';
 import { DatabaseService } from '../../../common/database/database.service';
 import { AgentInboxGateway } from '../gateways/agent-inbox.gateway';
 import { ExecutionEngine } from '../../operations/executions/execution.engine';
+import { ProBuyerWebhookService } from './probuyer-webhook.service';
 
 @Injectable()
 export class AgentRouterService {
@@ -21,6 +23,8 @@ export class AgentRouterService {
     private readonly inboxGateway: AgentInboxGateway,
     private readonly eventEmitter: EventEmitter2,
     private readonly executionEngine: ExecutionEngine,
+    private readonly probuyerWebhook: ProBuyerWebhookService,
+    private readonly ai: AiService,
   ) {}
 
   @OnEvent(COMMUNICATION_EVENTS.MESSAGE_RECEIVED)
@@ -181,13 +185,18 @@ export class AgentRouterService {
 
       // 4. Check if human is active (Intervened / Autopilot OFF)
       const convMetadata = (conversation.metadata as any) || {};
+      const isAuthFlow =
+        conversation.assignedAgentId === 'icellshop-autorizaciones' ||
+        Boolean(convMetadata.isAuthRequest) ||
+        Boolean(convMetadata.authorizationId);
+
       const humanActiveUntil = convMetadata.humanActiveUntil
         ? new Date(convMetadata.humanActiveUntil)
         : null;
 
       let shouldRouteToAi = false;
-      // Default is OFF. AI only responds if humanActiveUntil is explicitly set to the past.
-      if (humanActiveUntil && humanActiveUntil <= new Date()) {
+      // Default is OFF, but if it is an authorization flow or humanActiveUntil <= now, enable AI
+      if ((humanActiveUntil && humanActiveUntil <= new Date()) || isAuthFlow) {
         shouldRouteToAi = true;
       }
 
@@ -198,67 +207,173 @@ export class AgentRouterService {
         return;
       }
 
-      // 5. Route to Agent Runtime (AI Router)
-      const agentSlug =
-        conversation.assignedAgentId &&
-        !conversation.assignedAgentId.startsWith('usr_')
-          ? conversation.assignedAgentId
-          : undefined;
-      const response = await this.aiRouter.route(
-        event.content,
-        event.tenantId,
-        undefined,
-        agentSlug,
-      );
+      // Check for Pro Buyer Authorization Flow
+      let authHandled = false;
+      let responseText: string | null = null;
 
-      // 5. Send back via provider
-      if (response && event.provider === 'whatsapp') {
-        let responseText =
-          typeof response === 'string'
-            ? response
-            : (response as any).content || JSON.stringify(response);
-
-        // --- NEW INTERCEPTOR LOGIC ---
+      if (isAuthFlow && event.provider === 'whatsapp') {
         try {
-          const cleanedStr = responseText
-            .replace(/```json/g, '')
-            .replace(/```/g, '')
-            .trim();
-          if (cleanedStr.startsWith('{') && cleanedStr.endsWith('}')) {
-            const parsed = JSON.parse(cleanedStr);
-            if (parsed.action === 'list_jobs') {
-              const jobs = await this.db.mysql.job.findMany({
-                where: { tenantId: event.tenantId, cronExpression: null },
-              });
-              if (jobs.length === 0) {
-                responseText =
-                  'No hay trabajos manuales configurados en este momento.';
-              } else {
-                const list = jobs
-                  .map(
-                    (j) => `- ${j.name}: ${j.description || 'Sin descripción'}`,
-                  )
-                  .join('\n');
-                responseText = `Trabajos disponibles:\n${list}`;
-              }
-            } else if (parsed.action === 'execute_job' && parsed.jobName) {
-              const job = await this.db.mysql.job.findFirst({
-                where: {
-                  tenantId: event.tenantId,
-                  name: { contains: parsed.jobName },
-                },
-              });
-              if (job) {
-                await this.executionEngine.executeJob(job.id);
-                responseText = `✅ Iniciando ejecución del trabajo "${job.name}".`;
-              } else {
-                responseText = `❌ No pude encontrar un trabajo llamado "${parsed.jobName}".`;
-              }
+          // Identify authorizationId from conversation metadata or previous messages
+          let authId = convMetadata.authorizationId;
+          if (!authId) {
+            const lastAuthMsg = await this.db.mysql.message.findFirst({
+              where: {
+                conversationId: conversation.id,
+                direction: 'OUTBOUND',
+                content: { contains: 'SOLICITUD DE AUTORIZACIÓN' },
+              },
+              orderBy: { createdAt: 'desc' },
+            });
+            if (lastAuthMsg) {
+              const match = lastAuthMsg.content.match(/ID:\s*([A-Za-z0-9-]+)/i);
+              if (match) authId = match[1];
             }
           }
-        } catch (e) {}
-        // --- END NEW INTERCEPTOR LOGIC ---
 
+          if (authId) {
+            // Find agent configuration
+            const agent = await this.db.mysql.agent.findFirst({
+              where: {
+                slug: 'icellshop-autorizaciones',
+                isActive: true,
+              },
+            });
+
+            const agentConfig = (agent?.config as any) || {};
+            const webhookConfig = agentConfig.webhookConfig || {};
+            const webhookUrl = webhookConfig.url;
+            const webhookSecret = webhookConfig.secret;
+
+            // Interpret decision
+            const decision =
+              await this.probuyerWebhook.interpretAuthorizerResponse(
+                event.content,
+                this.ai,
+              );
+
+            this.logger.log(
+              `[AgentRouter] Decisión de autorización interpretada para ${authId}: ${decision.action} (${decision.reason})`,
+            );
+
+            if (decision.action !== 'AMBIGUOUS') {
+              if (webhookUrl && !webhookUrl.includes('[TU-DOMINIO]')) {
+                const cleanPhone = event.from.replace(/\D/g, '');
+                const hookRes =
+                  await this.probuyerWebhook.sendAuthorizationWebhook({
+                    webhookUrl,
+                    webhookSecret,
+                    payload: {
+                      authorizationId: authId,
+                      action: decision.action,
+                      partialAmount: decision.partialAmount,
+                      responseNote: event.content,
+                      authorizedByPhone: cleanPhone,
+                    },
+                  });
+
+                const shortId = authId.slice(0, 8).toUpperCase();
+                if (hookRes.success) {
+                  if (decision.action === 'APPROVE') {
+                    responseText = `✅ *Autorización Aprobada*\n\nHe registrado la aprobación de la solicitud [${shortId}] en Pro Buyer. La caja ya quedó autorizada para cerrar la venta.`;
+                  } else if (decision.action === 'APPROVE_PARTIAL') {
+                    responseText = `💛 *Autorización Parcial Registrada*\n\nHe registrado la aprobación parcial por *$${decision.partialAmount}* para la solicitud [${shortId}] en Pro Buyer. El descuento ha sido actualizado en la caja.`;
+                  } else {
+                    responseText = `❌ *Autorización Rechazada*\n\nHe registrado el rechazo de la solicitud [${shortId}] en Pro Buyer. El descuento no será aplicado.`;
+                  }
+                } else {
+                  responseText = `⚠️ Interpreté tu decisión como *${
+                    decision.action === 'APPROVE'
+                      ? 'APROBADA'
+                      : decision.action === 'APPROVE_PARTIAL'
+                        ? `APROBADA PARCIAL ($${decision.partialAmount})`
+                        : 'RECHAZADA'
+                  }*, pero ocurrió un detalle al reportarlo a Pro Buyer: ${
+                    hookRes.error || 'Error de conexión'
+                  }.`;
+                }
+              } else {
+                responseText = `⚠️ Interpreté tu respuesta como *${decision.action}*, pero la URL del webhook de Pro Buyer no está configurada o contiene un valor temporal en PitayaCore. Por favor configúrala en Capacidades Técnicas del agente.`;
+              }
+              authHandled = true;
+            } else {
+              // Ambiguous
+              responseText = `No pude determinar con certeza tu respuesta para la solicitud de autorización. Por favor responde:\n\n• *"Sí"* o *"Autorizado"* para aprobar el descuento completo.\n• *"Autorizo $300"* para autorizar un monto parcial específico.\n• *"No"* para rechazar la solicitud.`;
+              authHandled = true;
+            }
+          }
+        } catch (authError: any) {
+          this.logger.error(
+            `Error procesando flujo de autorización: ${authError.message}`,
+            authError.stack,
+          );
+        }
+      }
+
+      // If not an authorization or authorization fallback, use standard AI Router
+      if (!authHandled) {
+        const agentSlug =
+          conversation.assignedAgentId &&
+          !conversation.assignedAgentId.startsWith('usr_')
+            ? conversation.assignedAgentId
+            : undefined;
+        const response = await this.aiRouter.route(
+          event.content,
+          event.tenantId,
+          undefined,
+          agentSlug,
+        );
+
+        if (response) {
+          responseText =
+            typeof response === 'string'
+              ? response
+              : (response as any).content || JSON.stringify(response);
+
+          // --- NEW INTERCEPTOR LOGIC ---
+          try {
+            const cleanedStr = responseText
+              .replace(/```json/g, '')
+              .replace(/```/g, '')
+              .trim();
+            if (cleanedStr.startsWith('{') && cleanedStr.endsWith('}')) {
+              const parsed = JSON.parse(cleanedStr);
+              if (parsed.action === 'list_jobs') {
+                const jobs = await this.db.mysql.job.findMany({
+                  where: { tenantId: event.tenantId, cronExpression: null },
+                });
+                if (jobs.length === 0) {
+                  responseText =
+                    'No hay trabajos manuales configurados en este momento.';
+                } else {
+                  const list = jobs
+                    .map(
+                      (j) =>
+                        `- ${j.name}: ${j.description || 'Sin descripción'}`,
+                    )
+                    .join('\n');
+                  responseText = `Trabajos disponibles:\n${list}`;
+                }
+              } else if (parsed.action === 'execute_job' && parsed.jobName) {
+                const job = await this.db.mysql.job.findFirst({
+                  where: {
+                    tenantId: event.tenantId,
+                    name: { contains: parsed.jobName },
+                  },
+                });
+                if (job) {
+                  await this.executionEngine.executeJob(job.id);
+                  responseText = `✅ Iniciando ejecución del trabajo "${job.name}".`;
+                } else {
+                  responseText = `❌ No pude encontrar un trabajo llamado "${parsed.jobName}".`;
+                }
+              }
+            }
+          } catch (e) {}
+          // --- END NEW INTERCEPTOR LOGIC ---
+        }
+      }
+
+      if (responseText && event.provider === 'whatsapp') {
         await this.whatsappProvider.sendMessage(
           event.tenantId,
           event.channelId,

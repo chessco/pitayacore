@@ -51,6 +51,17 @@ const registryData = [
       { slug: 'prompt-engine', name: 'Prompt Engine', description: 'Motor de prompts', actions: ['generate_prompt', 'optimize_prompt', 'validate_prompt'] },
       { slug: 'asset-search', name: 'Asset Search', description: 'Búsqueda de activos', actions: ['search_assets', 'semantic_asset_search'] }
     ]
+  },
+  {
+    suite: { name: 'Integration Suite', slug: 'integration-suite', description: 'Capacidades de integración externa y webhooks.' },
+    skills: [
+      {
+        slug: 'probuyer-discount-authorization-webhook',
+        name: 'Webhook de Autorización - Pro Buyer',
+        description: 'Envía el resultado estructurado de la autorización hacia el endpoint webhook de Pro Buyer (POST /api/sales/authorizations/webhook) con firma de seguridad x-pitayacore-secret.',
+        actions: ['send_authorization_result', 'verify_webhook_connection', 'format_authorization_payload']
+      }
+    ]
   }
 ];
 

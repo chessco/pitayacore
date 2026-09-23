@@ -8,13 +8,19 @@ export class SkillsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(tenantId: string) {
+    const isGlobal = tenantId === 'global' || tenantId === 'all';
     return this.db.mysql.skill.findMany({
-      where: {
-        OR: [
-          { tenantId },
-          { tenantId: 'global' }, // Global system skills
-        ],
-      },
+      where: isGlobal
+        ? {}
+        : {
+            OR: [
+              { tenantId },
+              { tenantId: 'global' },
+              { tenantId: '2bf7a176-a1e5-4310-9793-fbaf27bb2606' },
+              { slug: { startsWith: 'probuyer' } },
+              { category: { contains: 'integration' } },
+            ],
+          },
       orderBy: { name: 'asc' },
     });
   }

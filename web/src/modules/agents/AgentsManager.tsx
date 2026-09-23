@@ -17,7 +17,14 @@ import {
   Thermometer,
   Brain,
   Wand2,
-  Bot
+  Bot,
+  Globe,
+  Eye,
+  EyeOff,
+  Link2,
+  Shield,
+  Send,
+  RefreshCw,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTenant } from '../../contexts/TenantContext'
@@ -39,6 +46,22 @@ export function AgentsManager() {
   const [versions, setVersions] = useState<any[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [createAgentData, setCreateAgentData] = useState({ name: '', slug: '', prompt: '' })
+
+  // Webhook technical capability state
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookSecret, setWebhookSecret] = useState('')
+  const [showSecret, setShowSecret] = useState(false)
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false)
+  const [testWebhookResult, setTestWebhookResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  useEffect(() => {
+    if (selectedAgent) {
+      const cfg = selectedAgent.config?.webhookConfig || {}
+      setWebhookUrl(cfg.url || '')
+      setWebhookSecret(cfg.secret || '')
+      setTestWebhookResult(null)
+    }
+  }, [selectedAgent])
 
   useEffect(() => {
     fetchAgents()
@@ -173,6 +196,95 @@ export function AgentsManager() {
       console.error('Error toggling skill:', error)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleSaveWebhookConfig = async () => {
+    if (!selectedAgent) return
+    setIsSaving(true)
+    setMessage(null)
+    try {
+      const token = localStorage.getItem('token')
+      const currentConfig = selectedAgent.config || {}
+      const newConfig = {
+        ...currentConfig,
+        webhookConfig: {
+          url: webhookUrl.trim(),
+          secret: webhookSecret.trim(),
+          enabled: true,
+        },
+      }
+
+      const res = await axios.patch(
+        `${apiUrl}/api/agents/${selectedAgent.id}`,
+        { config: newConfig },
+        {
+          headers: {
+            'x-tenant-id': selectedTenant?.id || '',
+            'x-api-key': flowApiKey,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      setSelectedAgent({ ...selectedAgent, config: res.data.config })
+      setMessage({ type: 'success', text: 'Configuración técnica del Webhook guardada exitosamente' })
+      fetchAgents()
+    } catch (err: any) {
+      setMessage({ type: 'error', text: 'Error al guardar la configuración del Webhook' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleTestWebhook = async () => {
+    if (!webhookUrl) {
+      setTestWebhookResult({
+        success: false,
+        message: 'Por favor ingresa la URL del webhook antes de probar.',
+      })
+      return
+    }
+    setIsTestingWebhook(true)
+    setTestWebhookResult(null)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.post(
+        `${apiUrl}/api/agents/${selectedAgent.id}/test-webhook`,
+        {
+          webhookUrl: webhookUrl.trim(),
+          webhookSecret: webhookSecret.trim(),
+        },
+        {
+          headers: {
+            'x-tenant-id': selectedTenant?.id || '',
+            'x-api-key': flowApiKey,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      if (res.data?.success) {
+        setTestWebhookResult({
+          success: true,
+          message: `Conexión exitosa (HTTP ${res.data.statusCode || 200}): Pro Buyer recibió la solicitud de prueba correctamente.`,
+        })
+      } else {
+        setTestWebhookResult({
+          success: false,
+          message:
+            res.data?.error ||
+            `Error HTTP ${res.data?.statusCode || 500}: No se pudo verificar el webhook.`,
+        })
+      }
+    } catch (err: any) {
+      setTestWebhookResult({
+        success: false,
+        message:
+          err.response?.data?.message ||
+          err.message ||
+          'Error al conectar con el servidor de webhook.',
+      })
+    } finally {
+      setIsTestingWebhook(false)
     }
   }
 
@@ -359,12 +471,15 @@ export function AgentsManager() {
                     <motion.div 
                         initial={{ opacity: 0, x: -10 }} 
                         animate={{ opacity: 1, x: 0 }}
-                        className="space-y-6"
+                        className="space-y-8"
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">Matriz de Habilidades</h4>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Activa o desactiva capacidades específicas</p>
+                            <div>
+                              <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">Matriz de Habilidades y Capacidades</h4>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Activa o desactiva capacidades y configura sus parámetros de integración</p>
+                            </div>
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {allSkills.map(skill => {
                                 const isAssigned = selectedAgent.config?.assignedSkills?.includes(skill.id);
@@ -376,16 +491,21 @@ export function AgentsManager() {
                                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
                                                 isAssigned ? 'bg-brand-blue/10 text-brand-blue' : 'bg-slate-200 text-slate-400'
                                             }`}>
-                                                <Zap size={20} />
+                                                {skill.slug?.includes('probuyer') || skill.slug?.includes('webhook') ? (
+                                                  <Globe size={20} />
+                                                ) : (
+                                                  <Zap size={20} />
+                                                )}
                                             </div>
                                             <div>
                                                 <h5 className="font-bold text-sm text-slate-800">{skill.name}</h5>
-                                                <p className="text-[10px] text-slate-400 font-medium">v{skill.version}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium">v{skill.version || '1.0'} {skill.category ? `• ${skill.category}` : ''}</p>
                                             </div>
                                         </div>
                                         <button 
                                             onClick={() => handleToggleSkill(skill.id)}
                                             className={`w-12 h-7 rounded-full p-1 transition-all ${isAssigned ? 'bg-brand-blue' : 'bg-slate-200'}`}
+                                            title={isAssigned ? "Desactivar capacidad" : "Activar capacidad"}
                                         >
                                             <div className={`w-5 h-5 bg-white rounded-full shadow-sm transform transition-all ${isAssigned ? 'translate-x-5' : 'translate-x-0'}`} />
                                         </button>
@@ -393,6 +513,160 @@ export function AgentsManager() {
                                 )
                             })}
                         </div>
+
+                        {/* Panel de Configuración Técnica de Webhook Pro Buyer */}
+                        {(selectedAgent.slug === 'icellshop-autorizaciones' ||
+                          selectedAgent.config?.assignedSkills?.some((id: string) => {
+                            const s = allSkills.find((item: any) => item.id === id);
+                            return s?.slug?.includes('probuyer') || s?.name?.includes('Pro Buyer');
+                          })) && (
+                          <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-50 to-blue-50/30 border border-slate-200/90 shadow-sm space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-brand-blue/10 text-brand-blue flex items-center justify-center">
+                                  <Globe size={22} />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="font-black text-sm text-slate-800 uppercase tracking-wider">
+                                      Webhook HTTP de Autorización (Pro Buyer)
+                                    </h5>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                      Capacidad Activa
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 font-medium">
+                                    Llama a Pro Buyer con el resultado de la autorización al procesar la respuesta del autorizador en WhatsApp.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-slate-400 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                POST /api/sales/authorizations/webhook
+                              </span>
+                            </div>
+
+                            {/* Inputs de Configuración */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                  <Globe size={12} className="text-brand-blue" />
+                                  URL del Webhook de Pro Buyer
+                                </label>
+                                <input
+                                  type="text"
+                                  value={webhookUrl}
+                                  onChange={(e) => setWebhookUrl(e.target.value)}
+                                  placeholder="https://[TU-DOMINIO]/api/sales/authorizations/webhook"
+                                  className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-xs font-mono text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all shadow-sm"
+                                />
+                                <p className="text-[10px] text-slate-400 ml-1">
+                                  Endpoint completo donde Pro Buyer escucha las decisiones de autorización.
+                                </p>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                  <ShieldCheck size={12} className="text-brand-blue" />
+                                  Secret de Autenticación (Header x-pitayacore-secret)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showSecret ? 'text' : 'password'}
+                                    value={webhookSecret}
+                                    onChange={(e) => setWebhookSecret(e.target.value)}
+                                    placeholder="••••••••••••••••••••"
+                                    className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-xs font-mono text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all shadow-sm pr-12"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowSecret(!showSecret)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                  >
+                                    {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 ml-1">
+                                  Debe coincidir exactamente con el valor configurado en Pro Buyer (Ajustes &gt; Integraciones).
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Alerta de Resultado de Prueba */}
+                            {testWebhookResult && (
+                              <div
+                                className={`p-4 rounded-2xl flex items-center gap-3 text-xs font-bold ${
+                                  testWebhookResult.success
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                                }`}
+                              >
+                                {testWebhookResult.success ? (
+                                  <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+                                ) : (
+                                  <AlertCircle size={18} className="text-rose-600 flex-shrink-0" />
+                                )}
+                                <span>{testWebhookResult.message}</span>
+                              </div>
+                            )}
+
+                            {/* Schema Preview */}
+                            <div className="p-4 bg-slate-900 rounded-2xl text-[11px] text-blue-100 font-mono space-y-1">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                Payload Estructurado Enviado por el Agente:
+                              </p>
+                              <pre className="text-[10px] text-emerald-400 overflow-x-auto custom-scrollbar">
+{`{
+  "authorizationId": "string (UUID)",
+  "action": "APPROVE" | "APPROVE_PARTIAL" | "REJECT",
+  "partialAmount": 300,
+  "responseNote": "Texto original del autorizador",
+  "authorizedByPhone": "521XXXXXXXXXX"
+}`}
+                              </pre>
+                            </div>
+
+                            {/* Botones de Acción */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                              <button
+                                type="button"
+                                onClick={handleTestWebhook}
+                                disabled={isTestingWebhook || !webhookUrl}
+                                className="px-5 py-3 rounded-2xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
+                              >
+                                {isTestingWebhook ? (
+                                  <>
+                                    <Loader2 size={14} className="animate-spin text-brand-blue" />
+                                    Probando Webhook...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Activity size={14} className="text-brand-blue" />
+                                    Probar Conectividad
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={handleSaveWebhookConfig}
+                                disabled={isSaving}
+                                className="px-6 py-3 rounded-2xl text-xs font-bold bg-brand-deep text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-brand-deep/20 disabled:opacity-50"
+                              >
+                                {isSaving ? (
+                                  <>
+                                    <Loader2 size={14} className="animate-spin" />
+                                    Guardando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save size={14} />
+                                    Guardar Configuración Técnica
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                     </motion.div>
                   ) : (
                     <div className="text-center py-20">

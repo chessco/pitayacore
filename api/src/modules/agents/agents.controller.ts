@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AgentsService } from './agents.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import { ProBuyerWebhookService } from '../communication/services/probuyer-webhook.service';
 import { CombinedAuthGuard } from '../../common/guards/combined-auth.guard';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 
@@ -22,6 +23,7 @@ export class AgentsController {
     private readonly agentsService: AgentsService,
     @Inject(forwardRef(() => ConversationsService))
     private readonly conversationsService: ConversationsService,
+    private readonly webhookService: ProBuyerWebhookService,
   ) {}
 
   @Get()
@@ -94,5 +96,16 @@ export class AgentsController {
     @Param('versionId') versionId: string,
   ) {
     return this.agentsService.rollback(id, versionId);
+  }
+
+  @Post(':id/test-webhook')
+  async testWebhook(
+    @Param('id') id: string,
+    @Body() body: { webhookUrl: string; webhookSecret: string },
+  ) {
+    return this.webhookService.testConnection(
+      body.webhookUrl,
+      body.webhookSecret,
+    );
   }
 }

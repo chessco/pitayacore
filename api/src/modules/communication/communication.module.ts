@@ -17,6 +17,7 @@ import { CommunicationGateway } from './gateways/communication.gateway';
 import { AgentInboxGateway } from './gateways/agent-inbox.gateway';
 import { PresenceGateway } from './gateways/presence.gateway';
 import { AgentRouterService } from './services/agent-router.service';
+import { ProBuyerWebhookService } from './services/probuyer-webhook.service';
 
 import { AiModule } from '../ai/ai.module';
 import { DatabaseModule } from '../../common/database/database.module';
@@ -46,6 +47,7 @@ import { OperationsModule } from '../operations/operations.module';
     MessageService,
     InboxService,
     AgentRouterService,
+    ProBuyerWebhookService,
 
     // Gateways
     CommunicationGateway,
@@ -60,6 +62,7 @@ import { OperationsModule } from '../operations/operations.module';
     ContactService,
     ConversationService,
     MessageService,
+    ProBuyerWebhookService,
   ],
 })
 export class CommunicationModule {}

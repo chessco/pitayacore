@@ -13,7 +13,7 @@ import { CorrectionsController } from './corrections.controller';
   imports: [
     DatabaseModule,
     forwardRef(() => KnowledgeBaseModule),
-    AgentsModule,
+    forwardRef(() => AgentsModule),
   ],
   controllers: [AiController, CorrectionsController],
   providers: [AiService, AiRouterService, PredictiveService],

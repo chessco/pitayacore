@@ -7,15 +7,16 @@ export class AgentsService {
 
   constructor(private readonly db: DatabaseService) {}
 
-  async findBySlug(slug: string, tenantId: string) {
+  async findBySlug(slugOrId: string, tenantId: string) {
     return this.db.mysql.agent.findFirst({
       where: {
-        slug,
-        OR: [
-          { tenantId },
-          { tenantId: 'GLOBAL' }, // Soporte para agentes globales del sistema
+        OR: [{ slug: slugOrId }, { id: slugOrId }],
+        AND: [
+          {
+            OR: [{ tenantId }, { tenantId: 'GLOBAL' }],
+          },
+          { isActive: true },
         ],
-        isActive: true,
       },
     });
   }
