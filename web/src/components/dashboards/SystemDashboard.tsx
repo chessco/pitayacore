@@ -1,5 +1,6 @@
 import { BrandingSettings } from '../../modules/settings/BrandingSettings'
 import { SystemSettingsPanel } from '../../modules/system/SystemSettingsPanel'
+import { AiSettingsPanel } from '../../modules/settings/AiSettingsPanel'
 import { 
   LayoutDashboard, 
   Settings, 
@@ -461,6 +462,8 @@ export function SystemDashboard() {
                 <div className="dashboard-card p-8 border-2 border-brand-blue/10 bg-gradient-to-br from-white to-brand-blue/5">
                   <BrandingSettings />
                 </div>
+                
+                <AiSettingsPanel />
                 
                 <SystemSettingsPanel />
                 

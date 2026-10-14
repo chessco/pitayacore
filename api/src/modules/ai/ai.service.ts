@@ -1,30 +1,92 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 import { DatabaseService } from '../../common/database/database.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 import { AI_AGENTS } from './prompts.config';
 
+export type AIProviderType = 'gemini' | 'freellmapi';
+
 @Injectable()
-export class AiService {
+export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
-  private genAI: GoogleGenerativeAI;
+  private genAI: GoogleGenerativeAI | null = null;
+  private activeProvider: AIProviderType = 'gemini';
   private activeModel: string = 'gemini-2.5-flash';
+  private geminiApiKey: string = '';
+  private freellmUrl: string = 'http://llm.pitayacode.io/v1';
+  private freellmApiKey: string = '';
 
   constructor(
     private configService: ConfigService,
     private db: DatabaseService,
+    private systemSettings: SystemSettingsService,
   ) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not defined in environment variables');
+    // Initial bootstrap from env variables
+    this.geminiApiKey = this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+    this.freellmUrl = this.configService.get<string>('FREELLMAPI_URL') || process.env.FREELLMAPI_URL || 'http://llm.pitayacode.io/v1';
+    this.freellmApiKey = this.configService.get<string>('FREELLMAPI_API_KEY') || process.env.FREELLMAPI_API_KEY || '';
+
+    if (this.geminiApiKey) {
+      this.initGemini(this.geminiApiKey);
+    } else {
+      this.logger.warn('GEMINI_API_KEY is not defined in environment variables. Can be configured in System Settings.');
     }
-    this.logger.log(
-      `Initializing Gemini with key: ${apiKey.substring(0, 5)}...`,
-    );
-    this.genAI = new GoogleGenerativeAI(apiKey);
+  }
+
+  async onModuleInit() {
+    await this.reloadConfig();
+  }
+
+  private initGemini(key: string) {
+    try {
+      this.genAI = new GoogleGenerativeAI(key);
+      this.logger.log(`Initialized Gemini with key: ${key.substring(0, 5)}...`);
+    } catch (e: any) {
+      this.logger.error(`Failed to initialize Gemini client: ${e.message}`);
+    }
+  }
+
+  async reloadConfig() {
+    try {
+      const settings = await this.systemSettings.getMany([
+        'AI_PROVIDER',
+        'AI_MODEL',
+        'GEMINI_API_KEY',
+        'FREELLMAPI_URL',
+        'FREELLMAPI_API_KEY',
+      ]);
+
+      const dbProvider = settings['AI_PROVIDER'] as AIProviderType;
+      if (dbProvider === 'gemini' || dbProvider === 'freellmapi') {
+        this.activeProvider = dbProvider;
+      }
+
+      const dbGeminiKey = settings['GEMINI_API_KEY'];
+      const effectiveGeminiKey = dbGeminiKey || this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+      if (effectiveGeminiKey && effectiveGeminiKey !== this.geminiApiKey) {
+        this.geminiApiKey = effectiveGeminiKey;
+        this.initGemini(this.geminiApiKey);
+      }
+
+      this.freellmUrl = settings['FREELLMAPI_URL'] || process.env.FREELLMAPI_URL || 'http://llm.pitayacode.io/v1';
+      this.freellmApiKey = settings['FREELLMAPI_API_KEY'] || process.env.FREELLMAPI_API_KEY || '';
+
+      if (settings['AI_MODEL']) {
+        this.activeModel = settings['AI_MODEL'];
+      } else {
+        this.activeModel = this.activeProvider === 'freellmapi' ? 'auto' : 'gemini-2.5-flash';
+      }
+
+      this.logger.log(
+        `AI Configuration reloaded: Provider=${this.activeProvider}, Model=${this.activeModel}, FreeLLMUrl=${this.freellmUrl}`,
+      );
+    } catch (err: any) {
+      this.logger.warn(`Failed to reload AI config from database: ${err.message}`);
+    }
   }
 
   async generateResponse(
@@ -47,6 +109,64 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
       `Eres PitayaCore AI, un asistente inteligente experto. Tu objetivo es proporcionar consejos precisos, técnicos y útiles.`;
     const activeSystemPrompt = `${basePersona}\n\n${globalRules}`;
 
+    // 1. FREELLMAPI (PitayaCode LLM) Provider
+    if (this.activeProvider === 'freellmapi') {
+      try {
+        this.logger.log(
+          `[AiService] Generating response with FreeLLMAPI (${this.freellmUrl}), model: ${selectedModel}...`,
+        );
+
+        const messages = [
+          { role: 'system', content: activeSystemPrompt },
+          ...history.map((h) => ({
+            role: h.role === 'user' ? 'user' : 'assistant',
+            content: h.content,
+          })),
+          { role: 'user', content: userMessage },
+        ];
+
+        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        }
+
+        const response = await axios.post(
+          endpoint,
+          {
+            model: selectedModel || 'auto',
+            messages,
+            temperature: 0.7,
+          },
+          {
+            headers,
+            timeout: 60000,
+          },
+        );
+
+        const responseText = response.data?.choices?.[0]?.message?.content || '';
+        const confidence = this.calculateConfidence(responseText);
+
+        const promptTokens = response.data?.usage?.prompt_tokens ?? Math.round(userMessage.length / 4);
+        const completionTokens = response.data?.usage?.completion_tokens ?? Math.round(responseText.length / 4);
+
+        await this.trackCost(tenantId, selectedModel, promptTokens, completionTokens);
+
+        return {
+          content: responseText,
+          confidence,
+          isFlagged: confidence < 0.7,
+        };
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        this.logger.error(`[AiService] FreeLLMAPI error in generateResponse: ${errorMsg}`);
+        throw new Error(`Error con PitayaCode LLM (${this.freellmUrl}): ${errorMsg}`);
+      }
+    }
+
+    // 2. Google Gemini Provider
     const contents = [
       { role: 'user', parts: [{ text: activeSystemPrompt }] },
       {
@@ -61,8 +181,11 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     ];
 
     try {
-      console.log(
-        `[AiService] Generating response with model ${selectedModel}...`,
+      if (!this.genAI) {
+        throw new Error('Gemini API key no está configurada. Asígnala en la Configuración Global o mediante GEMINI_API_KEY.');
+      }
+      this.logger.log(
+        `[AiService] Generating response with Gemini model: ${selectedModel}...`,
       );
       const model = this.genAI.getGenerativeModel({ model: selectedModel });
 
@@ -86,38 +209,109 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         confidence,
         isFlagged: confidence < 0.7,
       };
-    } catch (error) {
-      console.error(`[AiService] Error in generateResponse: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`[AiService] Error in generateResponse: ${error.message}`);
       throw error;
     }
   }
 
-  async generateRaw(prompt: string, modelName: string = 'gemini-2.5-flash') {
+  async generateRaw(prompt: string, modelName?: string) {
+    const selectedModel = modelName || this.activeModel;
+
+    if (this.activeProvider === 'freellmapi') {
+      try {
+        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        }
+
+        const response = await axios.post(
+          endpoint,
+          {
+            model: selectedModel || 'auto',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+          },
+          {
+            headers,
+            timeout: 60000,
+          },
+        );
+
+        return response.data?.choices?.[0]?.message?.content || '';
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        this.logger.error(`[AiService] FreeLLMAPI error in generateRaw: ${errorMsg}`);
+        return '';
+      }
+    }
+
     try {
-      const model = this.genAI.getGenerativeModel({ model: modelName });
+      if (!this.genAI) {
+        this.logger.warn('[AiService] Gemini not initialized in generateRaw');
+        return '';
+      }
+      const model = this.genAI.getGenerativeModel({ model: selectedModel || 'gemini-2.5-flash' });
       const result = await model.generateContent(prompt);
       return result.response.text();
-    } catch (error) {
-      console.error(`[AiService] Error in generateRaw: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`[AiService] Error in generateRaw: ${error.message}`);
       return '';
     }
   }
 
   async getEmbedding(text: string) {
-    try {
-      const model = this.genAI.getGenerativeModel({
-        model: 'gemini-embedding-001',
-      });
-      const result = await model.embedContent({
-        content: { role: 'user', parts: [{ text }] },
-        outputDimensionality: 768,
-      } as any);
-      return result.embedding.values;
-    } catch (e) {
-      console.error('Embedding API failed, using mock embedding (768 dims)');
-      return Array(768).fill(0.1);
+    if (this.activeProvider === 'freellmapi') {
+      try {
+        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/embeddings`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        }
+
+        const response = await axios.post(
+          endpoint,
+          {
+            model: 'auto',
+            input: text,
+          },
+          {
+            headers,
+            timeout: 30000,
+          },
+        );
+
+        const values = response.data?.data?.[0]?.embedding;
+        if (Array.isArray(values) && values.length > 0) {
+          return values;
+        }
+      } catch (e: any) {
+        this.logger.warn(`FreeLLMAPI embeddings failed: ${e.message}, falling back...`);
+      }
     }
+
+    try {
+      if (this.genAI) {
+        const model = this.genAI.getGenerativeModel({
+          model: 'gemini-embedding-001',
+        });
+        const result = await model.embedContent({
+          content: { role: 'user', parts: [{ text }] },
+          outputDimensionality: 768,
+        } as any);
+        return result.embedding.values;
+      }
+    } catch (e) {
+      this.logger.warn('Embedding API failed, using mock embedding (768 dims)');
+    }
+    return Array(768).fill(0.1);
   }
+
 
   async analyzeVision(imageUrl: string, prompt: string) {
     try {
@@ -302,4 +496,201 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     this.activeModel = model;
     return { status: 'ok', model: this.activeModel };
   }
+
+  getActiveProvider(): AIProviderType {
+    return this.activeProvider;
+  }
+
+  setActiveProvider(provider: AIProviderType) {
+    this.logger.log(`[AiService] Switching active provider to: ${provider}`);
+    this.activeProvider = provider;
+    return { status: 'ok', provider: this.activeProvider };
+  }
+
+  async getConfigSummary() {
+    const envKey = this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+    const dbGeminiKey = (await this.systemSettings.getSetting('GEMINI_API_KEY')) || '';
+    const effectiveGeminiKey = dbGeminiKey || envKey;
+
+    const mask = (k: string) => {
+      if (!k || k.length < 8) return k ? '••••••••' : '';
+      return `${k.substring(0, 8)}••••••••${k.substring(k.length - 4)}`;
+    };
+
+    return {
+      provider: this.activeProvider,
+      model: this.activeModel,
+      gemini: {
+        hasEnvKey: Boolean(envKey),
+        isConfiguredInDb: Boolean(dbGeminiKey),
+        maskedKey: mask(effectiveGeminiKey),
+        activeKeySource: dbGeminiKey ? 'DATABASE' : envKey ? 'ENV' : 'NONE',
+      },
+      freellmapi: {
+        url: this.freellmUrl,
+        isConfigured: Boolean(this.freellmApiKey),
+        maskedKey: mask(this.freellmApiKey),
+      },
+    };
+  }
+
+  async saveAiConfig(dto: {
+    provider?: 'gemini' | 'freellmapi';
+    model?: string;
+    geminiApiKey?: string;
+    freellmUrl?: string;
+    freellmApiKey?: string;
+  }) {
+    const updates: Record<string, string> = {};
+
+    if (dto.provider) updates['AI_PROVIDER'] = dto.provider;
+    if (dto.model) updates['AI_MODEL'] = dto.model;
+    if (dto.geminiApiKey !== undefined) updates['GEMINI_API_KEY'] = dto.geminiApiKey.trim();
+    if (dto.freellmUrl !== undefined) updates['FREELLMAPI_URL'] = dto.freellmUrl.trim();
+    if (dto.freellmApiKey !== undefined) updates['FREELLMAPI_API_KEY'] = dto.freellmApiKey.trim();
+
+    await this.systemSettings.updateMany(updates);
+    await this.reloadConfig();
+
+    return await this.getConfigSummary();
+  }
+
+  async testConnection(testConfig?: {
+    provider?: 'gemini' | 'freellmapi';
+    model?: string;
+    geminiApiKey?: string;
+    freellmUrl?: string;
+    freellmApiKey?: string;
+  }) {
+    const provider = testConfig?.provider || this.activeProvider;
+    const start = Date.now();
+
+    if (provider === 'freellmapi') {
+      const url = (testConfig?.freellmUrl || this.freellmUrl).replace(/\/+$/, '');
+      const key = testConfig?.freellmApiKey !== undefined ? testConfig.freellmApiKey : this.freellmApiKey;
+      const model = testConfig?.model || this.activeModel || 'auto';
+
+      try {
+        const endpoint = `${url}/chat/completions`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (key) {
+          headers['Authorization'] = `Bearer ${key}`;
+        }
+
+        const res = await axios.post(
+          endpoint,
+          {
+            model,
+            messages: [{ role: 'user', content: 'Ping: Responde OK' }],
+            max_tokens: 10,
+          },
+          {
+            headers,
+            timeout: 15000,
+          },
+        );
+        const latencyMs = Date.now() - start;
+        const text = res.data?.choices?.[0]?.message?.content || 'OK';
+        return {
+          success: true,
+          provider: 'freellmapi',
+          latencyMs,
+          message: `Conexión exitosa a PitayaCode LLM (${url}) en ${latencyMs}ms. Respuesta: "${text.trim().substring(0, 50)}"`,
+        };
+      } catch (err: any) {
+        const latencyMs = Date.now() - start;
+        const msg = err.response?.data?.error?.message || err.message;
+        return {
+          success: false,
+          provider: 'freellmapi',
+          latencyMs,
+          message: `Error al conectar con FreeLLMAPI (${url}): ${msg}`,
+        };
+      }
+    } else {
+      // Gemini test
+      const envKey = this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+      const key = testConfig?.geminiApiKey !== undefined ? testConfig.geminiApiKey : (this.geminiApiKey || envKey);
+      const modelName = testConfig?.model || (this.activeProvider === 'gemini' ? this.activeModel : 'gemini-2.5-flash');
+
+      if (!key) {
+        return {
+          success: false,
+          provider: 'gemini',
+          latencyMs: 0,
+          message: 'No hay API Key configurada para Gemini (ni en base de datos ni en variable de entorno)',
+        };
+      }
+      try {
+        const client = new GoogleGenerativeAI(key);
+        const model = client.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent('Ping: responde OK');
+        const latencyMs = Date.now() - start;
+        const text = result.response.text();
+        return {
+          success: true,
+          provider: 'gemini',
+          latencyMs,
+          message: `Conexión exitosa a Gemini (${modelName}) en ${latencyMs}ms. Respuesta: "${text.trim().substring(0, 50)}"`,
+        };
+      } catch (err: any) {
+        const latencyMs = Date.now() - start;
+        return {
+          success: false,
+          provider: 'gemini',
+          latencyMs,
+          message: `Error al conectar con Gemini: ${err.message}`,
+        };
+      }
+    }
+  }
+
+  async fetchAvailableModels(providerParam?: string, urlParam?: string, keyParam?: string) {
+    const provider = providerParam || this.activeProvider;
+    if (provider === 'freellmapi') {
+      const url = (urlParam || this.freellmUrl).replace(/\/+$/, '');
+      const key = keyParam !== undefined ? keyParam : this.freellmApiKey;
+      try {
+        const endpoint = `${url}/models`;
+        const headers: Record<string, string> = {};
+        if (key) {
+          headers['Authorization'] = `Bearer ${key}`;
+        }
+        const res = await axios.get(endpoint, {
+          headers,
+          timeout: 10000,
+        });
+        const data = res.data?.data || [];
+        const models = data.map((m: any) => ({
+          id: m.id,
+          name: m.name || m.id,
+          available: m.available !== false,
+        }));
+        if (!models.some((m: any) => m.id === 'auto')) {
+          models.unshift({ id: 'auto', name: 'auto (Enrutamiento Automático)', available: true });
+        }
+        return models;
+      } catch (err: any) {
+        this.logger.warn(`Could not fetch models from FreeLLMAPI: ${err.message}`);
+        return [
+          { id: 'auto', name: 'auto (Enrutamiento Automático)', available: true },
+          { id: 'deepseek-ai/DeepSeek-V3', name: 'deepseek-ai/DeepSeek-V3', available: true },
+          { id: 'deepseek-ai/DeepSeek-R1', name: 'deepseek-ai/DeepSeek-R1', available: true },
+          { id: 'gpt-4o', name: 'gpt-4o', available: true },
+          { id: 'claude-3-5-sonnet-20241022', name: 'claude-3-5-sonnet-20241022', available: true },
+        ];
+      }
+    } else {
+      // Gemini models
+      return [
+        { id: 'gemini-2.5-flash', name: 'gemini-2.5-flash (Predeterminado - Recomendado)', available: true },
+        { id: 'gemini-1.5-flash', name: 'gemini-1.5-flash (Ligero y rápido)', available: true },
+        { id: 'gemini-1.5-pro', name: 'gemini-1.5-pro (Razonamiento complejo)', available: true },
+        { id: 'gemini-2.0-flash', name: 'gemini-2.0-flash (Siguiente generación)', available: true },
+      ];
+    }
+  }
 }
+

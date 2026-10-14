@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AgentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import { ProBuyerWebhookService } from '../communication/services/probuyer-webhook.service';
 
 // Mock getTenantId middleware helper
 jest.mock('../../common/tenant/tenant.middleware', () => ({
@@ -30,11 +31,16 @@ describe('AgentsController', () => {
       handleIncomingMessage: jest.fn(),
     };
 
+    const proBuyerWebhookServiceMock = {
+      handleWebhook: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AgentsController],
       providers: [
         { provide: AgentsService, useValue: agentsServiceMock },
         { provide: ConversationsService, useValue: conversationsServiceMock },
+        { provide: ProBuyerWebhookService, useValue: proBuyerWebhookServiceMock },
       ],
     }).compile();
 

@@ -49,9 +49,13 @@ describe('AgentsService', () => {
       expect(result).toEqual(mockAgent);
       expect(db.mysql.agent.findFirst).toHaveBeenCalledWith({
         where: {
-          slug: 'test-agent',
-          OR: [{ tenantId: 'tenant-1' }, { tenantId: 'GLOBAL' }],
-          isActive: true,
+          OR: [{ slug: 'test-agent' }, { id: 'test-agent' }],
+          AND: [
+            {
+              OR: [{ tenantId: 'tenant-1' }, { tenantId: 'GLOBAL' }],
+            },
+            { isActive: true },
+          ],
         },
       });
     });

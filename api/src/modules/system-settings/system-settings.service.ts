@@ -19,4 +19,28 @@ export class SystemSettingsService {
       create: { key, value },
     });
   }
+
+  async getMany(keys: string[]): Promise<Record<string, string>> {
+    try {
+      const settings = await this.db.mysql.systemSetting.findMany({
+        where: { key: { in: keys } },
+      });
+      const map: Record<string, string> = {};
+      for (const s of settings) {
+        map[s.key] = s.value;
+      }
+      return map;
+    } catch {
+      return {};
+    }
+  }
+
+  async updateMany(entries: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(entries)) {
+      if (value !== undefined && value !== null) {
+        await this.updateSetting(key, value);
+      }
+    }
+  }
 }
+

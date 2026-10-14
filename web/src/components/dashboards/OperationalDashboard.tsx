@@ -1,6 +1,7 @@
 import { BrandingSettings } from '../../modules/settings/BrandingSettings'
 import { SystemSettingsPanel } from '../../modules/system/SystemSettingsPanel'
 import { CommunicationSettingsPanel } from '../../modules/settings/CommunicationSettingsPanel'
+import { AiSettingsPanel } from '../../modules/settings/AiSettingsPanel'
 import { 
   LayoutDashboard, 
   MessageSquare, 
@@ -754,19 +755,24 @@ export function OperationalDashboard() {
                   <BrandingSettings />
                 </div>
 
+                {/* AI / LLM SETTINGS SECTION */}
+                <div className="md:col-span-2">
+                  <AiSettingsPanel />
+                </div>
+
                 {/* COMMUNICATION SETTINGS SECTION */}
                 <div className="md:col-span-2">
                   <CommunicationSettingsPanel />
                 </div>
 
                 {/* SYSTEM SETTINGS SECTION */}
-                {role === 'system' && (
+                {['system', 'admin'].includes(role?.toLowerCase()) && (
                   <div className="md:col-span-2">
                     <SystemSettingsPanel />
                   </div>
                 )}
 
-                {role === 'system' && (
+                {['system', 'admin'].includes(role?.toLowerCase()) && (
                   <div className="dashboard-card p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">

@@ -15,7 +15,8 @@ export class SystemSettingsController {
 
   @Get(':key')
   async getSetting(@Param('key') key: string, @Req() req: any) {
-    if (req.user?.role !== 'SYSTEM' && req.user?.role !== 'ADMIN') {
+    const role = req.user?.role?.toUpperCase();
+    if (role !== 'SYSTEM' && role !== 'ADMIN') {
       throw new UnauthorizedException('Requires SYSTEM or ADMIN role');
     }
     const value = await this.systemSettingsService.getSetting(key);
@@ -28,10 +29,12 @@ export class SystemSettingsController {
     @Body('value') value: string,
     @Req() req: any,
   ) {
-    if (req.user?.role !== 'SYSTEM' && req.user?.role !== 'ADMIN') {
+    const role = req.user?.role?.toUpperCase();
+    if (role !== 'SYSTEM' && role !== 'ADMIN') {
       throw new UnauthorizedException('Requires SYSTEM or ADMIN role');
     }
     await this.systemSettingsService.updateSetting(key, value);
     return { success: true, key, value };
   }
 }
+

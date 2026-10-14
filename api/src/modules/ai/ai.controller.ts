@@ -58,7 +58,56 @@ export class AiController {
   @Public()
   @Post('model/current')
   async getModel() {
-    return { model: this.aiService.getActiveModel() };
+    return { model: this.aiService.getActiveModel(), provider: this.aiService.getActiveProvider() };
+  }
+
+  @Public()
+  @Post('config/get')
+  async getConfigPost() {
+    return this.aiService.getConfigSummary();
+  }
+
+  @Public()
+  @Post('config')
+  async saveConfig(
+    @Body()
+    body: {
+      provider?: 'gemini' | 'freellmapi';
+      model?: string;
+      geminiApiKey?: string;
+      freellmUrl?: string;
+      freellmApiKey?: string;
+    },
+  ) {
+    return this.aiService.saveAiConfig(body);
+  }
+
+  @Public()
+  @Post('test')
+  async testConnection(
+    @Body()
+    body?: {
+      provider?: 'gemini' | 'freellmapi';
+      model?: string;
+      geminiApiKey?: string;
+      freellmUrl?: string;
+      freellmApiKey?: string;
+    },
+  ) {
+    return this.aiService.testConnection(body);
+  }
+
+  @Public()
+  @Post('models')
+  async getModels(
+    @Body()
+    body?: {
+      provider?: string;
+      url?: string;
+      key?: string;
+    },
+  ) {
+    return this.aiService.fetchAvailableModels(body?.provider, body?.url, body?.key);
   }
 
   @Public()
@@ -67,3 +116,4 @@ export class AiController {
     return { status: 'ok', timestamp: new Date().toISOString() };
   }
 }
+

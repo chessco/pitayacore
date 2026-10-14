@@ -14,6 +14,7 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // Force new SW to activate immediately without waiting for old tabs to close
         skipWaiting: true,
         clientsClaim: true,

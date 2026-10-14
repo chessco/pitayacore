@@ -86,7 +86,7 @@ export class AiRouterService {
       const response = await this.ai.generateResponse(
         userInput,
         formattedHistory,
-        'gemini-2.5-flash',
+        undefined,
         undefined,
         channel,
       );
@@ -114,7 +114,7 @@ export class AiRouterService {
         ...(await this.ai.generateResponse(
           userInput,
           formattedHistory,
-          'gemini-2.5-flash',
+          undefined,
           undefined,
           channel,
         )),
@@ -156,7 +156,7 @@ export class AiRouterService {
     Options: low (greetings, simple info), technical (troubleshooting, technical details), critical (emergencies, business critical).
     Return JSON: { "complexity": "low" | "technical" | "critical" }`;
 
-    const result = await this.ai.generateRaw(prompt, 'gemini-2.5-flash');
+    const result = await this.ai.generateRaw(prompt);
     try {
       return JSON.parse(result);
     } catch {
@@ -175,12 +175,14 @@ export class AiRouterService {
   ) {
     // 1. Load Agent Persona
     let persona = `Eres PitayaCore AI, un asistente inteligente experto.`;
+    let agentModel: string | undefined = undefined;
 
     if (agentSlug) {
       const agent = await this.agentsService.findBySlug(agentSlug, tenantId);
       if (agent) {
         this.logger.log(`[AiRouter] Using Agent: ${agent.name}`);
         persona = agent.prompt;
+        agentModel = agent.defaultModel || undefined;
       } else {
         this.logger.warn(
           `[AiRouter] Agent slug '${agentSlug}' provided but not found. Using default persona.`,
@@ -243,9 +245,10 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
     return await this.ai.generateResponse(
       userPrompt,
       history,
-      'gemini-2.5-flash',
+      agentModel,
       persona,
       channel,
     );
   }
 }
+
