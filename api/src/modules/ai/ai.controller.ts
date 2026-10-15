@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  Headers,
+} from '@nestjs/common';
 import { PredictiveService } from './predictive.service';
 import { AiService } from './ai.service';
 import { Public } from '../../common/guards/public.decorator';
@@ -58,7 +66,10 @@ export class AiController {
   @Public()
   @Post('model/current')
   async getModel() {
-    return { model: this.aiService.getActiveModel(), provider: this.aiService.getActiveProvider() };
+    return {
+      model: this.aiService.getActiveModel(),
+      provider: this.aiService.getActiveProvider(),
+    };
   }
 
   @Public()
@@ -114,7 +125,11 @@ export class AiController {
       key?: string;
     },
   ) {
-    return this.aiService.fetchAvailableModels(body?.provider, body?.url, body?.key);
+    return this.aiService.fetchAvailableModels(
+      body?.provider,
+      body?.url,
+      body?.key,
+    );
   }
 
   @Public()
@@ -123,4 +138,3 @@ export class AiController {
     return { status: 'ok', timestamp: new Date().toISOString() };
   }
 }
-

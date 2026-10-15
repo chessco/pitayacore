@@ -282,4 +282,3 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
     );
   }
 }
-

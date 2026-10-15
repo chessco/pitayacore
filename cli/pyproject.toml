@@ -1,7 +1,7 @@
 [project]
-name = "cli"
+name = "pitayacode-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "Pitayacode CLI — Administration Terminal"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

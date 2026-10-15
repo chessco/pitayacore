@@ -2,7 +2,7 @@ import httpx
 from typing import List, Dict, Any
 
 API_BASE_URL = "https://pitayacore-api.pitayacode.io/api"
-DEFAULT_TENANT_ID = "edd1ac37-5ff9-4e46-bc7f-fff3c414d718"
+DEFAULT_TENANT_ID = "2bf7a176-a1e5-4310-9793-fbaf27bb2606" # PitayaCode
 SYSTEM_ROLE = "SYSTEM"
 
 class PitayaCoreAPI:

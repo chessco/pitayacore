@@ -86,7 +86,10 @@ export class AgentRouterService {
             phone: cleanPhone,
           },
         });
-      } else if (contact.name?.includes('@') || (cleanPhone && contact.phone?.includes('@lid'))) {
+      } else if (
+        contact.name?.includes('@') ||
+        (cleanPhone && contact.phone?.includes('@lid'))
+      ) {
         contact = await this.db.mysql.contact.update({
           where: { id: contact.id },
           data: { name: cleanPhone, phone: cleanPhone },
@@ -219,7 +222,9 @@ export class AgentRouterService {
         content: finalContent,
         timestamp: inboundMessage.createdAt,
       }).catch((err) => {
-        this.logger.debug(`Forward to iCellShop skipped/failed: ${err?.message}`);
+        this.logger.debug(
+          `Forward to iCellShop skipped/failed: ${err?.message}`,
+        );
       });
 
       // 4. Check if human is active or if this is an authorization flow
@@ -351,7 +356,8 @@ export class AgentRouterService {
 
             if (decision.action !== 'AMBIGUOUS') {
               if (webhookUrl && !webhookUrl.includes('[TU-DOMINIO]')) {
-                const senderAuthorizedPhone = contact.phone || cleanPhone || event.from.replace(/\D/g, '');
+                const senderAuthorizedPhone =
+                  contact.phone || cleanPhone || event.from.replace(/\D/g, '');
                 const hookRes =
                   await this.probuyerWebhook.sendAuthorizationWebhook({
                     webhookUrl,

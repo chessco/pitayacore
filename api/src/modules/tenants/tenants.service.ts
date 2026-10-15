@@ -36,7 +36,10 @@ export class TenantsService {
           },
         });
 
-        const rawAiConfig = (tenant as any).aiConfig || (tenant.brandingConfig as any)?.aiConfig || null;
+        const rawAiConfig =
+          (tenant as any).aiConfig ||
+          (tenant.brandingConfig as any)?.aiConfig ||
+          null;
         return {
           ...tenant,
           aiConfig: rawAiConfig,
@@ -81,7 +84,10 @@ export class TenantsService {
     if (!tenant) return null;
     return {
       ...tenant,
-      aiConfig: (tenant as any).aiConfig || (tenant.brandingConfig as any)?.aiConfig || null,
+      aiConfig:
+        (tenant as any).aiConfig ||
+        (tenant.brandingConfig as any)?.aiConfig ||
+        null,
     };
   }
 
@@ -98,10 +104,15 @@ export class TenantsService {
       where: { id },
     });
 
-    let brandingConfig = data.brandingConfig !== undefined ? data.brandingConfig : currentTenant?.brandingConfig;
+    let brandingConfig =
+      data.brandingConfig !== undefined
+        ? data.brandingConfig
+        : currentTenant?.brandingConfig;
     if (data.aiConfig !== undefined) {
       brandingConfig = {
-        ...(typeof brandingConfig === 'object' && brandingConfig !== null ? brandingConfig : {}),
+        ...(typeof brandingConfig === 'object' && brandingConfig !== null
+          ? brandingConfig
+          : {}),
         aiConfig: data.aiConfig,
       };
     }
@@ -140,7 +151,10 @@ export class TenantsService {
       });
     } catch (err: any) {
       // Fallback if aiConfig column is pending db push
-      if (err.message?.includes('aiConfig') || err.message?.includes('Unknown column')) {
+      if (
+        err.message?.includes('aiConfig') ||
+        err.message?.includes('Unknown column')
+      ) {
         delete updatePayload.aiConfig;
         return await (this.db.mysql.tenant as any).update({
           where: { id },

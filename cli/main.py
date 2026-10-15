@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
 from api_client import PitayaCoreAPI
+from alicia import run_alicia_interactive
 
 console = Console()
 
@@ -38,15 +39,15 @@ def ask_with_esc(prompt_text, default=""):
 
 def print_banner():
     banner = r"""
-    [bold cyan]
- __        __         _                                 ____ _     ___ 
- \ \      / /__  _ __| | _____ _ __   __ _  ___ ___    / ___| |   |_ _|
-  \ \ /\ / / _ \| '__| |/ / __| '_ \ / _` |/ __/ _ \  | |   | |    | | 
-   \ V  V / (_) | |  |   <\__ \ |_) | (_| | (_|  __/  | |___| |___ | | 
-    \_/\_/ \___/|_|  |_|\_\___/ .__/ \__,_|\___\___|   \____|_____|___|
-                              |_|                                      
-    [white]ADMINISTRATION TERMINAL[/]
-    [/]
+[bold red]
+    ____  _ __                      ______          __        ________    ____
+   / __ \(_) /_____ ___  ______ _  / ____/___  ____/ /__     / ____/ /   /  _/
+  / /_/ / / __/ __ `/ / / / __ `/ / /   / __ \/ __  / _ \   / /   / /    / /  
+ / ____/ / /_/ /_/ / /_/ / /_/ / / /___/ /_/ / /_/ /  __/  / /___/ /____/ /   
+/_/   /_/\__/\__,_/\__, /\__,_/  \____/\____/\__,_/\___/   \____/_____/___/   
+                  /____/                                                      
+[/]
+[bold red]PITAYACODE CLI[/] [dim]|[/] [white]ADMINISTRATION TERMINAL[/]
     """
     console.print(banner)
 
@@ -188,10 +189,12 @@ def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                cfg = json.load(f)
+                if cfg.get('tenant_id'):
+                    return cfg
         except:
             pass
-    return {}
+    return {"tenant_id": "2bf7a176-a1e5-4310-9793-fbaf27bb2606", "tenant_name": "PitayaCode"}
 
 def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
@@ -206,10 +209,15 @@ def select_workspace(api: PitayaCoreAPI):
         return False
         
     console.print("\n[bold yellow]Workspaces disponibles:[/]")
+    default_idx = "1"
     for idx, tenant in enumerate(tenants):
-        console.print(f" [{idx + 1}] {tenant.get('name', 'Desconocido')} ({tenant.get('id')})")
+        is_def = tenant.get('isDefault', False) or "pitaya" in tenant.get('name', '').lower()
+        marker = " [bold green](PRINCIPAL)[/]" if is_def else ""
+        console.print(f" [{idx + 1}] {tenant.get('name', 'Desconocido')}{marker} ({tenant.get('id')})")
+        if is_def:
+            default_idx = str(idx + 1)
         
-    choice = ask_with_esc("\n[bold cyan]Selecciona tu Workspace (Enter para usar el primero, ESC para salir): [/]", default="1")
+    choice = ask_with_esc(f"\n[bold cyan]Selecciona tu Workspace (Enter para usar el principal [{default_idx}], ESC para salir): [/]", default=default_idx)
     if choice == "ESC":
         sys.exit(0)
         
@@ -255,14 +263,17 @@ def main():
         console.print(" [bold green]4.[/] 📄 Documentos")
         console.print(" [bold green]5.[/] 🤖 AI Assistant")
         console.print(" [bold green]6.[/] 🔎 Búsqueda Global")
+        console.print(" [bold magenta]A.[/] 🌸 Hablar con Alicia (Agente MCP en Lenguaje Natural)")
         console.print(" [bold green]7.[/] 🏢 Cambiar de Workspace")
         console.print(" [bold green]8.[/] 🚪 Salir")
         
-        choice = ask_with_esc("\n[bold yellow]Selecciona una opción [1-8] (o ESC para salir): [/]")
+        choice = ask_with_esc("\n[bold yellow]Selecciona una opción [1-8 o A] (o ESC para salir): [/]")
         
         if choice == "ESC" or choice == "8":
-            console.print("\n[bold cyan]Cerrando Workspace CLI. ¡Hasta luego![/]")
+            console.print("\n[bold cyan]Cerrando Pitayacode CLI. ¡Hasta luego![/]")
             sys.exit(0)
+        elif choice.upper() == "A":
+            run_alicia_interactive()
         elif choice == "1":
             list_notes(api)
         elif choice == "2":

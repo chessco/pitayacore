@@ -36,12 +36,17 @@ export function OperationsManager() {
 
   // Modals state
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [isEditWorkerModalOpen, setIsEditWorkerModalOpen] = useState(false);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isEditScriptModalOpen, setIsEditScriptModalOpen] = useState(false);
   
   // Forms state
   const [newWorkerForm, setNewWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE' });
+  const [editWorker, setEditWorker] = useState<any>(null);
+  const [editWorkerForm, setEditWorkerForm] = useState({ name: '', workerType: 'WINDOWS_NATIVE', version: '1.0.0' });
+  const [isSavingWorker, setIsSavingWorker] = useState(false);
+
   const [newScriptForm, setNewScriptForm] = useState({ name: '', language: 'NODEJS', content: '' });
   const [newJobForm, setNewJobForm] = useState({ name: '', jobType: 'SCRAPING', priority: 1, payload: '{}', cronExpression: '', isActive: false });
   const [editJob, setEditJob] = useState<any>(null);
@@ -64,6 +69,58 @@ export function OperationsManager() {
       });
       setIsWorkerModalOpen(false);
       setNewWorkerForm({ name: '', workerType: 'WINDOWS_NATIVE' });
+      fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenEditWorker = (worker: any) => {
+    setEditWorker(worker);
+    setEditWorkerForm({
+      name: worker.name || '',
+      workerType: worker.workerType || worker.type || 'WINDOWS_NATIVE',
+      version: worker.version || '1.0.0',
+    });
+    setIsEditWorkerModalOpen(true);
+  };
+
+  const handleUpdateWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editWorker) return;
+    setIsSavingWorker(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${apiUrl}/api/operations/workers/${editWorker.id}`, editWorkerForm, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsEditWorkerModalOpen(false);
+      setEditWorker(null);
+      fetchWorkers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingWorker(false);
+    }
+  };
+
+  const handleDeleteWorker = async (workerId: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este Worker?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${apiUrl}/api/operations/workers/${workerId}`, {
+        headers: { 
+          'x-tenant-id': selectedTenant?.id || '',
+          'x-api-key': flowApiKey,
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setIsEditWorkerModalOpen(false);
+      setEditWorker(null);
       fetchWorkers();
     } catch (err) {
       console.error(err);
@@ -464,7 +521,7 @@ export function OperationsManager() {
                     </div>
                   ) : (
                     workers.map((worker) => (
-                      <div key={worker.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                      <div key={worker.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow relative">
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${worker.status === 'ONLINE' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}`}>
@@ -472,25 +529,43 @@ export function OperationsManager() {
                             </div>
                             <div>
                               <h3 className="font-semibold text-slate-800">{worker.name}</h3>
-                              <p className="text-xs text-slate-500">{worker.workerType}</p>
+                              <p className="text-xs text-slate-500 font-mono">{worker.type || worker.workerType || 'WINDOWS_NATIVE'}</p>
                             </div>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            worker.status === 'ONLINE' ? 'bg-emerald-100 text-emerald-700' : 
-                            worker.status === 'BUSY' ? 'bg-blue-100 text-blue-700' : 
-                            'bg-slate-100 text-slate-700'
-                          }`}>
-                            {worker.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              worker.status === 'ONLINE' ? 'bg-emerald-100 text-emerald-700' : 
+                              worker.status === 'BUSY' ? 'bg-blue-100 text-blue-700' : 
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {worker.status}
+                            </span>
+                            <button
+                              onClick={() => handleOpenEditWorker(worker)}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="Editar Worker"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between text-slate-600">
                             <span>Versión</span>
-                            <span className="font-medium">{worker.version}</span>
+                            <span className="font-medium">{worker.version || '1.0.0'}</span>
                           </div>
                           <div className="flex justify-between text-slate-600">
                             <span>Último Latido</span>
                             <span className="font-medium">{worker.lastHeartbeat ? new Date(worker.lastHeartbeat).toLocaleTimeString() : 'Nunca'}</span>
+                          </div>
+                          <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                            <span className="font-mono">ID: {worker.id.substring(0, 8)}...</span>
+                            <button
+                              onClick={() => handleOpenEditWorker(worker)}
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              Configurar
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -526,8 +601,16 @@ export function OperationsManager() {
                               <p className="text-xs text-slate-500 font-mono">{script.id.substring(0, 8)}...</p>
                             </td>
                             <td className="p-4">
-                              <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600 font-medium">
-                                {script.language}
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                script.language === 'CSHARP'
+                                  ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                  : script.language === 'NODEJS'
+                                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                  : script.language === 'PYTHON'
+                                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {script.language === 'CSHARP' ? 'C# (CS-Script)' : script.language}
                               </span>
                             </td>
                             <td className="p-4 text-slate-600 text-sm">v{script.version}</td>
@@ -744,6 +827,101 @@ export function OperationsManager() {
                 >
                   Registrar
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditWorkerModalOpen && editWorker && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h2 className="font-semibold text-slate-800">Editar Worker</h2>
+                <p className="text-xs text-slate-400 font-mono">ID: {editWorker.id}</p>
+              </div>
+              <button onClick={() => setIsEditWorkerModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateWorker} className="p-4 flex-1 overflow-y-auto space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Worker</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editWorkerForm.name}
+                  onChange={(e) => setEditWorkerForm({...editWorkerForm, name: e.target.value})}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="ej. Lenevo t14"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Worker</label>
+                <select 
+                  value={editWorkerForm.workerType}
+                  onChange={(e) => setEditWorkerForm({...editWorkerForm, workerType: e.target.value})}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="WINDOWS_NATIVE">Windows Native (C# / CS-Script)</option>
+                  <option value="NODEJS">Node.js (Puppeteer / Playwright)</option>
+                  <option value="PYTHON_CLI">Python CLI</option>
+                  <option value="DOCKER">Docker Container</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Versión</label>
+                <input 
+                  type="text" 
+                  value={editWorkerForm.version}
+                  onChange={(e) => setEditWorkerForm({...editWorkerForm, version: e.target.value})}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  placeholder="1.0.0"
+                />
+              </div>
+
+              {/* Box con Token / Worker ID para archivo .env */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1">
+                <div className="flex justify-between items-center text-slate-600 font-medium">
+                  <span>WORKER_ID (.env)</span>
+                  <button 
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(editWorker.id)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Copiar ID
+                  </button>
+                </div>
+                <p className="font-mono text-slate-700 break-all select-all">{editWorker.id}</p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                <button 
+                  type="button" 
+                  onClick={() => handleDeleteWorker(editWorker.id)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditWorkerModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSavingWorker}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSavingWorker ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

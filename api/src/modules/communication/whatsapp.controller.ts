@@ -89,7 +89,11 @@ export class WhatsAppController {
               phone: cleanPhone,
             },
           });
-        } else if (resolvedTarget && resolvedTarget.includes('@lid') && contact.externalId !== resolvedTarget) {
+        } else if (
+          resolvedTarget &&
+          resolvedTarget.includes('@lid') &&
+          contact.externalId !== resolvedTarget
+        ) {
           contact = await this.db.mysql.contact.update({
             where: { id: contact.id },
             data: { externalId: resolvedTarget },

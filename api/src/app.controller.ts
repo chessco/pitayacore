@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { Public } from './common/guards/public.decorator';
 import { AppService } from './app.service';
 
-@Controller('api')
+@Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -17,6 +17,7 @@ export class AppController {
     return { status: 'ok', timestamp: new Date().toISOString() };
   }
 
+  @Public()
   @Get('system/status')
   getSystemStatus() {
     return {

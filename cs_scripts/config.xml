@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PitayaScriptsConfig>
+  <!-- Configuración Global Compartida (Base de datos, Directorios de logs y datos) -->
+  <GlobalSettings>
+    <DatabaseConnection>
+      <Server>localhost</Server>
+      <Port>3306</Port>
+      <Database>pitayacore_db</Database>
+      <User>root</User>
+      <Password>luxury_pass</Password>
+      <ConnectionString>Server=localhost;Database=pitayacore_db;Uid=root;Pwd=luxury_pass;</ConnectionString>
+    </DatabaseConnection>
+    <Paths>
+      <BaseDir>c:\PitayaCode\pitayacore\cs_scripts</BaseDir>
+      <LogsDir>c:\PitayaCode\pitayacore\cs_scripts\logs</LogsDir>
+      <DataDir>c:\PitayaCode\pitayacore\cs_scripts\data</DataDir>
+    </Paths>
+  </GlobalSettings>
+
+  <!-- Catálogo único de Scripts con sus Parámetros y Programación Cron -->
+  <Scripts>
+    <Script id="LightSpeedCalculator" enabled="false">
+      <Description>Calcula la velocidad de la luz en diferentes medios (vacío, agua, vidrio, aire) o con un índice de refracción personalizado. Lee los parámetros desde el XML de configuración.</Description>
+      <Cron>*/1 * * * *</Cron>
+      <Parameters>
+        <medio>agua</medio>
+      </Parameters>
+    </Script>
+      <Script id="LightSpeedCalculatorPro" enabled="false">
+      <Description>Calculadora avanzada de velocidad de la luz en diferentes medios físicos</Description>
+      <Cron>0 0 * * *</Cron>
+      <Parameters>
+        <modo>avanzado</modo>
+        <mostrar_indices>true</mostrar_indices>
+      </Parameters>
+    </Script>
+      <Script id="CalculadoraIMC" language="CSHARP" enabled="false">
+      <Description>Programa local para calcular el Índice de Masa Corporal (IMC) con datos predefinidos</Description>
+      <Cron>*/1 * * * *</Cron>
+      <Parameters>
+
+      </Parameters>
+    </Script>
+      <Script id="CalculadoraIMC_135kg_1.76m" language="CSHARP" enabled="false">
+      <Description>Script para calcular IMC con datos específicos: 135kg y 1.76m</Description>
+      <Cron>*/1 * * * *</Cron>
+      <Parameters>
+
+      </Parameters>
+    </Script>
+  </Scripts>
+</PitayaScriptsConfig>

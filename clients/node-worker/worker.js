@@ -66,6 +66,8 @@ socket.on('job.execute', async (payload) => {
   console.log(chalk.cyan(`   Execution ID: ${executionId}`));
 
   let scriptContent = '';
+  let scriptLanguage = 'NODEJS';
+  let scriptName = 'Script';
   
   if (executionPlan && executionPlan.scriptId) {
     try {
@@ -80,6 +82,8 @@ socket.on('job.execute', async (payload) => {
       const script = scripts.find(s => s.id === executionPlan.scriptId);
       if (script) {
         scriptContent = script.content;
+        scriptLanguage = (script.language || 'NODEJS').toUpperCase();
+        scriptName = script.name || 'Script';
       } else {
         throw new Error('Script no encontrado en el servidor');
       }
@@ -93,44 +97,107 @@ socket.on('job.execute', async (payload) => {
 
   const tmpDir = path.join(process.cwd(), '.tmp');
   if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir);
+    fs.mkdirSync(tmpDir, { recursive: true });
   }
+
+  // Helper para resolver comando del runner
+  const resolveCommand = (cmd) => {
+    if (cmd === 'css' && process.platform === 'win32') {
+      const userProfile = process.env.USERPROFILE || '';
+      const dotnetCss = path.join(userProfile, '.dotnet', 'tools', 'css.exe');
+      if (fs.existsSync(dotnetCss)) {
+        return dotnetCss;
+      }
+    }
+    return cmd;
+  };
   
-    const executeScript = () => {
-      return new Promise((resolve) => {
-        // Use jobId in filename to avoid conflicts if it's a cron job, or executionId if it's manual
-        const runId = cronExpression ? jobId : executionId;
-        const scriptPath = path.join(tmpDir, `exec_${runId}.cjs`);
-        fs.writeFileSync(scriptPath, scriptContent);
-        console.log(chalk.gray(`   Script escrito en ${scriptPath}`));
+  const executeScript = () => {
+    return new Promise((resolve) => {
+      // Detección inteligente de lenguaje (por metadata o contenido)
+      const isCSharp = scriptLanguage === 'CSHARP' || 
+                       scriptLanguage === 'C#' || 
+                       scriptContent.includes('//css_') || 
+                       scriptContent.includes('using System;') || 
+                       scriptContent.includes('namespace ') || 
+                       scriptContent.includes('class Program') ||
+                       (scriptContent.includes('Console.WriteLine') && !scriptContent.includes('console.log'));
 
-        console.log(chalk.yellow(`   [>>] Iniciando ejecución...`));
-        const child = spawn('node', [scriptPath]);
+      const isPython = scriptLanguage === 'PYTHON' || 
+                       scriptLanguage === 'PY' || 
+                       scriptContent.startsWith('#!/usr/bin/env python') || 
+                       scriptContent.startsWith('# python');
 
-        child.stdout.on('data', (data) => {
-          const text = data.toString();
-          console.log(chalk.white(text.trimEnd()));
-        });
+      let ext = 'cjs';
+      let cmd = 'node';
+      let langLabel = 'Node.js';
 
-        let errorLog = '';
-        child.stderr.on('data', (data) => {
-          const text = data.toString();
-          errorLog += text;
-          console.error(chalk.red(text.trimEnd()));
-        });
+      if (isCSharp) {
+        ext = 'cs';
+        cmd = resolveCommand('css');
+        langLabel = 'C# (CS-Script)';
 
-        child.on('close', (code) => {
-          if (code === 0) {
-            console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
-            socket.emit('job.execution_completed', { executionId, workerId: WORKER_ID });
-          } else {
-            console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
-            socket.emit('job.execution_failed', { executionId, workerId: WORKER_ID, error: errorLog });
+        // Garantizar que config.xml esté disponible en tmpDir para lecturas de DB/parámetros
+        const candidateConfigs = [
+          process.env.CS_SCRIPTS_CONFIG,
+          path.resolve(process.cwd(), '../../cs_scripts/config.xml'),
+          path.resolve(process.cwd(), '../cs_scripts/config.xml'),
+          'C:\\PitayaCode\\pitayacore\\cs_scripts\\config.xml'
+        ].filter(Boolean);
+
+        for (const candidate of candidateConfigs) {
+          if (fs.existsSync(candidate)) {
+            try {
+              const destXml = path.join(tmpDir, 'config.xml');
+              fs.copyFileSync(candidate, destXml);
+              console.log(chalk.gray(`   [CS] config.xml sincronizado en entorno de ejecución`));
+              break;
+            } catch (err) {}
           }
-          resolve(code);
-        });
+        }
+      } else if (isPython) {
+        ext = 'py';
+        cmd = process.platform === 'win32' ? 'python' : 'python3';
+        langLabel = 'Python';
+      }
+
+      // Use jobId in filename to avoid conflicts if it's a cron job, or executionId if it's manual
+      const runId = cronExpression ? jobId : executionId;
+      const scriptPath = path.join(tmpDir, `exec_${runId}.${ext}`);
+      fs.writeFileSync(scriptPath, scriptContent, 'utf-8');
+      console.log(chalk.gray(`   Script guardado: ${scriptPath} [${langLabel}]`));
+
+      console.log(chalk.yellow(`   [>>] Iniciando ejecución (${langLabel})...`));
+      const child = spawn(cmd, [scriptPath], {
+        cwd: tmpDir,
+        shell: true,
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
       });
-    };
+
+      child.stdout.on('data', (data) => {
+        const text = data.toString();
+        console.log(chalk.white(text.trimEnd()));
+      });
+
+      let errorLog = '';
+      child.stderr.on('data', (data) => {
+        const text = data.toString();
+        errorLog += text;
+        console.error(chalk.red(text.trimEnd()));
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          console.log(chalk.green.bold(`   [OK] Ejecución completada exitosamente.`));
+          socket.emit('job.execution_completed', { executionId, workerId: WORKER_ID });
+        } else {
+          console.log(chalk.red.bold(`   [ERROR] Ejecución falló con código ${code}`));
+          socket.emit('job.execution_failed', { executionId, workerId: WORKER_ID, error: errorLog });
+        }
+        resolve(code);
+      });
+    });
+  };
 
   if (cronExpression) {
     console.log(chalk.magenta(`   [CRON] Configurando bucle automático: ${cronExpression}`));

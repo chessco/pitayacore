@@ -40,7 +40,10 @@ describe('AgentsController', () => {
       providers: [
         { provide: AgentsService, useValue: agentsServiceMock },
         { provide: ConversationsService, useValue: conversationsServiceMock },
-        { provide: ProBuyerWebhookService, useValue: proBuyerWebhookServiceMock },
+        {
+          provide: ProBuyerWebhookService,
+          useValue: proBuyerWebhookServiceMock,
+        },
       ],
     }).compile();
 

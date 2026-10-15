@@ -37,4 +37,3 @@ export class SystemSettingsController {
     return { success: true, key, value };
   }
 }
-

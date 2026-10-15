@@ -22,14 +22,24 @@ export class GeminiProvider implements IAiProvider {
     }
   }
 
-  private async getGenAIClient(): Promise<{ client: GoogleGenAI; model: string }> {
-    const dbKey = (await this.systemSettings?.getSetting('GEMINI_API_KEY')) || '';
-    const envKey = this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
+  private async getGenAIClient(): Promise<{
+    client: GoogleGenAI;
+    model: string;
+  }> {
+    const dbKey =
+      (await this.systemSettings?.getSetting('GEMINI_API_KEY')) || '';
+    const envKey =
+      this.configService.get<string>('GEMINI_API_KEY') ||
+      process.env.GEMINI_API_KEY ||
+      '';
     const activeKey = dbKey || envKey;
-    const model = (await this.systemSettings?.getSetting('AI_MODEL')) || 'gemini-2.5-flash';
+    const model =
+      (await this.systemSettings?.getSetting('AI_MODEL')) || 'gemini-2.5-flash';
 
     if (!activeKey) {
-      throw new Error('Gemini API key no configurada (ni en BD ni en variables de entorno)');
+      throw new Error(
+        'Gemini API key no configurada (ni en BD ni en variables de entorno)',
+      );
     }
 
     if (!this.ai || this.currentKey !== activeKey) {
@@ -90,21 +100,34 @@ export class GeminiProvider implements IAiProvider {
     prompt: string,
     systemInstruction?: string,
   ): Promise<string> {
-    const provider = (await this.systemSettings?.getSetting('AI_PROVIDER')) || 'gemini';
+    const provider =
+      (await this.systemSettings?.getSetting('AI_PROVIDER')) || 'gemini';
     if (provider === 'freellmapi') {
-      const url = (await this.systemSettings?.getSetting('FREELLMAPI_URL')) || process.env.FREELLMAPI_URL || 'http://llm.pitayacode.io/v1';
-      const key = (await this.systemSettings?.getSetting('FREELLMAPI_API_KEY')) || process.env.FREELLMAPI_API_KEY || '';
-      const model = (await this.systemSettings?.getSetting('AI_MODEL')) || 'auto';
+      const url =
+        (await this.systemSettings?.getSetting('FREELLMAPI_URL')) ||
+        process.env.FREELLMAPI_URL ||
+        'http://llm.pitayacode.io/v1';
+      const key =
+        (await this.systemSettings?.getSetting('FREELLMAPI_API_KEY')) ||
+        process.env.FREELLMAPI_API_KEY ||
+        '';
+      const model =
+        (await this.systemSettings?.getSetting('AI_MODEL')) || 'auto';
 
       const messages: any[] = [];
-      if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
+      if (systemInstruction)
+        messages.push({ role: 'system', content: systemInstruction });
       messages.push({ role: 'user', content: prompt });
 
       const endpoint = `${url.replace(/\/+$/, '')}/chat/completions`;
-      const res = await axios.post(endpoint, { model, messages }, {
-        headers: key ? { Authorization: `Bearer ${key}` } : {},
-        timeout: 60000,
-      });
+      const res = await axios.post(
+        endpoint,
+        { model, messages },
+        {
+          headers: key ? { Authorization: `Bearer ${key}` } : {},
+          timeout: 60000,
+        },
+      );
       return res.data?.choices?.[0]?.message?.content || '';
     }
 
@@ -123,25 +146,38 @@ export class GeminiProvider implements IAiProvider {
     schema: any,
     systemInstruction?: string,
   ): Promise<T> {
-    const provider = (await this.systemSettings?.getSetting('AI_PROVIDER')) || 'gemini';
+    const provider =
+      (await this.systemSettings?.getSetting('AI_PROVIDER')) || 'gemini';
     if (provider === 'freellmapi') {
-      const url = (await this.systemSettings?.getSetting('FREELLMAPI_URL')) || process.env.FREELLMAPI_URL || 'http://llm.pitayacode.io/v1';
-      const key = (await this.systemSettings?.getSetting('FREELLMAPI_API_KEY')) || process.env.FREELLMAPI_API_KEY || '';
-      const model = (await this.systemSettings?.getSetting('AI_MODEL')) || 'auto';
+      const url =
+        (await this.systemSettings?.getSetting('FREELLMAPI_URL')) ||
+        process.env.FREELLMAPI_URL ||
+        'http://llm.pitayacode.io/v1';
+      const key =
+        (await this.systemSettings?.getSetting('FREELLMAPI_API_KEY')) ||
+        process.env.FREELLMAPI_API_KEY ||
+        '';
+      const model =
+        (await this.systemSettings?.getSetting('AI_MODEL')) || 'auto';
 
       const promptWithSchema = `${prompt}\n\nIMPORTANT: Respond with pure valid JSON matching this schema: ${JSON.stringify(schema)}. Do not include markdown codeblocks.`;
       const messages: any[] = [];
-      if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
+      if (systemInstruction)
+        messages.push({ role: 'system', content: systemInstruction });
       messages.push({ role: 'user', content: promptWithSchema });
 
       const endpoint = `${url.replace(/\/+$/, '')}/chat/completions`;
-      const res = await axios.post(endpoint, {
-        model,
-        messages,
-      }, {
-        headers: key ? { Authorization: `Bearer ${key}` } : {},
-        timeout: 60000,
-      });
+      const res = await axios.post(
+        endpoint,
+        {
+          model,
+          messages,
+        },
+        {
+          headers: key ? { Authorization: `Bearer ${key}` } : {},
+          timeout: 60000,
+        },
+      );
 
       const raw = res.data?.choices?.[0]?.message?.content || '{}';
       try {
@@ -173,4 +209,3 @@ export class GeminiProvider implements IAiProvider {
     }
   }
 }
-

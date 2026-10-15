@@ -22,16 +22,41 @@ export class WorkersService {
     });
   }
 
+  async findOne(id: string) {
+    const tenantId = getTenantId();
+    return this.db.mysql.worker.findFirst({ where: { id, tenantId } });
+  }
+
   async create(data: any) {
     const tenantId = getTenantId();
     return this.db.mysql.worker.create({
       data: {
         name: data.name,
-        type: data.workerType || 'WINDOWS_NATIVE',
+        type: data.workerType || data.type || 'WINDOWS_NATIVE',
         tenantId,
         status: 'OFFLINE',
-        version: '1.0.0',
+        version: data.version || '1.0.0',
       },
+    });
+  }
+
+  async update(id: string, data: any) {
+    return this.db.mysql.worker.update({
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.type && { type: data.type }),
+        ...(data.workerType && { type: data.workerType }),
+        ...(data.version && { version: data.version }),
+        ...(data.status && { status: data.status }),
+      },
+    });
+  }
+
+  async remove(id: string) {
+    const tenantId = getTenantId();
+    return this.db.mysql.worker.deleteMany({
+      where: { id, tenantId },
     });
   }
 }
