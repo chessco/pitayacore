@@ -1017,12 +1017,18 @@ function TenantModal({ tenant, onClose, onSave }: any) {
                       setTestMsg(null);
                       try {
                         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
-                        const res = await axios.post(`${apiUrl}/ai/test`, {
+                        const token = localStorage.getItem('token');
+                        const res = await axios.post(`${apiUrl}/api/ai/test`, {
                           provider: formData.aiConfig.provider,
                           model: formData.aiConfig.model,
                           freellmUrl: formData.aiConfig.freellmUrl,
                           freellmApiKey: formData.aiConfig.freellmApiKey || undefined,
                           geminiApiKey: formData.aiConfig.geminiApiKey || undefined,
+                        }, {
+                          headers: {
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            'Content-Type': 'application/json',
+                          }
                         });
                         setTestMsg(res.data);
                       } catch (err: any) {
