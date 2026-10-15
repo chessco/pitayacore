@@ -78,8 +78,25 @@ export class AiRouterService {
       };
     }
 
+    // Si se especifica un agentSlug explícito (ej. Asistente Interno con 'alicia'),
+    // enrutar directamente a handleRAG para respetar la identidad del agente y el modelo del tenant.
+    if (agentSlug) {
+      return {
+        decision: RouterDecision.RAG,
+        ...(await this.handleRAG(
+          userInput,
+          tenantId,
+          skills,
+          formattedHistory,
+          agentSlug,
+          channel,
+          metadata,
+        )),
+      };
+    }
+
     // 2. Classify Complexity
-    const classification = await this.classifyComplexity(userInput);
+    const classification = await this.classifyComplexity(userInput, tenantId);
 
     // 3. Route based on complexity
     if (classification.complexity === 'low') {
@@ -89,6 +106,7 @@ export class AiRouterService {
         undefined,
         undefined,
         channel,
+        tenantId,
       );
       return { decision: RouterDecision.CHEAP, ...response };
     }
@@ -117,6 +135,7 @@ export class AiRouterService {
           undefined,
           undefined,
           channel,
+          tenantId,
         )),
       };
     }
@@ -150,13 +169,13 @@ export class AiRouterService {
     });
   }
 
-  private async classifyComplexity(input: string) {
+  private async classifyComplexity(input: string, tenantId?: string) {
     // Using a very small prompt to classify
     const prompt = `Classify the complexity of this user query: "${input}". 
     Options: low (greetings, simple info), technical (troubleshooting, technical details), critical (emergencies, business critical).
     Return JSON: { "complexity": "low" | "technical" | "critical" }`;
 
-    const result = await this.ai.generateRaw(prompt);
+    const result = await this.ai.generateRaw(prompt, undefined, tenantId);
     try {
       return JSON.parse(result);
     } catch {
@@ -248,6 +267,7 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
       agentModel,
       persona,
       channel,
+      tenantId,
     );
   }
 }

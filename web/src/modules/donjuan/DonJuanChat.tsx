@@ -56,8 +56,13 @@ export const DonJuanChat: React.FC = () => {
       });
       setAgents(res.data);
       
-      // Default to any default-assistant or don-juan agent if it exists, otherwise first agent
-      const defaultAgent = res.data.find((a: any) => a.slug?.toLowerCase().includes('default-assistant') || a.slug?.toLowerCase().includes('don-juan'));
+      // Default to Alicia, default-assistant or don-juan agent if it exists, otherwise first agent
+      const defaultAgent = res.data.find((a: any) => 
+        a.slug?.toLowerCase().includes('alicia') ||
+        a.name?.toLowerCase().includes('alicia') ||
+        a.slug?.toLowerCase().includes('default-assistant') || 
+        a.slug?.toLowerCase().includes('don-juan')
+      );
       if (defaultAgent) {
         setSelectedAgent(defaultAgent);
       } else if (res.data.length > 0) {
