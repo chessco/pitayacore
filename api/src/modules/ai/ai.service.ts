@@ -225,6 +225,9 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'User-Agent': 'pitayacore/1.0',
+          'X-Agent': 'pitayacore',
+          'X-Title': 'pitayacore',
         };
         if (effectiveConfig.freellmApiKey) {
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
@@ -338,6 +341,9 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'User-Agent': 'pitayacore/1.0',
+          'X-Agent': 'pitayacore',
+          'X-Title': 'pitayacore',
         };
         if (effectiveConfig.freellmApiKey) {
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
@@ -398,6 +404,9 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/embeddings`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'User-Agent': 'pitayacore/1.0',
+          'X-Agent': 'pitayacore',
+          'X-Title': 'pitayacore',
         };
         if (effectiveConfig.freellmApiKey) {
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
@@ -744,6 +753,9 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const endpoint = `${url}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'User-Agent': 'pitayacore/1.0',
+          'X-Agent': 'pitayacore',
+          'X-Title': 'pitayacore',
         };
         if (key) {
           headers['Authorization'] = `Bearer ${key}`;
@@ -842,7 +854,11 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
       const key = keyParam !== undefined ? keyParam : this.freellmApiKey;
       try {
         const endpoint = `${url}/models`;
-        const headers: Record<string, string> = {};
+        const headers: Record<string, string> = {
+          'User-Agent': 'pitayacore/1.0',
+          'X-Agent': 'pitayacore',
+          'X-Title': 'pitayacore',
+        };
         if (key) {
           headers['Authorization'] = `Bearer ${key}`;
         }
