@@ -10,6 +10,23 @@ import { AI_AGENTS } from './prompts.config';
 
 export type AIProviderType = 'gemini' | 'freellmapi';
 
+export interface TenantAiConfig {
+  provider?: 'system' | 'gemini' | 'freellmapi';
+  model?: string;
+  geminiApiKey?: string;
+  freellmUrl?: string;
+  freellmApiKey?: string;
+}
+
+export interface EffectiveAiConfig {
+  provider: AIProviderType;
+  model: string;
+  geminiApiKey: string;
+  freellmUrl: string;
+  freellmApiKey: string;
+  source: 'tenant' | 'system';
+}
+
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
@@ -89,15 +106,95 @@ export class AiService implements OnModuleInit {
     }
   }
 
+  async getEffectiveAiConfig(tenantIdParam?: string): Promise<EffectiveAiConfig> {
+    let tenantId = tenantIdParam;
+    if (!tenantId) {
+      try {
+        tenantId = getTenantId();
+      } catch {
+        tenantId = undefined;
+      }
+    }
+
+    let provider = this.activeProvider;
+    let model = this.activeModel;
+    let geminiApiKey = this.geminiApiKey;
+    let freellmUrl = this.freellmUrl;
+    let freellmApiKey = this.freellmApiKey;
+    let source: 'tenant' | 'system' = 'system';
+
+    if (tenantId && tenantId !== 'global' && tenantId !== 'system') {
+      try {
+        const tenant = await this.db.mysql.tenant.findUnique({
+          where: { id: tenantId },
+          select: {
+            id: true,
+            name: true,
+            aiConfig: true,
+            brandingConfig: true,
+          },
+        });
+
+        const rawAiConfig = (tenant as any)?.aiConfig || (tenant?.brandingConfig as any)?.aiConfig;
+        const aiConfig: TenantAiConfig | null =
+          typeof rawAiConfig === 'string' ? JSON.parse(rawAiConfig) : rawAiConfig;
+
+        if (aiConfig && aiConfig.provider && aiConfig.provider !== 'system') {
+          provider = aiConfig.provider as AIProviderType;
+          source = 'tenant';
+
+          if (aiConfig.model) {
+            model = aiConfig.model;
+          } else {
+            model = provider === 'freellmapi' ? 'auto' : 'gemini-2.5-flash';
+          }
+
+          if (aiConfig.freellmUrl) {
+            freellmUrl = aiConfig.freellmUrl;
+          }
+          if (aiConfig.freellmApiKey) {
+            freellmApiKey = aiConfig.freellmApiKey;
+          }
+          if (aiConfig.geminiApiKey) {
+            geminiApiKey = aiConfig.geminiApiKey;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not resolve tenant AI config for ${tenantId}: ${err.message}`);
+      }
+    }
+
+    return {
+      provider,
+      model,
+      geminiApiKey,
+      freellmUrl,
+      freellmApiKey,
+      source,
+    };
+  }
+
   async generateResponse(
     userMessage: string,
     history: any[] = [],
     modelName?: string,
     systemInstruction?: string,
     channel: string = 'whatsapp',
+    tenantIdParam?: string,
   ) {
-    const selectedModel = modelName || this.activeModel;
-    const tenantId = getTenantId();
+    let tenantId = tenantIdParam;
+    if (!tenantId) {
+      try {
+        tenantId = getTenantId();
+      } catch {
+        tenantId = undefined;
+      }
+    }
+
+    const effectiveConfig = await this.getEffectiveAiConfig(tenantId);
+    const selectedModel = modelName || effectiveConfig.model;
+    const activeProvider = effectiveConfig.provider;
+
     const globalRules = `REGLA CRÍTICA DE IDIOMA: Responde SIEMPRE en el mismo idioma que el usuario. Si el usuario habla español, NO uses términos en inglés como "DIAGNOSTIC", "ROOT CAUSE" o "ACTION PLAN". Usa exclusivamente sus equivalentes en español.
     
 ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}. 
@@ -110,10 +207,10 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     const activeSystemPrompt = `${basePersona}\n\n${globalRules}`;
 
     // 1. FREELLMAPI (PitayaCode LLM) Provider
-    if (this.activeProvider === 'freellmapi') {
+    if (activeProvider === 'freellmapi') {
       try {
         this.logger.log(
-          `[AiService] Generating response with FreeLLMAPI (${this.freellmUrl}), model: ${selectedModel}...`,
+          `[AiService] Generating response with PitayaCode LLM (${effectiveConfig.freellmUrl}) for tenant=${tenantId || 'global'}, model: ${selectedModel}...`,
         );
 
         const messages = [
@@ -125,12 +222,12 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
           { role: 'user', content: userMessage },
         ];
 
-        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
+        const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        if (this.freellmApiKey) {
-          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        if (effectiveConfig.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
         }
 
         const response = await axios.post(
@@ -152,7 +249,9 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const promptTokens = response.data?.usage?.prompt_tokens ?? Math.round(userMessage.length / 4);
         const completionTokens = response.data?.usage?.completion_tokens ?? Math.round(responseText.length / 4);
 
-        await this.trackCost(tenantId, selectedModel, promptTokens, completionTokens);
+        if (tenantId) {
+          await this.trackCost(tenantId, selectedModel, promptTokens, completionTokens);
+        }
 
         return {
           content: responseText,
@@ -162,7 +261,7 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
       } catch (error: any) {
         const errorMsg = error.response?.data?.error?.message || error.message;
         this.logger.error(`[AiService] FreeLLMAPI error in generateResponse: ${errorMsg}`);
-        throw new Error(`Error con PitayaCode LLM (${this.freellmUrl}): ${errorMsg}`);
+        throw new Error(`Error con PitayaCode LLM (${effectiveConfig.freellmUrl}): ${errorMsg}`);
       }
     }
 
@@ -181,13 +280,17 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     ];
 
     try {
-      if (!this.genAI) {
+      const client = effectiveConfig.geminiApiKey === this.geminiApiKey && this.genAI
+        ? this.genAI
+        : (effectiveConfig.geminiApiKey ? new GoogleGenerativeAI(effectiveConfig.geminiApiKey) : null);
+
+      if (!client) {
         throw new Error('Gemini API key no está configurada. Asígnala en la Configuración Global o mediante GEMINI_API_KEY.');
       }
       this.logger.log(
-        `[AiService] Generating response with Gemini model: ${selectedModel}...`,
+        `[AiService] Generating response with Gemini for tenant=${tenantId || 'global'}, model: ${selectedModel}...`,
       );
-      const model = this.genAI.getGenerativeModel({ model: selectedModel });
+      const model = client.getGenerativeModel({ model: selectedModel });
 
       const result = await model.generateContent({
         contents: contents,
@@ -197,12 +300,14 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
       const confidence = this.calculateConfidence(responseText);
 
       // Track Cost (Simple simulation)
-      await this.trackCost(
-        tenantId,
-        selectedModel,
-        userMessage.length / 4,
-        responseText.length / 4,
-      );
+      if (tenantId) {
+        await this.trackCost(
+          tenantId,
+          selectedModel,
+          userMessage.length / 4,
+          responseText.length / 4,
+        );
+      }
 
       return {
         content: responseText,
@@ -215,17 +320,27 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     }
   }
 
-  async generateRaw(prompt: string, modelName?: string) {
-    const selectedModel = modelName || this.activeModel;
-
-    if (this.activeProvider === 'freellmapi') {
+  async generateRaw(prompt: string, modelName?: string, tenantIdParam?: string) {
+    let tenantId = tenantIdParam;
+    if (!tenantId) {
       try {
-        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
+        tenantId = getTenantId();
+      } catch {
+        tenantId = undefined;
+      }
+    }
+    const effectiveConfig = await this.getEffectiveAiConfig(tenantId);
+    const selectedModel = modelName || effectiveConfig.model;
+    const activeProvider = effectiveConfig.provider;
+
+    if (activeProvider === 'freellmapi') {
+      try {
+        const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        if (this.freellmApiKey) {
-          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        if (effectiveConfig.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
         }
 
         const response = await axios.post(
@@ -250,11 +365,15 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     }
 
     try {
-      if (!this.genAI) {
+      const client = effectiveConfig.geminiApiKey === this.geminiApiKey && this.genAI
+        ? this.genAI
+        : (effectiveConfig.geminiApiKey ? new GoogleGenerativeAI(effectiveConfig.geminiApiKey) : null);
+
+      if (!client) {
         this.logger.warn('[AiService] Gemini not initialized in generateRaw');
         return '';
       }
-      const model = this.genAI.getGenerativeModel({ model: selectedModel || 'gemini-2.5-flash' });
+      const model = client.getGenerativeModel({ model: selectedModel || 'gemini-2.5-flash' });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (error: any) {
@@ -263,15 +382,25 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     }
   }
 
-  async getEmbedding(text: string) {
-    if (this.activeProvider === 'freellmapi') {
+  async getEmbedding(text: string, tenantIdParam?: string) {
+    let tenantId = tenantIdParam;
+    if (!tenantId) {
       try {
-        const endpoint = `${this.freellmUrl.replace(/\/+$/, '')}/embeddings`;
+        tenantId = getTenantId();
+      } catch {
+        tenantId = undefined;
+      }
+    }
+    const effectiveConfig = await this.getEffectiveAiConfig(tenantId);
+
+    if (effectiveConfig.provider === 'freellmapi') {
+      try {
+        const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/embeddings`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
-        if (this.freellmApiKey) {
-          headers['Authorization'] = `Bearer ${this.freellmApiKey}`;
+        if (effectiveConfig.freellmApiKey) {
+          headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
         }
 
         const response = await axios.post(
@@ -296,8 +425,12 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     }
 
     try {
-      if (this.genAI) {
-        const model = this.genAI.getGenerativeModel({
+      const client = effectiveConfig.geminiApiKey === this.geminiApiKey && this.genAI
+        ? this.genAI
+        : (effectiveConfig.geminiApiKey ? new GoogleGenerativeAI(effectiveConfig.geminiApiKey) : null);
+
+      if (client) {
+        const model = client.getGenerativeModel({
           model: 'gemini-embedding-001',
         });
         const result = await model.embedContent({
@@ -312,13 +445,30 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     return Array(768).fill(0.1);
   }
 
+  async analyzeVision(imageUrl: string, prompt: string, tenantIdParam?: string) {
+    let tenantId = tenantIdParam;
+    if (!tenantId) {
+      try {
+        tenantId = getTenantId();
+      } catch {
+        tenantId = undefined;
+      }
+    }
+    const effectiveConfig = await this.getEffectiveAiConfig(tenantId);
 
-  async analyzeVision(imageUrl: string, prompt: string) {
     try {
       this.logger.log(
         `[AiService] Analyzing image from URL: ${imageUrl.substring(0, 50)}...`,
       );
-      const model = this.genAI.getGenerativeModel({ model: this.activeModel });
+      const client = effectiveConfig.geminiApiKey === this.geminiApiKey && this.genAI
+        ? this.genAI
+        : (effectiveConfig.geminiApiKey ? new GoogleGenerativeAI(effectiveConfig.geminiApiKey) : null);
+
+      if (!client) {
+        throw new Error('Gemini API key no configurada para análisis visual');
+      }
+
+      const model = client.getGenerativeModel({ model: effectiveConfig.model });
 
       let base64Data: string;
       let mimeType: string;
@@ -561,14 +711,34 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     geminiApiKey?: string;
     freellmUrl?: string;
     freellmApiKey?: string;
+    tenantId?: string;
   }) {
-    const provider = testConfig?.provider || this.activeProvider;
+    let effectiveTest = {
+      provider: testConfig?.provider || this.activeProvider,
+      model: testConfig?.model || this.activeModel,
+      geminiApiKey: testConfig?.geminiApiKey !== undefined ? testConfig.geminiApiKey : this.geminiApiKey,
+      freellmUrl: testConfig?.freellmUrl || this.freellmUrl,
+      freellmApiKey: testConfig?.freellmApiKey !== undefined ? testConfig.freellmApiKey : this.freellmApiKey,
+    };
+
+    if (testConfig?.tenantId && !testConfig.provider) {
+      const tenantEffective = await this.getEffectiveAiConfig(testConfig.tenantId);
+      effectiveTest = {
+        provider: tenantEffective.provider,
+        model: tenantEffective.model,
+        geminiApiKey: tenantEffective.geminiApiKey,
+        freellmUrl: tenantEffective.freellmUrl,
+        freellmApiKey: tenantEffective.freellmApiKey,
+      };
+    }
+
+    const provider = effectiveTest.provider;
     const start = Date.now();
 
     if (provider === 'freellmapi') {
-      const url = (testConfig?.freellmUrl || this.freellmUrl).replace(/\/+$/, '');
-      const key = testConfig?.freellmApiKey !== undefined ? testConfig.freellmApiKey : this.freellmApiKey;
-      const model = testConfig?.model || this.activeModel || 'auto';
+      const url = (effectiveTest.freellmUrl || this.freellmUrl).replace(/\/+$/, '');
+      const key = effectiveTest.freellmApiKey !== undefined ? effectiveTest.freellmApiKey : this.freellmApiKey;
+      const model = effectiveTest.model || 'auto';
 
       try {
         const endpoint = `${url}/chat/completions`;
@@ -612,8 +782,8 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     } else {
       // Gemini test
       const envKey = this.configService.get<string>('GEMINI_API_KEY') || process.env.GEMINI_API_KEY || '';
-      const key = testConfig?.geminiApiKey !== undefined ? testConfig.geminiApiKey : (this.geminiApiKey || envKey);
-      const modelName = testConfig?.model || (this.activeProvider === 'gemini' ? this.activeModel : 'gemini-2.5-flash');
+      const key = effectiveTest.geminiApiKey !== undefined ? effectiveTest.geminiApiKey : (this.geminiApiKey || envKey);
+      const modelName = effectiveTest.model || (this.activeProvider === 'gemini' ? this.activeModel : 'gemini-2.5-flash');
 
       if (!key) {
         return {
@@ -645,6 +815,24 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         };
       }
     }
+  }
+
+  async getTenantAiConfigSummary(tenantId: string) {
+    const effective = await this.getEffectiveAiConfig(tenantId);
+    let tenantConfig: TenantAiConfig | null = null;
+    try {
+      const tenant = await this.db.mysql.tenant.findUnique({
+        where: { id: tenantId },
+        select: { aiConfig: true, brandingConfig: true },
+      });
+      const raw = (tenant as any)?.aiConfig || (tenant?.brandingConfig as any)?.aiConfig;
+      tenantConfig = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {}
+
+    return {
+      effective,
+      tenantConfig,
+    };
   }
 
   async fetchAvailableModels(providerParam?: string, urlParam?: string, keyParam?: string) {

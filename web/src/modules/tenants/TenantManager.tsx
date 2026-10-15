@@ -23,7 +23,11 @@ import {
   GitMerge,
   ShoppingBag,
   Package,
-  Layout
+  Layout,
+  Sparkles,
+  Server,
+  Bot,
+  Check
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
@@ -514,7 +518,22 @@ function TenantRow({ tenant, setSelectedTenant, setActiveTab, onEdit, onShowDeta
               <h5 className="font-bold text-sm text-slate-800 leading-tight group-hover:text-brand-blue transition-all cursor-pointer">{name || 'Sin nombre'}</h5>
               {isDefault && <Globe size={12} className="text-brand-blue" />}
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-tighter font-medium">ID: #{id?.slice(0, 8)}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-[10px] text-slate-400 uppercase tracking-tighter font-medium">ID: #{id?.slice(0, 8)}</p>
+              {tenant?.aiConfig?.provider === 'freellmapi' ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200" title={`Endpoint: ${tenant.aiConfig.freellmUrl || 'http://llm.pitayacode.io/v1'}`}>
+                  <Server size={9} /> PitayaCode LLM ({tenant.aiConfig.model || 'auto'})
+                </span>
+              ) : tenant?.aiConfig?.provider === 'gemini' ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-50 text-brand-blue border border-brand-blue/20">
+                  <Sparkles size={9} /> Gemini ({tenant.aiConfig.model || 'gemini-2.5-flash'})
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-50 text-slate-400 border border-slate-200">
+                  <Globe size={9} /> Global
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </td>
@@ -585,12 +604,21 @@ function TenantModal({ tenant, onClose, onSave }: any) {
     enabledModules: tenant?.enabledModules || {
       intelligence: { enabled: true, features: { vision: true, predictive: true, protocols: true, agents: true } },
       ecommerce: { enabled: false, features: { catalog: true, orders: true } }
+    },
+    aiConfig: tenant?.aiConfig || {
+      provider: 'system',
+      model: 'gemini-2.5-flash',
+      freellmUrl: 'http://llm.pitayacode.io/v1',
+      freellmApiKey: '',
+      geminiApiKey: '',
     }
   })
+  const [isTesting, setIsTesting] = useState(false)
+  const [testMsg, setTestMsg] = useState<any>(null)
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-3">
@@ -800,6 +828,221 @@ function TenantModal({ tenant, onClose, onSave }: any) {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* AI / LLM Configuration */}
+            <div className="pt-5 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Motor LLM / Inteligencia Artificial
+                  </label>
+                  <p className="text-[11px] text-slate-500 font-medium">Define el modelo y proveedor de IA exclusivo para esta organización</p>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Bot size={16} />
+                </div>
+              </div>
+
+              {/* Provider Selector Cards */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    aiConfig: { ...formData.aiConfig, provider: 'system' }
+                  })}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    !formData.aiConfig?.provider || formData.aiConfig?.provider === 'system'
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-slate-900/10'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Globe size={13} className={!formData.aiConfig?.provider || formData.aiConfig?.provider === 'system' ? 'text-slate-300' : 'text-slate-500'} />
+                    <p className="text-[11px] font-black leading-tight">Global</p>
+                  </div>
+                  <p className="text-[9px] opacity-75">Heredar del sistema</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    aiConfig: { 
+                      ...formData.aiConfig, 
+                      provider: 'gemini',
+                      model: formData.aiConfig?.model && formData.aiConfig.model.includes('gemini') ? formData.aiConfig.model : 'gemini-2.5-flash'
+                    }
+                  })}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    formData.aiConfig?.provider === 'gemini'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-600/20'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles size={13} className={formData.aiConfig?.provider === 'gemini' ? 'text-blue-200' : 'text-blue-500'} />
+                    <p className="text-[11px] font-black leading-tight">Gemini</p>
+                  </div>
+                  <p className="text-[9px] opacity-75">Google Cloud AI</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    aiConfig: { 
+                      ...formData.aiConfig, 
+                      provider: 'freellmapi',
+                      freellmUrl: formData.aiConfig?.freellmUrl || 'http://llm.pitayacode.io/v1',
+                      model: formData.aiConfig?.model && !formData.aiConfig.model.includes('gemini') ? formData.aiConfig.model : 'auto'
+                    }
+                  })}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    formData.aiConfig?.provider === 'freellmapi'
+                      ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold shadow-md ring-2 ring-amber-500/20'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Server size={13} className={formData.aiConfig?.provider === 'freellmapi' ? 'text-slate-950' : 'text-amber-500'} />
+                    <p className="text-[11px] font-black leading-tight">PitayaCode</p>
+                  </div>
+                  <p className="text-[9px] opacity-75">llm.pitayacode.io</p>
+                </button>
+              </div>
+
+              {/* Detail fields based on selected provider */}
+              {formData.aiConfig?.provider === 'gemini' && (
+                <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-2xl space-y-3 animate-in fade-in duration-200 mb-3">
+                  <div>
+                    <label className="block text-[9px] font-black text-blue-900 uppercase tracking-wider mb-1">
+                      Modelo Gemini
+                    </label>
+                    <select
+                      value={formData.aiConfig.model || 'gemini-2.5-flash'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aiConfig: { ...formData.aiConfig, model: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-brand-blue"
+                    >
+                      <option value="gemini-2.5-flash">gemini-2.5-flash (Predeterminado - Recomendado)</option>
+                      <option value="gemini-1.5-flash">gemini-1.5-flash (Rápido y económico)</option>
+                      <option value="gemini-1.5-pro">gemini-1.5-pro (Razonamiento profundo)</option>
+                      <option value="gemini-2.0-flash">gemini-2.0-flash (Siguiente generación)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-blue-900 uppercase tracking-wider mb-1">
+                      API Key de Gemini (Opcional)
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.aiConfig.geminiApiKey || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aiConfig: { ...formData.aiConfig, geminiApiKey: e.target.value }
+                      })}
+                      placeholder="Dejar vacío para usar clave global del sistema"
+                      className="w-full px-3 py-2 bg-white border border-blue-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-brand-blue"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.aiConfig?.provider === 'freellmapi' && (
+                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-3 animate-in fade-in duration-200 mb-3">
+                  <div>
+                    <label className="block text-[9px] font-black text-amber-900 uppercase tracking-wider mb-1">
+                      Endpoint LLM (Base URL)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.aiConfig.freellmUrl || 'http://llm.pitayacode.io/v1'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aiConfig: { ...formData.aiConfig, freellmUrl: e.target.value }
+                      })}
+                      placeholder="http://llm.pitayacode.io/v1"
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-amber-900 uppercase tracking-wider mb-1">
+                      Modelo
+                    </label>
+                    <select
+                      value={formData.aiConfig.model || 'auto'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aiConfig: { ...formData.aiConfig, model: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="auto">auto (Enrutamiento Automático PitayaCode)</option>
+                      <option value="deepseek-ai/DeepSeek-V3">deepseek-ai/DeepSeek-V3</option>
+                      <option value="deepseek-ai/DeepSeek-R1">deepseek-ai/DeepSeek-R1</option>
+                      <option value="gpt-4o">gpt-4o</option>
+                      <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-amber-900 uppercase tracking-wider mb-1">
+                      API Key (Opcional)
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.aiConfig.freellmApiKey || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aiConfig: { ...formData.aiConfig, freellmApiKey: e.target.value }
+                      })}
+                      placeholder="Dejar vacío para usar clave global del sistema"
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Test Button */}
+              {formData.aiConfig?.provider && formData.aiConfig.provider !== 'system' && (
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    disabled={isTesting}
+                    onClick={async () => {
+                      setIsTesting(true);
+                      setTestMsg(null);
+                      try {
+                        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3014';
+                        const res = await axios.post(`${apiUrl}/ai/test`, {
+                          provider: formData.aiConfig.provider,
+                          model: formData.aiConfig.model,
+                          freellmUrl: formData.aiConfig.freellmUrl,
+                          freellmApiKey: formData.aiConfig.freellmApiKey || undefined,
+                          geminiApiKey: formData.aiConfig.geminiApiKey || undefined,
+                        });
+                        setTestMsg(res.data);
+                      } catch (err: any) {
+                        setTestMsg({ success: false, message: err.response?.data?.message || err.message });
+                      } finally {
+                        setIsTesting(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    {isTesting ? <Loader2 size={12} className="animate-spin text-brand-blue" /> : <Zap size={12} className="text-amber-500" />}
+                    Probar Conexión
+                  </button>
+                  {testMsg && (
+                    <span className={`text-[10px] font-bold ${testMsg.success ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {testMsg.success ? `✓ OK (${testMsg.latencyMs || 0}ms)` : `✗ ${testMsg.message?.slice(0, 35)}...`}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

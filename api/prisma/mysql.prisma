@@ -22,6 +22,7 @@ model Tenant {
   updatedAt             DateTime               @updatedAt
   brandingConfig        Json?
   enabledModules        Json?
+  aiConfig              Json?
   isDefault             Boolean                @default(false)
   agents                Agent[]
   costLogs              AiCostLog[]

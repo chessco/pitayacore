@@ -36,8 +36,10 @@ export class TenantsService {
           },
         });
 
+        const rawAiConfig = (tenant as any).aiConfig || (tenant.brandingConfig as any)?.aiConfig || null;
         return {
           ...tenant,
+          aiConfig: rawAiConfig,
           consumption: {
             totalTokens:
               (consumption._sum.tokensIn || 0) +
@@ -73,9 +75,14 @@ export class TenantsService {
   }
 
   async findOne(id: string) {
-    return this.db.mysql.tenant.findUnique({
+    const tenant = await this.db.mysql.tenant.findUnique({
       where: { id },
     });
+    if (!tenant) return null;
+    return {
+      ...tenant,
+      aiConfig: (tenant as any).aiConfig || (tenant.brandingConfig as any)?.aiConfig || null,
+    };
   }
 
   async update(id: string, data: any) {
@@ -87,31 +94,61 @@ export class TenantsService {
       });
     }
 
-    return (this.db.mysql.tenant as any).update({
+    const currentTenant = await this.db.mysql.tenant.findUnique({
       where: { id },
-      data: {
-        name: data.name,
-        plan:
-          data.plan?.toUpperCase() === 'ENTERPRISE'
-            ? 'ENTERPRISE'
-            : data.plan?.toUpperCase() === 'SCALE'
-              ? 'PRO'
-              : data.plan?.toUpperCase() === 'STARTER'
-                ? 'FREE'
-                : data.plan?.toUpperCase(),
-        status:
-          data.status?.toLowerCase() === 'active' ||
-          data.status?.toLowerCase() === 'activo'
-            ? 'ACTIVE'
-            : data.status?.toLowerCase() === 'suspended' ||
-                data.status?.toLowerCase() === 'suspendido'
-              ? 'SUSPENDED'
-              : 'ACTIVE',
-        isDefault: data.isDefault,
-        enabledModules: data.enabledModules,
-        brandingConfig: data.brandingConfig,
-      },
     });
+
+    let brandingConfig = data.brandingConfig !== undefined ? data.brandingConfig : currentTenant?.brandingConfig;
+    if (data.aiConfig !== undefined) {
+      brandingConfig = {
+        ...(typeof brandingConfig === 'object' && brandingConfig !== null ? brandingConfig : {}),
+        aiConfig: data.aiConfig,
+      };
+    }
+
+    const updatePayload: any = {
+      name: data.name,
+      plan:
+        data.plan?.toUpperCase() === 'ENTERPRISE'
+          ? 'ENTERPRISE'
+          : data.plan?.toUpperCase() === 'SCALE'
+            ? 'PRO'
+            : data.plan?.toUpperCase() === 'STARTER'
+              ? 'FREE'
+              : data.plan?.toUpperCase(),
+      status:
+        data.status?.toLowerCase() === 'active' ||
+        data.status?.toLowerCase() === 'activo'
+          ? 'ACTIVE'
+          : data.status?.toLowerCase() === 'suspended' ||
+              data.status?.toLowerCase() === 'suspendido'
+            ? 'SUSPENDED'
+            : 'ACTIVE',
+      isDefault: data.isDefault,
+      enabledModules: data.enabledModules,
+      brandingConfig: brandingConfig,
+    };
+
+    if (data.aiConfig !== undefined) {
+      updatePayload.aiConfig = data.aiConfig;
+    }
+
+    try {
+      return await (this.db.mysql.tenant as any).update({
+        where: { id },
+        data: updatePayload,
+      });
+    } catch (err: any) {
+      // Fallback if aiConfig column is pending db push
+      if (err.message?.includes('aiConfig') || err.message?.includes('Unknown column')) {
+        delete updatePayload.aiConfig;
+        return await (this.db.mysql.tenant as any).update({
+          where: { id },
+          data: updatePayload,
+        });
+      }
+      throw err;
+    }
   }
 
   async getGlobalAnalytics() {

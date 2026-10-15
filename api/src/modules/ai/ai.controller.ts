@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Headers } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Headers } from '@nestjs/common';
 import { PredictiveService } from './predictive.service';
 import { AiService } from './ai.service';
 import { Public } from '../../common/guards/public.decorator';
@@ -83,6 +83,12 @@ export class AiController {
   }
 
   @Public()
+  @Post('tenant/:tenantId/config')
+  async getTenantConfig(@Param('tenantId') tenantId: string) {
+    return this.aiService.getTenantAiConfigSummary(tenantId);
+  }
+
+  @Public()
   @Post('test')
   async testConnection(
     @Body()
@@ -92,6 +98,7 @@ export class AiController {
       geminiApiKey?: string;
       freellmUrl?: string;
       freellmApiKey?: string;
+      tenantId?: string;
     },
   ) {
     return this.aiService.testConnection(body);
