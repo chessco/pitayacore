@@ -107,6 +107,7 @@ export class AiRouterService {
         undefined,
         channel,
         tenantId,
+        agentSlug,
       );
       return { decision: RouterDecision.CHEAP, ...response };
     }
@@ -136,6 +137,7 @@ export class AiRouterService {
           undefined,
           channel,
           tenantId,
+          agentSlug,
         )),
       };
     }
@@ -261,6 +263,14 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
       ? `BASÁNDOTE EN ESTA INFORMACIÓN TÉCNICA:\n${context}\n\nRESPONDE A ESTA CONSULTA: ${input}`
       : input;
 
+    const effectiveAgentSlug =
+      agentSlug ||
+      (skills?.don_juan_camaron
+        ? 'don-juan'
+        : skills?.default_assistant
+          ? 'default-assistant'
+          : undefined);
+
     return await this.ai.generateResponse(
       userPrompt,
       history,
@@ -268,6 +278,7 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
       persona,
       channel,
       tenantId,
+      effectiveAgentSlug,
     );
   }
 }

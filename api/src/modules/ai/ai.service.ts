@@ -181,6 +181,7 @@ export class AiService implements OnModuleInit {
     systemInstruction?: string,
     channel: string = 'whatsapp',
     tenantIdParam?: string,
+    agentIdentifier?: string,
   ) {
     let tenantId = tenantIdParam;
     if (!tenantId) {
@@ -194,6 +195,9 @@ export class AiService implements OnModuleInit {
     const effectiveConfig = await this.getEffectiveAiConfig(tenantId);
     const selectedModel = modelName || effectiveConfig.model;
     const activeProvider = effectiveConfig.provider;
+
+    const cleanAgent = (agentIdentifier || '').toLowerCase().trim();
+    const agentTag = cleanAgent ? `pitayacore/${cleanAgent}` : 'pitayacore';
 
     const globalRules = `REGLA CRÍTICA DE IDIOMA: Responde SIEMPRE en el mismo idioma que el usuario. Si el usuario habla español, NO uses términos en inglés como "DIAGNOSTIC", "ROOT CAUSE" o "ACTION PLAN". Usa exclusivamente sus equivalentes en español.
     
@@ -210,7 +214,7 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     if (activeProvider === 'freellmapi') {
       try {
         this.logger.log(
-          `[AiService] Generating response with PitayaCode LLM (${effectiveConfig.freellmUrl}) for tenant=${tenantId || 'global'}, model: ${selectedModel}...`,
+          `[AiService] Generating response with PitayaCode LLM (${effectiveConfig.freellmUrl}) for tenant=${tenantId || 'global'}, model: ${selectedModel}, agent: ${agentTag}...`,
         );
 
         const messages = [
@@ -225,9 +229,10 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
         const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
-          'User-Agent': 'pitayacore/1.0',
-          'X-Agent': 'pitayacore',
-          'X-Title': 'pitayacore',
+          'User-Agent': `${agentTag}/1.0`,
+          'X-Agent': agentTag,
+          'X-Sub-Agent': cleanAgent,
+          'X-Title': agentTag,
         };
         if (effectiveConfig.freellmApiKey) {
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
@@ -323,7 +328,12 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     }
   }
 
-  async generateRaw(prompt: string, modelName?: string, tenantIdParam?: string) {
+  async generateRaw(
+    prompt: string,
+    modelName?: string,
+    tenantIdParam?: string,
+    agentIdentifier?: string,
+  ) {
     let tenantId = tenantIdParam;
     if (!tenantId) {
       try {
@@ -336,14 +346,18 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     const selectedModel = modelName || effectiveConfig.model;
     const activeProvider = effectiveConfig.provider;
 
+    const cleanAgent = (agentIdentifier || '').toLowerCase().trim();
+    const agentTag = cleanAgent ? `pitayacore/${cleanAgent}` : 'pitayacore';
+
     if (activeProvider === 'freellmapi') {
       try {
         const endpoint = `${effectiveConfig.freellmUrl.replace(/\/+$/, '')}/chat/completions`;
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
-          'User-Agent': 'pitayacore/1.0',
-          'X-Agent': 'pitayacore',
-          'X-Title': 'pitayacore',
+          'User-Agent': `${agentTag}/1.0`,
+          'X-Agent': agentTag,
+          'X-Sub-Agent': cleanAgent,
+          'X-Title': agentTag,
         };
         if (effectiveConfig.freellmApiKey) {
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
