@@ -27,7 +27,8 @@ import {
   Zap,
   MessageSquareQuote,
   Menu,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react'
 import { 
   CartesianGrid, 
@@ -86,7 +87,29 @@ export function OperationalDashboard() {
   } = useTenant()
   const { t, i18n } = useTranslation()
 
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
+    operativo: false,
+    gestion: false,
+    avanzado: false,
+    crm: true,
+    sistema: true,
+  });
+
+  const toggleCategory = (cat: string) => {
+    setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
+  // Automatically expand category if active tab is inside it
+  useEffect(() => {
+    const activeModule = AVAILABLE_MODULES.find(m => m.id === activeTab);
+    if (activeModule?.category && collapsedCategories[activeModule.category]) {
+      setCollapsedCategories(prev => ({ ...prev, [activeModule.category]: false }));
+    }
+  }, [activeTab]);
+
   const hasMenu = (menuId: string) => {
+    if (role === 'system') return true;
+
     const module = AVAILABLE_MODULES.find(m => m.id === menuId);
     
     // Feature Flag Check (Tenant Level)
@@ -98,7 +121,6 @@ export function OperationalDashboard() {
        }
     }
 
-    if (role === 'system') return true;
     return permissions?.menus?.includes(menuId);
   };
 
@@ -243,7 +265,7 @@ export function OperationalDashboard() {
                 <h1 className="text-lg font-bold tracking-tight font-display text-brand-deep">
                   {selectedTenant?.brandingConfig?.brandName || 'PitayaCore AI'}
                 </h1>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operaciones</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Consola Operativa</p>
               </motion.div>
             )}
           </div>
@@ -267,30 +289,19 @@ export function OperationalDashboard() {
         <nav className="flex-1 px-4 space-y-4 overflow-y-auto custom-scrollbar pt-4">
           {/* Categoría: Operativo */}
           <div>
-            {!isSidebarCollapsed && <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">Operaciones</p>}
-            <div className="space-y-1">
-              {AVAILABLE_MODULES.filter(m => m.category === 'operativo' && hasMenu(m.id)).map(module => (
-                <NavItem 
-                  key={module.id}
-                  icon={<module.icon size={20} />} 
-                  label={module.label} 
-                  active={activeTab === module.id} 
-                  collapsed={isSidebarCollapsed}
-                  onClick={() => {
-                    setActiveTab(module.id);
-                    setIsSidebarOpen(false);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Categoría: Gestión */}
-          {AVAILABLE_MODULES.some(m => m.category === 'gestion' && hasMenu(m.id)) && (
-            <div>
-              {!isSidebarCollapsed && <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">Gestión</p>}
+            {!isSidebarCollapsed && (
+              <button
+                type="button"
+                onClick={() => toggleCategory('operativo')}
+                className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em] mb-2 px-2 py-1 rounded-md transition-colors"
+              >
+                <span>Operaciones</span>
+                <ChevronDown size={12} className={`transition-transform duration-200 ${collapsedCategories.operativo ? '-rotate-90 text-slate-300' : 'text-slate-400'}`} />
+              </button>
+            )}
+            {(!collapsedCategories.operativo || isSidebarCollapsed) && (
               <div className="space-y-1">
-                {AVAILABLE_MODULES.filter(m => m.category === 'gestion' && hasMenu(m.id)).map(module => (
+                {AVAILABLE_MODULES.filter(m => m.category === 'operativo' && hasMenu(m.id)).map(module => (
                   <NavItem 
                     key={module.id}
                     icon={<module.icon size={20} />} 
@@ -304,72 +315,138 @@ export function OperationalDashboard() {
                   />
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Categoría: Gestión */}
+          {AVAILABLE_MODULES.some(m => m.category === 'gestion' && hasMenu(m.id)) && (
+            <div>
+              {!isSidebarCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleCategory('gestion')}
+                  className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em] mb-2 px-2 py-1 rounded-md transition-colors"
+                >
+                  <span>Gestión</span>
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${collapsedCategories.gestion ? '-rotate-90 text-slate-300' : 'text-slate-400'}`} />
+                </button>
+              )}
+              {(!collapsedCategories.gestion || isSidebarCollapsed) && (
+                <div className="space-y-1">
+                  {AVAILABLE_MODULES.filter(m => m.category === 'gestion' && hasMenu(m.id)).map(module => (
+                    <NavItem 
+                      key={module.id}
+                      icon={<module.icon size={20} />} 
+                      label={module.label} 
+                      active={activeTab === module.id} 
+                      collapsed={isSidebarCollapsed}
+                      onClick={() => {
+                        setActiveTab(module.id);
+                        setIsSidebarOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Categoría: Inteligencia */}
           {AVAILABLE_MODULES.some(m => m.category === 'avanzado' && hasMenu(m.id)) && (
             <div>
-              {!isSidebarCollapsed && <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">Inteligencia</p>}
-              <div className="space-y-1">
-                {AVAILABLE_MODULES.filter(m => m.category === 'avanzado' && hasMenu(m.id)).map(module => (
-                  <NavItem 
-                    key={module.id}
-                    icon={<module.icon size={20} />} 
-                    label={module.label} 
-                    active={activeTab === module.id} 
-                    collapsed={isSidebarCollapsed}
-                    onClick={() => {
-                      setActiveTab(module.id);
-                      setIsSidebarOpen(false);
-                    }}
-                  />
-                ))}
-              </div>
+              {!isSidebarCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleCategory('avanzado')}
+                  className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em] mb-2 px-2 py-1 rounded-md transition-colors"
+                >
+                  <span>Inteligencia</span>
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${collapsedCategories.avanzado ? '-rotate-90 text-slate-300' : 'text-slate-400'}`} />
+                </button>
+              )}
+              {(!collapsedCategories.avanzado || isSidebarCollapsed) && (
+                <div className="space-y-1">
+                  {AVAILABLE_MODULES.filter(m => m.category === 'avanzado' && hasMenu(m.id)).map(module => (
+                    <NavItem 
+                      key={module.id}
+                      icon={<module.icon size={20} />} 
+                      label={module.label} 
+                      active={activeTab === module.id} 
+                      collapsed={isSidebarCollapsed}
+                      onClick={() => {
+                        setActiveTab(module.id);
+                        setIsSidebarOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
           
           {/* Categoría: CRM & Ventas */}
           {AVAILABLE_MODULES.some(m => m.category === 'crm' && hasMenu(m.id)) && (
             <div>
-              {!isSidebarCollapsed && <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">CRM & Ventas</p>}
-              <div className="space-y-1">
-                {AVAILABLE_MODULES.filter(m => m.category === 'crm' && hasMenu(m.id)).map(module => (
-                  <NavItem 
-                    key={module.id}
-                    icon={<module.icon size={20} />} 
-                    label={module.label} 
-                    active={activeTab === module.id} 
-                    collapsed={isSidebarCollapsed}
-                    onClick={() => {
-                      setActiveTab(module.id);
-                      setIsSidebarOpen(false);
-                    }}
-                  />
-                ))}
-              </div>
+              {!isSidebarCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleCategory('crm')}
+                  className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em] mb-2 px-2 py-1 rounded-md transition-colors"
+                >
+                  <span>CRM & Ventas</span>
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${collapsedCategories.crm ? '-rotate-90 text-slate-300' : 'text-slate-400'}`} />
+                </button>
+              )}
+              {(!collapsedCategories.crm || isSidebarCollapsed) && (
+                <div className="space-y-1">
+                  {AVAILABLE_MODULES.filter(m => m.category === 'crm' && hasMenu(m.id)).map(module => (
+                    <NavItem 
+                      key={module.id}
+                      icon={<module.icon size={20} />} 
+                      label={module.label} 
+                      active={activeTab === module.id} 
+                      collapsed={isSidebarCollapsed}
+                      onClick={() => {
+                        setActiveTab(module.id);
+                        setIsSidebarOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Categoría: Sistema (Solo para System admins) */}
           {role === 'system' && AVAILABLE_MODULES.some(m => m.category === 'sistema' && hasMenu(m.id)) && (
             <div>
-              {!isSidebarCollapsed && <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">Sistema</p>}
-              <div className="space-y-1">
-                {AVAILABLE_MODULES.filter(m => m.category === 'sistema' && hasMenu(m.id)).map(module => (
-                  <NavItem 
-                    key={module.id}
-                    icon={<module.icon size={20} />} 
-                    label={module.label} 
-                    active={activeTab === module.id} 
-                    collapsed={isSidebarCollapsed}
-                    onClick={() => {
-                      setActiveTab(module.id);
-                      setIsSidebarOpen(false);
-                    }}
-                  />
-                ))}
-              </div>
+              {!isSidebarCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleCategory('sistema')}
+                  className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em] mb-2 px-2 py-1 rounded-md transition-colors"
+                >
+                  <span>Sistema</span>
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${collapsedCategories.sistema ? '-rotate-90 text-slate-300' : 'text-slate-400'}`} />
+                </button>
+              )}
+              {(!collapsedCategories.sistema || isSidebarCollapsed) && (
+                <div className="space-y-1">
+                  {AVAILABLE_MODULES.filter(m => m.category === 'sistema' && hasMenu(m.id)).map(module => (
+                    <NavItem 
+                      key={module.id}
+                      icon={<module.icon size={20} />} 
+                      label={module.label} 
+                      active={activeTab === module.id} 
+                      collapsed={isSidebarCollapsed}
+                      onClick={() => {
+                        setActiveTab(module.id);
+                        setIsSidebarOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </nav>
@@ -973,8 +1050,17 @@ export function OperationalDashboard() {
 }
 
 function NavItem({ icon, label, active, onClick, className, collapsed }: any) {
+  const itemRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (active && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [active]);
+
   return (
     <button 
+      ref={itemRef}
       onClick={onClick}
       title={collapsed ? label : ""}
       className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 ${

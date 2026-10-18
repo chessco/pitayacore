@@ -1,0 +1,64 @@
+name: Deploy API to Hetzner
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/deploy-api-hetzner.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy API to Hetzner Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 [1/6] Sincronizando repositorio en Hetzner..."
+            cd /opt/pitaya/pitayacore
+
+            # Sincronización limpia con origin/main
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+
+            echo "🔒 [2/6] Verificando red y variables de entorno..."
+            docker network inspect pitayacode_net >/dev/null 2>&1 || docker network create pitayacode_net
+
+            # Asegurar que .env provenga del .env.prod seguro del servidor
+            if [ -f api/.env.prod ]; then
+              cp api/.env.prod api/.env
+              cp api/.env.prod api/.env.pitayacore
+            fi
+
+            echo "🔨 [3/6] Compilando contenedor pitayacore-api..."
+            docker compose -f docker-compose.prod.yml build --no-cache api
+
+            echo "🔄 [4/6] Levantando contenedor actualizado..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps api
+
+            echo "🗄️ [5/6] Ejecutando migraciones de base de datos..."
+            sleep 5
+            docker exec pitayacore-api npx prisma db push --schema=prisma/mysql.prisma --accept-data-loss
+            docker exec pitayacore-api npx prisma db push --schema=prisma/postgres.prisma --accept-data-loss
+            docker exec pitayacore-api npx tsx seed-foundation.ts 2>/dev/null || true
+
+            echo "🩺 [6/6] Verificando estado y salud..."
+            docker ps --filter name=pitayacore-api
+
+            echo "✅ Despliegue de API en Hetzner completado exitosamente."

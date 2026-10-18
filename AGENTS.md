@@ -160,8 +160,14 @@ Default tenant ID: `edd1ac37-5ff9-4e46-bc7f-fff3c414d718` (Acuaequipos).
 
 ## Deployment
 
-- **API**: Hetzner server `46.224.155.43`, SSH key `~/.ssh/id_citaia`. Script: `.\scripts\deploy_api_hetzner.ps1`
-- **Web**: Hostinger `185.212.71.206:65002`. Script: `.\scripts\deploy_web_hostinger.ps1`
+- **GitHub Actions (CI/CD)**:
+  - `.github/workflows/deploy-api-hetzner.yml` (Hetzner API deploy on push to main `api/**`)
+  - `.github/workflows/deploy-web-hostinger.yml` (Hostinger Web deploy on push to main `web/**`)
+  - `.github/workflows/ci.yml` (Quality gate & linting on PRs and main)
+  - Secrets documentation: `.github/SECRETS.md`
+- **Manual PowerShell scripts**:
+  - API: Hetzner server `46.224.155.43`, SSH key `~/.ssh/id_citaia`. Script: `.\scripts\deploy_api_hetzner.ps1`
+  - Web: Hostinger `185.212.71.206:65002`. Script: `.\scripts\deploy_web_hostinger.ps1`
 - **Schema push to prod**: `.\scripts\push_schema_to_prod.ps1` (no data loss)
 - **DB sync prod→local**: `.\scripts\sync_prod_to_local.ps1` (MySQL only)
 - **Network**: Docker network `pitayacode_net` (external, must exist)

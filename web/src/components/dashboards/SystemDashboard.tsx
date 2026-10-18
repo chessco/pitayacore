@@ -33,7 +33,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts'
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { AVAILABLE_MODULES } from '../../modules/modules.config'
 import { useTenant } from '../../contexts/TenantContext'
@@ -489,8 +489,16 @@ export function SystemDashboard() {
 }
 
 function NavItem({ icon, label, active, onClick }: any) {
+  const itemRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (active && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [active]);
+
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 ${active ? 'bg-brand-blue-light text-brand-blue font-bold shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
+    <button ref={itemRef} onClick={onClick} className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 ${active ? 'bg-brand-blue-light text-brand-blue font-bold shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
       <div className={`${active ? 'text-brand-blue' : 'text-slate-400'}`}>{icon}</div>
       <span className="text-sm">{label}</span>
     </button>
