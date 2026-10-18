@@ -156,7 +156,8 @@ backups/
 # ============================
 # Scripts folder (contains SSH keys refs, prod credentials)
 # ============================
-scripts/
+/scripts/
+/api/scripts/
 
 # ============================
 # Misc secrets
