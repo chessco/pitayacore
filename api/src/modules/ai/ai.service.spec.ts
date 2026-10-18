@@ -41,6 +41,9 @@ describe('AiService - Tool Calling & Callbacks', () => {
         aiCostLog: {
           create: jest.fn().mockResolvedValue({ id: 'cost-1' }),
         },
+        agent: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
       },
     };
 
@@ -68,6 +71,15 @@ describe('AiService - Tool Calling & Callbacks', () => {
     (service as any).freellmUrl = 'http://llm.pitayacode.io/v1';
 
     axiosPostSpy = jest.spyOn(axios, 'post');
+    jest.spyOn(axios, 'get').mockResolvedValue({
+      data: {
+        data: [
+          { id: 'claude-haiku-4-5', available: true },
+          { id: 'claude-sonnet-4-5', available: true },
+          { id: 'gpt-oss-120b', available: true },
+        ],
+      },
+    });
   });
 
   afterEach(() => {
@@ -473,6 +485,308 @@ describe('AiService - Tool Calling & Callbacks', () => {
       expect(response.content).toContain(
         'Hubo un error al ejecutar la herramienta',
       );
+    });
+  });
+
+  describe('6. Modelo no disponible -> fallback a modelo preferido', () => {
+    it('debería reintentar con el siguiente modelo de preferencia si el primer modelo falla con 404 o unavailable', async () => {
+      // 1ª llamada: el modelo solicitado falla con 404 / unavailable
+      const notFoundErr: any = new Error("Model 'gemini-2.5-flash' not found");
+      notFoundErr.response = {
+        status: 404,
+        data: { error: { message: "Model 'gemini-2.5-flash' not found" } },
+      };
+      axiosPostSpy.mockRejectedValueOnce(notFoundErr);
+
+      // 2ª llamada: reintenta con el primer modelo preferido ('gpt-oss-120b') y tiene éxito
+      axiosPostSpy.mockImplementationOnce(async (url: string, payload: any) => {
+        expect(payload.model).toBe('gpt-oss-120b');
+        return {
+          data: {
+            choices: [
+              {
+                message: {
+                  role: 'assistant',
+                  content: 'Respuesta generada con modelo de respaldo exitoso.',
+                },
+              },
+            ],
+            usage: {
+              prompt_tokens: 45,
+              completion_tokens: 15,
+            },
+          },
+        };
+      });
+
+      const response = await service.generateResponse(
+        'Consulta con modelo no disponible',
+        [],
+        'gemini-2.5-flash',
+        undefined,
+        'internal',
+        'tenant-cared',
+        'aura',
+        [{ name: 'buscar_orden', description: 'desc' }],
+        { url: 'https://api.luxuryos.com/tools' },
+      );
+
+      expect(response.content).toBe(
+        'Respuesta generada con modelo de respaldo exitoso.',
+      );
+      expect(response.usage).toEqual({
+        promptTokens: 45,
+        completionTokens: 15,
+        toolCalls: 0,
+      });
+      // Verificamos que se registraron los costos con el modelo que realmente funcionó
+      expect(dbService.mysql.aiCostLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            model: 'gpt-oss-120b',
+            tokensIn: 45,
+            tokensOut: 15,
+          }),
+        }),
+      );
+    });
+
+    it("debería reintentar cuando el gateway devuelve error de catálogo (\"Model 'claude-haiku-4-5' is not in the catalog. Use 'auto'...\")", async () => {
+      // 1ª llamada: falla con el mensaje real que devuelve llm.pitayacode.io
+      const catalogErr: any = new Error(
+        "Model 'claude-haiku-4-5' is not in the catalog. Use 'auto' to let the router choose or check available models.",
+      );
+      catalogErr.response = {
+        status: 400,
+        data: {
+          error: {
+            message:
+              "Model 'claude-haiku-4-5' is not in the catalog. Use 'auto' to let the router choose or check available models.",
+          },
+        },
+      };
+      axiosPostSpy.mockRejectedValueOnce(catalogErr);
+
+      // 2ª llamada: pasa al siguiente modelo candidato ('gpt-oss-120b')
+      axiosPostSpy.mockImplementationOnce(async (url: string, payload: any) => {
+        expect(payload.model).toBe('gpt-oss-120b');
+        return {
+          data: {
+            choices: [
+              {
+                message: {
+                  role: 'assistant',
+                  content: 'Respuesta recuperada tras error de catálogo.',
+                },
+              },
+            ],
+            usage: { prompt_tokens: 35, completion_tokens: 12 },
+          },
+        };
+      });
+
+      const response = await service.generateResponse(
+        'Consulta con modelo fuera de catálogo',
+        [],
+        'claude-haiku-4-5',
+        undefined,
+        'internal',
+        'tenant-cared',
+        'aura',
+        [{ name: 'buscar_orden', description: 'desc' }],
+        { url: 'https://api.luxuryos.com/tools' },
+      );
+
+      expect(response.content).toBe(
+        'Respuesta recuperada tras error de catálogo.',
+      );
+      expect(response.usage?.promptTokens).toBe(35);
+      expect(dbService.mysql.aiCostLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            model: 'gpt-oss-120b',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('7. Sin modelos disponibles -> error claro', () => {
+    it('debería lanzar un error claro cuando todos los modelos candidatos fallan', async () => {
+      // Configuramos axios.post para que falle siempre por modelo no disponible
+      const unavailableErr: any = new Error('Model unavailable: needsKey');
+      unavailableErr.response = {
+        status: 503,
+        data: { error: { message: 'Model unavailable: needsKey' } },
+      };
+      axiosPostSpy.mockRejectedValue(unavailableErr);
+
+      await expect(
+        service.generateResponse(
+          'Consulta que fallará en todos los modelos',
+          [],
+          'gemini-2.5-flash',
+          undefined,
+          'internal',
+          'tenant-cared',
+          'aura',
+          [{ name: 'buscar_orden', description: 'desc' }],
+          { url: 'https://api.luxuryos.com/tools' },
+        ),
+      ).rejects.toThrow(/Error con PitayaCode LLM/);
+    });
+  });
+
+  describe('8. Resolución y configuración de modelos con tools', () => {
+    it('debería priorizar agent.defaultModel si está configurado en el agente', async () => {
+      dbService.mysql.agent.findFirst.mockResolvedValueOnce({
+        defaultModel: 'claude-sonnet-4-5',
+      });
+
+      axiosPostSpy.mockImplementationOnce(async (url: string, payload: any) => {
+        expect(payload.model).toBe('claude-sonnet-4-5');
+        return {
+          data: {
+            choices: [{ message: { role: 'assistant', content: 'OK' } }],
+          },
+        };
+      });
+
+      await service.generateResponse(
+        'Mensaje',
+        [],
+        undefined, // sin modelName explícito
+        undefined,
+        'internal',
+        'tenant-cared',
+        'aura',
+        [{ name: 'test_tool', description: 'desc' }],
+        { url: 'https://api.luxuryos.com/tools' },
+      );
+    });
+
+    it('debería usar variable de entorno TOOL_DEFAULT_MODEL si agent.defaultModel no existe', async () => {
+      const origEnv = process.env.TOOL_DEFAULT_MODEL;
+      process.env.TOOL_DEFAULT_MODEL = 'gpt-oss-120b';
+
+      try {
+        axiosPostSpy.mockImplementationOnce(
+          async (url: string, payload: any) => {
+            expect(payload.model).toBe('gpt-oss-120b');
+            return {
+              data: {
+                choices: [{ message: { role: 'assistant', content: 'OK' } }],
+              },
+            };
+          },
+        );
+
+        await service.generateResponse(
+          'Mensaje',
+          [],
+          'auto',
+          undefined,
+          'internal',
+          'tenant-cared',
+          'aura',
+          [{ name: 'test_tool', description: 'desc' }],
+          { url: 'https://api.luxuryos.com/tools' },
+        );
+      } finally {
+        if (origEnv !== undefined) {
+          process.env.TOOL_DEFAULT_MODEL = origEnv;
+        } else {
+          delete process.env.TOOL_DEFAULT_MODEL;
+        }
+      }
+    });
+
+    it('debería consultar GET /models y cachear el resultado por 5 minutos', async () => {
+      // Limpiar caché
+      (service as any).cachedGatewayModels = null;
+      (service as any).cachedGatewayModelsExpiresAt = 0;
+
+      const axiosGetSpy = jest.spyOn(axios, 'get').mockResolvedValue({
+        data: {
+          data: [
+            { id: 'claude-sonnet-4-5', available: false },
+            { id: 'gpt-oss-120b', available: true },
+          ],
+        },
+      });
+
+      axiosPostSpy.mockImplementationOnce(async (url: string, payload: any) => {
+        expect(payload.model).toBe('gpt-oss-120b');
+        return {
+          data: {
+            choices: [{ message: { role: 'assistant', content: 'OK' } }],
+          },
+        };
+      });
+
+      await service.generateResponse(
+        'Mensaje',
+        [],
+        'auto',
+        undefined,
+        'internal',
+        'tenant-cared',
+        'generic-agent',
+        [{ name: 'test_tool', description: 'desc' }],
+        { url: 'https://api.luxuryos.com/tools' },
+      );
+
+      expect(axiosGetSpy).toHaveBeenCalledTimes(1);
+
+      // Segunda llamada inmediata: debe usar la caché sin volver a llamar a GET /models
+      axiosPostSpy.mockImplementationOnce(async (url: string, payload: any) => {
+        expect(payload.model).toBe('gpt-oss-120b');
+        return {
+          data: {
+            choices: [{ message: { role: 'assistant', content: 'OK' } }],
+          },
+        };
+      });
+
+      await service.generateResponse(
+        'Mensaje 2',
+        [],
+        'auto',
+        undefined,
+        'internal',
+        'tenant-cared',
+        'generic-agent',
+        [{ name: 'test_tool', description: 'desc' }],
+        { url: 'https://api.luxuryos.com/tools' },
+      );
+
+      // Aún debe ser 1 debido a la caché de 5 minutos
+      expect(axiosGetSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('debería respetar TOOL_MODEL_PREFERENCE para ordenar o sobreescribir la lista de modelos de preferencia', () => {
+      const origPref = process.env.TOOL_MODEL_PREFERENCE;
+      try {
+        process.env.TOOL_MODEL_PREFERENCE = 'qwen3.8-27b, gpt-oss-120b';
+        expect(service.getPreferredToolModels()).toEqual([
+          'qwen3.8-27b',
+          'gpt-oss-120b',
+        ]);
+
+        delete process.env.TOOL_MODEL_PREFERENCE;
+        expect(service.getPreferredToolModels()).toEqual([
+          'gpt-oss-120b',
+          'qwen3.8-27b',
+          'claude-haiku-4-5',
+          'claude-sonnet-4-5',
+        ]);
+      } finally {
+        if (origPref !== undefined) {
+          process.env.TOOL_MODEL_PREFERENCE = origPref;
+        } else {
+          delete process.env.TOOL_MODEL_PREFERENCE;
+        }
+      }
     });
   });
 });

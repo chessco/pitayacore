@@ -1,3 +1,4 @@
+import { BadGatewayException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AgentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
@@ -134,7 +135,11 @@ describe('AgentsController', () => {
         undefined,
         'agent-1',
         'internal',
-        { internalChat: true, operatorEmail: 'operator@email.com' },
+        {
+          internalChat: true,
+          operatorEmail: 'operator@email.com',
+          throwOnAiFailure: true,
+        },
       );
     });
 
@@ -153,7 +158,11 @@ describe('AgentsController', () => {
         undefined,
         'agent-1',
         'internal',
-        { internalChat: true, operatorEmail: undefined },
+        {
+          internalChat: true,
+          operatorEmail: undefined,
+          throwOnAiFailure: true,
+        },
       );
     });
 
@@ -194,10 +203,39 @@ describe('AgentsController', () => {
         {
           internalChat: true,
           operatorEmail: 'operator@cared.com',
+          throwOnAiFailure: true,
           tools,
           toolCallback,
         },
       );
+    });
+
+    it('debería lanzar BadGatewayException y no devolver el mensaje del usuario como respuesta si el asistente devuelve eco', async () => {
+      // Simula que conversationsService devuelve el mensaje del usuario (eco)
+      conversationsService.handleIncomingMessage.mockResolvedValue({
+        id: 'msg-user',
+        role: 'user',
+        content: '¿Cómo va la orden REP-54?',
+        conversationId: 'conv-echo',
+      });
+
+      await expect(
+        controller.chat('aura', { message: '¿Cómo va la orden REP-54?' }),
+      ).rejects.toThrow(
+        /El asistente no pudo generar una respuesta válida y no se permite devolver el mensaje como eco/,
+      );
+    });
+
+    it('debería propagar BadGatewayException si conversationsService falla al generar la respuesta', async () => {
+      conversationsService.handleIncomingMessage.mockRejectedValue(
+        new BadGatewayException(
+          'Error al generar respuesta del asistente: Gateway timeout',
+        ),
+      );
+
+      await expect(
+        controller.chat('aura', { message: '¿Qué hay en taller?' }),
+      ).rejects.toThrow(BadGatewayException);
     });
   });
 

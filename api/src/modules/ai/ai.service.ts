@@ -40,6 +40,14 @@ export interface EffectiveAiConfig {
   source: 'tenant' | 'system';
 }
 
+export const DEFAULT_PREFERRED_TOOL_MODELS = [
+  'gpt-oss-120b',
+  'qwen3.8-27b',
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5',
+];
+export const PREFERRED_TOOL_MODELS = DEFAULT_PREFERRED_TOOL_MODELS;
+
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
@@ -49,6 +57,8 @@ export class AiService implements OnModuleInit {
   private geminiApiKey: string = '';
   private freellmUrl: string = 'http://llm.pitayacode.io/v1';
   private freellmApiKey: string = '';
+  private cachedGatewayModels: string[] | null = null;
+  private cachedGatewayModelsExpiresAt: number = 0;
 
   constructor(
     private configService: ConfigService,
@@ -215,6 +225,68 @@ export class AiService implements OnModuleInit {
       freellmApiKey,
       source,
     };
+  }
+
+  /**
+   * Obtiene la lista de modelos de preferencia para herramientas, configurable vía TOOL_MODEL_PREFERENCE.
+   */
+  getPreferredToolModels(): string[] {
+    const envPref =
+      process.env.TOOL_MODEL_PREFERENCE ||
+      this.configService.get<string>('TOOL_MODEL_PREFERENCE');
+    if (envPref && envPref.trim()) {
+      const parsed = envPref
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean);
+      if (parsed.length > 0) {
+        return parsed;
+      }
+    }
+    return DEFAULT_PREFERRED_TOOL_MODELS;
+  }
+
+  /**
+   * Obtiene la lista de modelos disponibles en el gateway FreeLLMAPI (cacheados por 5 minutos).
+   */
+  async getGatewayAvailableModels(
+    freellmUrl: string,
+    apiKey?: string,
+  ): Promise<string[]> {
+    const now = Date.now();
+    if (
+      this.cachedGatewayModels &&
+      this.cachedGatewayModelsExpiresAt > now &&
+      this.cachedGatewayModels.length > 0
+    ) {
+      return this.cachedGatewayModels;
+    }
+
+    try {
+      const url = `${freellmUrl.replace(/\/+$/, '')}/models`;
+      const headers: Record<string, string> = {};
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      const res = await axios.get(url, { headers, timeout: 5000 });
+      const rawList = res.data?.data || res.data || [];
+      if (Array.isArray(rawList)) {
+        const availableModels = rawList
+          .filter((m: any) => m && m.available !== false && (m.id || m.name))
+          .map((m: any) => (m.id || m.name).toString());
+
+        this.cachedGatewayModels = availableModels;
+        this.cachedGatewayModelsExpiresAt = now + 5 * 60 * 1000;
+        return availableModels;
+      }
+    } catch (err: any) {
+      this.logger.warn(
+        `[AiService] No se pudo consultar GET ${freellmUrl}/models: ${err.message}`,
+      );
+    }
+
+    return this.cachedGatewayModels || [];
   }
 
   async validateToolCallbackUrl(
@@ -384,10 +456,69 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     if (activeProvider === 'freellmapi') {
       try {
         const hasTools = tools && Array.isArray(tools) && tools.length > 0;
-        const defaultToolModel = 'gemini-2.5-flash';
-        let currentModel = modelName || effectiveConfig.model;
-        if (hasTools && (!currentModel || currentModel === 'auto')) {
-          currentModel = defaultToolModel;
+        let candidateModels: string[] = [];
+        let candidateIndex = 0;
+        let currentModel: string;
+
+        if (hasTools) {
+          let chosenModel: string | undefined = undefined;
+
+          // 1. Usar agent.defaultModel si existe y no es 'auto'
+          if (modelName && modelName !== 'auto') {
+            chosenModel = modelName;
+          } else if (agentIdentifier) {
+            try {
+              const clean = agentIdentifier.toLowerCase().trim();
+              const agent = await this.db.mysql.agent.findFirst({
+                where: {
+                  slug: clean,
+                  ...(tenantId && tenantId !== 'global' ? { tenantId } : {}),
+                },
+                select: { defaultModel: true },
+              });
+              if (agent?.defaultModel && agent.defaultModel !== 'auto') {
+                chosenModel = agent.defaultModel;
+              }
+            } catch {
+              // Ignorar error de lectura en BD
+            }
+          }
+
+          // 2. Si no, variable de entorno TOOL_DEFAULT_MODEL
+          if (!chosenModel) {
+            const envToolModel =
+              process.env.TOOL_DEFAULT_MODEL ||
+              this.configService.get<string>('TOOL_DEFAULT_MODEL');
+            if (
+              envToolModel &&
+              envToolModel.trim() &&
+              envToolModel.trim() !== 'undefined' &&
+              envToolModel.trim() !== 'auto'
+            ) {
+              chosenModel = envToolModel.trim();
+            }
+          }
+
+          const preferredModels = this.getPreferredToolModels();
+
+          // 3. Si tampoco existe, consultar GET {freellmUrl}/models y elegir el primero disponible de la lista de preferencia
+          if (!chosenModel) {
+            const availableModels = await this.getGatewayAvailableModels(
+              effectiveConfig.freellmUrl,
+              effectiveConfig.freellmApiKey,
+            );
+            chosenModel =
+              preferredModels.find((m) => availableModels.includes(m)) ||
+              preferredModels[0];
+          }
+
+          candidateModels = Array.from(
+            new Set([chosenModel, ...preferredModels]),
+          );
+          currentModel = candidateModels[0];
+        } else {
+          currentModel = modelName || effectiveConfig.model || 'auto';
+          candidateModels = [currentModel];
         }
 
         this.logger.log(
@@ -459,6 +590,7 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
               timeout: 60000,
             });
           } catch (error: any) {
+            const statusCode = error.response?.status;
             const errorData = error.response?.data?.error;
             const errorMsg =
               (typeof errorData === 'string'
@@ -467,21 +599,54 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
               error.message ||
               '';
 
+            const isModelUnavailable =
+              statusCode === 404 ||
+              statusCode === 503 ||
+              /not found|unavailable|does not exist|needsKey|no_key|disabled|model_not_found|catalog|not in the catalog/i.test(
+                errorMsg,
+              );
+
+            if (
+              hasTools &&
+              isModelUnavailable &&
+              candidateIndex + 1 < candidateModels.length
+            ) {
+              candidateIndex++;
+              const nextModel = candidateModels[candidateIndex];
+              this.logger.warn(
+                `[AiService] Modelo '${currentModel}' no disponible o no encontrado (${errorMsg}). Reintentando con siguiente modelo preferido: '${nextModel}'...`,
+              );
+              currentModel = nextModel;
+              iteration--;
+              continue;
+            }
+
             const isToolUnsupported =
               activeTools &&
               activeTools.length > 0 &&
               /tool|function|unsupported|not supported/i.test(errorMsg);
 
             if (isToolUnsupported) {
+              if (hasTools && candidateIndex + 1 < candidateModels.length) {
+                candidateIndex++;
+                const nextModel = candidateModels[candidateIndex];
+                this.logger.warn(
+                  `[AiService] Modelo '${currentModel}' no soporta tools (${errorMsg}). Probando siguiente modelo preferido: '${nextModel}'...`,
+                );
+                currentModel = nextModel;
+                iteration--;
+                continue;
+              }
+
               this.logger.warn(
-                `[AiService] LLM model '${currentModel}' does not support tools. Downgrading to standard response without tools: ${errorMsg}`,
+                `[AiService] Ningún modelo de tool calling soportó herramientas. Degradando a respuesta sin tools: ${errorMsg}`,
               );
               activeTools = undefined;
               continue;
             }
 
             this.logger.error(
-              `[AiService] FreeLLMAPI error in generateResponse: ${errorMsg}`,
+              `[AiService] FreeLLMAPI error in generateResponse con modelo '${currentModel}': ${errorMsg}`,
             );
             throw new Error(
               `Error con PitayaCode LLM (${effectiveConfig.freellmUrl}): ${errorMsg}`,

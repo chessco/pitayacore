@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   Controller,
   Get,
   Post,
@@ -55,7 +56,11 @@ export class AgentsController {
     const userId = operatorEmail || 'internal-user';
     const message = body.message;
 
-    const metadata: any = { internalChat: true, operatorEmail };
+    const metadata: any = {
+      internalChat: true,
+      operatorEmail,
+      throwOnAiFailure: true,
+    };
     if (body.tools) {
       metadata.tools = body.tools;
     }
@@ -75,6 +80,15 @@ export class AgentsController {
       'internal', // channel
       metadata,
     );
+
+    if (
+      aiMessage.role === 'user' ||
+      (aiMessage.content && aiMessage.content.trim() === message.trim())
+    ) {
+      throw new BadGatewayException(
+        'El asistente no pudo generar una respuesta válida y no se permite devolver el mensaje como eco.',
+      );
+    }
 
     const response: any = {
       content: aiMessage.content,

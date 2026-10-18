@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
 import { AiRouterService } from '../ai/ai-router.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
@@ -148,9 +153,14 @@ export class ConversationsService {
         );
         aiResult.content = aiResult.content.substring(0, 4000);
       }
-    } catch (e) {
-      console.error('AI Routing failed:', e.message);
-      return savedUserMessage; // Return at least the user message
+    } catch (e: any) {
+      this.logger.error(`AI Routing failed: ${e.message}`, e.stack);
+      if (metadata?.throwOnAiFailure) {
+        throw new BadGatewayException(
+          `Error al generar respuesta del asistente: ${e.message}`,
+        );
+      }
+      return savedUserMessage; // Preserva comportamiento para webhooks y demás llamadores
     }
 
     // 4. Save AI message
