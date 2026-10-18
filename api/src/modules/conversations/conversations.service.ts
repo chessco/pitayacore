@@ -138,6 +138,8 @@ export class ConversationsService {
         agentSlug,
         channel,
         metadata || conversation.metadata,
+        conversation.id,
+        savedUserMessage.id,
       );
 
       // Security Trim: Meta/WhatsApp limit is 4096. We clip at 4000 for safety.

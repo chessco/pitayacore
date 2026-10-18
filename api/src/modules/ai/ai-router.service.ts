@@ -32,6 +32,47 @@ export class AiRouterService {
     private agentsService: AgentsService,
   ) {}
 
+  private activeKbCache = new Map<
+    string,
+    { hasActive: boolean; expiresAt: number }
+  >();
+
+  clearActiveKbCache(tenantId?: string) {
+    if (tenantId) {
+      this.activeKbCache.delete(tenantId);
+    } else {
+      this.activeKbCache.clear();
+    }
+  }
+
+  async hasActiveKnowledgeBase(tenantId: string): Promise<boolean> {
+    if (!tenantId) {
+      return false;
+    }
+
+    const now = Date.now();
+    const cached = this.activeKbCache.get(tenantId);
+    if (cached && cached.expiresAt > now) {
+      return cached.hasActive;
+    }
+
+    const activeKb = await this.db.mysql.knowledgeBase.findFirst({
+      where: {
+        tenantId,
+        status: 'ACTIVE',
+      },
+      select: { id: true },
+    });
+
+    const hasActive = !!activeKb;
+    this.activeKbCache.set(tenantId, {
+      hasActive,
+      expiresAt: now + 60_000,
+    });
+
+    return hasActive;
+  }
+
   async route(
     userInput: string,
     tenantIdParam?: string,
@@ -39,6 +80,8 @@ export class AiRouterService {
     agentSlug?: string,
     channel: string = 'whatsapp',
     metadata?: any,
+    conversationId?: string,
+    excludeMessageId?: string,
   ): Promise<RouterResponse> {
     const tenantId = tenantIdParam || getTenantId();
     console.log(`[AiRouter] Routing message. Skills received:`, skills);
@@ -57,14 +100,23 @@ export class AiRouterService {
     }
 
     // 0. Fetch recent history for context
+    const historyWhere: any = { tenantId };
+    if (conversationId) {
+      historyWhere.conversationId = conversationId;
+    }
+    if (excludeMessageId) {
+      historyWhere.id = { not: excludeMessageId };
+    }
+
     const history = await this.db.mysql.messageOld.findMany({
-      where: {
-        tenantId,
-      },
+      where: historyWhere,
       orderBy: { createdAt: 'desc' },
       take: 6, // Last 3 turns
     });
-    const formattedHistory = history.reverse();
+    const filteredHistory = excludeMessageId
+      ? history.filter((m: any) => m.id !== excludeMessageId)
+      : history;
+    const formattedHistory = [...filteredHistory].reverse();
 
     // 1. Check for FAQ (Static) - Cost: $0
     const faq = await this.checkFaq(userInput, tenantId);
@@ -250,11 +302,14 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
         }
       }
 
-      const results = (await this.kb.search(input, 3, filterIds)) as any[];
-      context += results.map((r: any) => r.content).join('\n---\n');
-      console.log(
-        `[AiRouter] Semantic search found ${results.length} relevant chunks.`,
-      );
+      const hasActiveKb = await this.hasActiveKnowledgeBase(tenantId);
+      if (hasActiveKb) {
+        const results = (await this.kb.search(input, 3, filterIds)) as any[];
+        context += results.map((r: any) => r.content).join('\n---\n');
+        console.log(
+          `[AiRouter] Semantic search found ${results.length} relevant chunks.`,
+        );
+      }
     } catch (e) {
       this.logger.error(`Semantic search failed: ${e.message}`);
     }
