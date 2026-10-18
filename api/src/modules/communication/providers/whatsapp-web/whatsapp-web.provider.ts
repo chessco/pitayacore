@@ -19,6 +19,7 @@ export class WhatsappWebProvider
   private readonly logger = new Logger(WhatsappWebProvider.name);
   private clients: Map<string, Client> = new Map(); // key = `${tenantId}:${channelId}`
   private clientStatuses: Map<string, string> = new Map(); // key = `${tenantId}:${channelId}` → status
+  private clientQrs: Map<string, string> = new Map(); // key = `${tenantId}:${channelId}` → qr // key = `${tenantId}:${channelId}` → status
   private readonly PROVIDER_NAME = 'whatsapp';
 
   constructor(
@@ -43,6 +44,19 @@ export class WhatsappWebProvider
             currentStatus as any,
           ),
         );
+        const currentQr = this.clientQrs.get(clientKey);
+        if (currentQr && currentStatus === 'QR_READY') {
+          this.eventBus.publish(
+            COMMUNICATION_EVENTS.QR_CODE_GENERATED,
+            new SessionStatusEvent(
+              tenantId,
+              this.PROVIDER_NAME,
+              channelId,
+              'QR_READY',
+              { qr: currentQr },
+            ),
+          );
+        }
       }
       return;
     }
@@ -53,18 +67,26 @@ export class WhatsappWebProvider
     );
 
     // Clean up Chromium singleton locks left from previous containers/crashes
-    const lockPath = path.join(
+    const sessionDir = path.join(
       dataPath,
       `session-channel_${channelId}`,
-      'SingletonLock',
     );
     try {
-      fs.unlinkSync(lockPath);
-      this.logger.log(`Removed Chromium SingletonLock at ${lockPath}`);
+      if (fs.existsSync(sessionDir)) {
+        const files = fs.readdirSync(sessionDir);
+        for (const file of files) {
+          if (file.startsWith('Singleton')) {
+            try {
+              fs.unlinkSync(path.join(sessionDir, file));
+              this.logger.log(`Removed Chromium singleton lock: ${file}`);
+            } catch {}
+          }
+        }
+      }
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
         this.logger.warn(
-          `Failed to remove Chromium SingletonLock at ${lockPath}: ${err.message}`,
+          `Failed to clean Chromium singleton files at ${sessionDir}: ${err.message}`,
         );
       }
     }
@@ -86,7 +108,8 @@ export class WhatsappWebProvider
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-gpu',
-          '--single-process',
+          '--no-first-run',
+          '--no-zygote',
         ],
       },
     });
@@ -151,6 +174,7 @@ export class WhatsappWebProvider
       await client.destroy();
       this.clients.delete(clientKey);
       this.clientStatuses.delete(clientKey);
+      this.clientQrs.delete(clientKey);
       this.logger.log(
         `Disconnected client for tenant: ${tenantId}, channel ${channelId}`,
       );
@@ -344,6 +368,7 @@ export class WhatsappWebProvider
       qrcode.generate(qr, { small: true });
 
       this.clientStatuses.set(clientKey, 'QR_READY');
+      this.clientQrs.set(clientKey, qr);
 
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
@@ -372,6 +397,7 @@ export class WhatsappWebProvider
         `WhatsApp client is ready for tenant ${tenantId}, channel ${channelId}`,
       );
       this.clientStatuses.set(clientKey, 'READY');
+      this.clientQrs.delete(clientKey);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
         new SessionStatusEvent(
@@ -394,6 +420,7 @@ export class WhatsappWebProvider
         `WhatsApp authentication failed for tenant ${tenantId}, channel ${channelId}: ${msg}`,
       );
       this.clientStatuses.delete(clientKey);
+      this.clientQrs.delete(clientKey);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
         new SessionStatusEvent(
@@ -412,6 +439,7 @@ export class WhatsappWebProvider
       );
       this.clients.delete(clientKey);
       this.clientStatuses.delete(clientKey);
+      this.clientQrs.delete(clientKey);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
         new SessionStatusEvent(
@@ -473,6 +501,13 @@ export class WhatsappWebProvider
     channelId: string,
   ): string | undefined {
     return this.clientStatuses.get(`${tenantId}:${channelId}`);
+  }
+
+  getActiveClientQr(
+    tenantId: string,
+    channelId: string,
+  ): string | undefined {
+    return this.clientQrs.get(`${tenantId}:${channelId}`);
   }
 
   async onModuleDestroy() {

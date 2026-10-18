@@ -71,12 +71,15 @@ export const CommunicationSettingsPanel: React.FC = () => {
   const addWhatsAppChannel = async () => {
     if (!tenant) return;
     try {
-      await axios.post(`${apiUrl}/api/communication/channels`, {
+      const res = await axios.post(`${apiUrl}/api/communication/channels`, {
         name: `WhatsApp ${channels.length + 1}`,
         provider: 'whatsapp',
       }, {
         headers: { 'x-tenant-id': tenant.id }
       });
+      if (res.data?.id) {
+        connectSession(res.data.id);
+      }
       fetchChannels();
     } catch (err) {
       console.error('Failed to create channel', err);
@@ -221,10 +224,22 @@ export const CommunicationSettingsPanel: React.FC = () => {
                   </div>
                 )}
                 
+                {(channel.status === 'DISCONNECTED' || !channel.status) && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <p className="text-xs text-slate-500 font-medium">El canal no está vinculado. Haz clic para generar el código QR.</p>
+                    <button
+                      onClick={() => connectSession(channel.id)}
+                      className="flex items-center gap-2 bg-brand-blue text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      <RefreshCw size={14} /> Vincular WhatsApp (Generar QR)
+                    </button>
+                  </div>
+                )}
+
                 {channel.status === 'AUTHENTICATING' && (
                   <div className="mt-6 p-6 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-center gap-3">
                     <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
-                    <span className="text-sm font-medium text-amber-800">Autenticando conexión...</span>
+                    <span className="text-sm font-medium text-amber-800">Iniciando sesión y generando código QR de WhatsApp...</span>
                   </div>
                 )}
               </div>

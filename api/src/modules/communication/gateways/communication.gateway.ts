@@ -72,6 +72,10 @@ export class CommunicationGateway
           channelId,
           status,
         });
+        const qr = this.whatsappProvider.getActiveClientQr(tenantId, channelId);
+        if (qr && status === 'QR_READY') {
+          client.emit('session.qr', { qr, channelId });
+        }
       }
     }
   }
