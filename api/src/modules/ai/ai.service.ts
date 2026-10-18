@@ -16,6 +16,19 @@ export interface TenantAiConfig {
   geminiApiKey?: string;
   freellmUrl?: string;
   freellmApiKey?: string;
+  toolCallbackHosts?: string[];
+}
+
+export interface ToolCallbackConfig {
+  url: string;
+  token?: string;
+}
+
+export interface ToolDefinition {
+  name: string;
+  description?: string;
+  parameters?: Record<string, any>;
+  [key: string]: any;
 }
 
 export interface EffectiveAiConfig {
@@ -204,6 +217,131 @@ export class AiService implements OnModuleInit {
     };
   }
 
+  async validateToolCallbackUrl(
+    rawUrl: string,
+    tenantId?: string,
+  ): Promise<{ valid: boolean; error?: string; url?: URL }> {
+    if (!rawUrl || typeof rawUrl !== 'string') {
+      return {
+        valid: false,
+        error: 'URL de callback no proporcionada o inválida',
+      };
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return { valid: false, error: 'Sintaxis de URL inválida' };
+    }
+
+    const allowedHosts = new Set<string>();
+
+    const envHosts =
+      process.env.TOOL_CALLBACK_HOSTS || process.env.TOOL_CALLBACK_ALLOWLIST;
+    if (envHosts) {
+      envHosts
+        .split(',')
+        .map((h) => h.trim().toLowerCase())
+        .filter(Boolean)
+        .forEach((h) => allowedHosts.add(h));
+    }
+
+    if (tenantId && tenantId !== 'global' && tenantId !== 'system') {
+      try {
+        const tenant = await this.db.mysql.tenant.findUnique({
+          where: { id: tenantId },
+          select: { aiConfig: true },
+        });
+        const tenantHosts = (tenant?.aiConfig as any)?.toolCallbackHosts;
+        if (Array.isArray(tenantHosts)) {
+          tenantHosts
+            .map((h: string) => String(h).trim().toLowerCase())
+            .filter(Boolean)
+            .forEach((h: string) => allowedHosts.add(h));
+        }
+      } catch (err: any) {
+        this.logger.warn(
+          `[AiService] Error consultando aiConfig de tenant: ${err.message}`,
+        );
+      }
+    }
+
+    const host = parsed.host.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+
+    const isHostAllowed =
+      allowedHosts.has(host) ||
+      allowedHosts.has(hostname) ||
+      Array.from(allowedHosts).some((allowed) => {
+        if (allowed.startsWith('*.')) {
+          const root = allowed.slice(2);
+          return hostname === root || hostname.endsWith(`.${root}`);
+        }
+        return false;
+      });
+
+    if (!isHostAllowed) {
+      return {
+        valid: false,
+        error: `Host '${host}' no está en la allowlist autorizada para callbacks`,
+      };
+    }
+
+    const isHttps = parsed.protocol === 'https:';
+    const isHttp = parsed.protocol === 'http:';
+
+    if (!isHttps && !isHttp) {
+      return {
+        valid: false,
+        error: `Protocolo '${parsed.protocol}' no permitido. Se requiere https`,
+      };
+    }
+
+    // Detección de IPs privadas y metadata (169.254.*, localhost, etc.)
+    const isPrivateOrMetadataIp =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.startsWith('169.254.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+      hostname === '0.0.0.0';
+
+    if (isHttp) {
+      const isExplicitlyAllowed =
+        allowedHosts.has(host) || allowedHosts.has(hostname);
+      const isInternalDockerHost =
+        !hostname.includes('.') ||
+        hostname.endsWith('.internal') ||
+        hostname.endsWith('.docker') ||
+        hostname.endsWith('.local') ||
+        isPrivateOrMetadataIp;
+
+      if (!isExplicitlyAllowed || !isInternalDockerHost) {
+        return {
+          valid: false,
+          error:
+            'Protocolo HTTP no permitido para hosts externos. Requiere HTTPS.',
+        };
+      }
+    }
+
+    if (
+      isPrivateOrMetadataIp &&
+      !allowedHosts.has(host) &&
+      !allowedHosts.has(hostname)
+    ) {
+      return {
+        valid: false,
+        error: 'Acceso a IPs privadas o metadata rechazado por seguridad',
+      };
+    }
+
+    return { valid: true, url: parsed };
+  }
+
   async generateResponse(
     userMessage: string,
     history: any[] = [],
@@ -212,6 +350,8 @@ export class AiService implements OnModuleInit {
     channel: string = 'whatsapp',
     tenantIdParam?: string,
     agentIdentifier?: string,
+    tools?: ToolDefinition[],
+    toolCallback?: ToolCallbackConfig,
   ) {
     let tenantId = tenantIdParam;
     if (!tenantId) {
@@ -243,11 +383,18 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
     // 1. FREELLMAPI (PitayaCode LLM) Provider
     if (activeProvider === 'freellmapi') {
       try {
+        const hasTools = tools && Array.isArray(tools) && tools.length > 0;
+        const defaultToolModel = 'gemini-2.5-flash';
+        let currentModel = modelName || effectiveConfig.model;
+        if (hasTools && (!currentModel || currentModel === 'auto')) {
+          currentModel = defaultToolModel;
+        }
+
         this.logger.log(
-          `[AiService] Generating response with PitayaCode LLM (${effectiveConfig.freellmUrl}) for tenant=${tenantId || 'global'}, model: ${selectedModel}, agent: ${agentTag}...`,
+          `[AiService] Generating response with PitayaCode LLM (${effectiveConfig.freellmUrl}) for tenant=${tenantId || 'global'}, model: ${currentModel}, agent: ${agentTag}, tools: ${hasTools ? tools.length : 0}...`,
         );
 
-        const messages = [
+        const messages: any[] = [
           { role: 'system', content: activeSystemPrompt },
           ...history.map((h) => ({
             role: h.role === 'user' ? 'user' : 'assistant',
@@ -268,43 +415,241 @@ ADAPTACIÓN DE CANAL: Estás respondiendo a través de: ${channel.toUpperCase()}
           headers['Authorization'] = `Bearer ${effectiveConfig.freellmApiKey}`;
         }
 
-        const response = await axios.post(
-          endpoint,
-          {
-            model: selectedModel || 'auto',
+        let activeTools: any[] | undefined = hasTools
+          ? tools.map((t: any) =>
+              t.type === 'function' && t.function
+                ? t
+                : {
+                    type: 'function',
+                    function: {
+                      name: t.name,
+                      description: t.description,
+                      parameters: t.parameters || {
+                        type: 'object',
+                        properties: {},
+                      },
+                    },
+                  },
+            )
+          : undefined;
+
+        let totalPromptTokens = 0;
+        let totalCompletionTokens = 0;
+        let totalToolCalls = 0;
+        let finalResponseText = '';
+        let iteration = 0;
+        const maxIterations = 4;
+
+        while (iteration < maxIterations) {
+          iteration++;
+
+          const payload: any = {
+            model: currentModel || 'auto',
             messages,
             temperature: 0.7,
-          },
-          {
-            headers,
-            timeout: 60000,
-          },
-        );
+          };
+          if (activeTools && activeTools.length > 0) {
+            payload.tools = activeTools;
+          }
 
-        const responseText =
-          response.data?.choices?.[0]?.message?.content || '';
-        const confidence = this.calculateConfidence(responseText);
+          let response: any;
+          try {
+            response = await axios.post(endpoint, payload, {
+              headers,
+              timeout: 60000,
+            });
+          } catch (error: any) {
+            const errorData = error.response?.data?.error;
+            const errorMsg =
+              (typeof errorData === 'string'
+                ? errorData
+                : errorData?.message) ||
+              error.message ||
+              '';
 
-        const promptTokens =
-          response.data?.usage?.prompt_tokens ??
-          Math.round(userMessage.length / 4);
-        const completionTokens =
-          response.data?.usage?.completion_tokens ??
-          Math.round(responseText.length / 4);
+            const isToolUnsupported =
+              activeTools &&
+              activeTools.length > 0 &&
+              /tool|function|unsupported|not supported/i.test(errorMsg);
+
+            if (isToolUnsupported) {
+              this.logger.warn(
+                `[AiService] LLM model '${currentModel}' does not support tools. Downgrading to standard response without tools: ${errorMsg}`,
+              );
+              activeTools = undefined;
+              continue;
+            }
+
+            this.logger.error(
+              `[AiService] FreeLLMAPI error in generateResponse: ${errorMsg}`,
+            );
+            throw new Error(
+              `Error con PitayaCode LLM (${effectiveConfig.freellmUrl}): ${errorMsg}`,
+            );
+          }
+
+          const choice = response.data?.choices?.[0];
+          const choiceMessage = choice?.message;
+          finalResponseText = choiceMessage?.content || '';
+
+          const iterPromptTokens =
+            response.data?.usage?.prompt_tokens ??
+            Math.round(userMessage.length / 4);
+          const iterCompletionTokens =
+            response.data?.usage?.completion_tokens ??
+            Math.round(finalResponseText.length / 4);
+
+          totalPromptTokens += iterPromptTokens;
+          totalCompletionTokens += iterCompletionTokens;
+
+          const toolCalls = choiceMessage?.tool_calls;
+          if (
+            !toolCalls ||
+            !Array.isArray(toolCalls) ||
+            toolCalls.length === 0
+          ) {
+            break;
+          }
+
+          if (!toolCallback?.url) {
+            this.logger.warn(
+              `[AiService] LLM requested tool calls but no toolCallback was provided.`,
+            );
+            break;
+          }
+
+          // Validación SSRF
+          const validation = await this.validateToolCallbackUrl(
+            toolCallback.url,
+            tenantId,
+          );
+          if (!validation.valid) {
+            this.logger.warn(
+              `[AiService] Tool callback URL rejected: ${validation.error}`,
+            );
+            messages.push(choiceMessage);
+            for (const tc of toolCalls) {
+              messages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: JSON.stringify({
+                  error: 'Tool execution rejected: host not allowed',
+                }),
+              });
+            }
+            continue;
+          }
+
+          messages.push(choiceMessage);
+
+          const maxToolsPerIteration = 3;
+          const toolsToExecute = toolCalls.slice(0, maxToolsPerIteration);
+          const extraTools = toolCalls.slice(maxToolsPerIteration);
+
+          totalToolCalls += toolCalls.length;
+
+          for (const tc of toolsToExecute) {
+            const toolName = tc.function?.name || 'unknown';
+            let toolArgs: any = tc.function?.arguments;
+            try {
+              if (typeof toolArgs === 'string') {
+                toolArgs = JSON.parse(toolArgs);
+              }
+            } catch {
+              // Mantener original
+            }
+
+            let toolResultString = '';
+            const startTime = Date.now();
+
+            try {
+              const callbackHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+              };
+              if (toolCallback.token) {
+                callbackHeaders['Authorization'] =
+                  `Bearer ${toolCallback.token}`;
+              }
+
+              const callbackRes = await axios.post(
+                toolCallback.url,
+                {
+                  name: toolName,
+                  arguments: toolArgs,
+                },
+                {
+                  headers: callbackHeaders,
+                  timeout: 10000,
+                },
+              );
+
+              const durationMs = Date.now() - startTime;
+              const rawData = callbackRes.data;
+              toolResultString =
+                typeof rawData === 'string' ? rawData : JSON.stringify(rawData);
+
+              if (toolResultString.length > 8192) {
+                toolResultString =
+                  toolResultString.substring(0, 8192) +
+                  '... [truncated at 8KB]';
+              }
+
+              const sizeBytes = Buffer.byteLength(toolResultString, 'utf8');
+              this.logger.log(
+                `[AiService] Tool '${toolName}' executed in ${durationMs}ms (size: ${sizeBytes} bytes)`,
+              );
+            } catch (toolError: any) {
+              const durationMs = Date.now() - startTime;
+              this.logger.warn(
+                `[AiService] Tool '${toolName}' failed after ${durationMs}ms`,
+              );
+              toolResultString = JSON.stringify({
+                error: 'Tool execution failed',
+              });
+            }
+
+            messages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              content: toolResultString,
+            });
+          }
+
+          for (const tc of extraTools) {
+            messages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              content: JSON.stringify({
+                error: 'Tool limit exceeded (max 3 per turn)',
+              }),
+            });
+          }
+        }
+
+        finalResponseText =
+          finalResponseText || 'Se completaron las consultas disponibles.';
+        const confidence = this.calculateConfidence(finalResponseText);
 
         if (tenantId) {
           await this.trackCost(
             tenantId,
-            selectedModel,
-            promptTokens,
-            completionTokens,
+            currentModel,
+            totalPromptTokens,
+            totalCompletionTokens,
           );
         }
 
         return {
-          content: responseText,
+          content: finalResponseText,
           confidence,
           isFlagged: confidence < 0.7,
+          ...(hasTools && {
+            usage: {
+              promptTokens: totalPromptTokens,
+              completionTokens: totalCompletionTokens,
+              toolCalls: totalToolCalls,
+            },
+          }),
         };
       } catch (error: any) {
         const errorMsg = error.response?.data?.error?.message || error.message;

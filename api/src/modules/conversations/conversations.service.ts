@@ -1,6 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../common/database/database.service';
-import { AiService } from '../ai/ai.service';
 import { AiRouterService } from '../ai/ai-router.service';
 import { getTenantId } from '../../common/tenant/tenant.middleware';
 import { HttpService } from '@nestjs/axios';
@@ -166,6 +165,10 @@ export class ConversationsService {
         classification: aiResult.decision, // Store routing decision
       },
     });
+
+    if (aiResult.usage) {
+      (savedAiMessage as any).usage = aiResult.usage;
+    }
 
     // Emit AI message to frontend
     this.gateway.emitNewMessage(tenantId, savedAiMessage);

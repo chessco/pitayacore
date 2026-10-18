@@ -55,6 +55,14 @@ export class AgentsController {
     const userId = operatorEmail || 'internal-user';
     const message = body.message;
 
+    const metadata: any = { internalChat: true, operatorEmail };
+    if (body.tools) {
+      metadata.tools = body.tools;
+    }
+    if (body.toolCallback) {
+      metadata.toolCallback = body.toolCallback;
+    }
+
     // Use conversationsService to handle the incoming message
     // Parameters: userId, content, tenantId, externalId, skills, agentSlug, channel, metadata
     const aiMessage = await this.conversationsService.handleIncomingMessage(
@@ -65,14 +73,20 @@ export class AgentsController {
       undefined, // skills
       slug, // agentSlug
       'internal', // channel
-      { internalChat: true, operatorEmail },
+      metadata,
     );
 
-    return {
+    const response: any = {
       content: aiMessage.content,
       role: 'assistant',
       conversationId: aiMessage.conversationId,
     };
+
+    if ((aiMessage as any).usage) {
+      response.usage = (aiMessage as any).usage;
+    }
+
+    return response;
   }
 
   @Patch(':id')

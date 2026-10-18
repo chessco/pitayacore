@@ -19,6 +19,11 @@ export interface RouterResponse {
   cost?: number;
   confidence: number;
   isFlagged: boolean;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    toolCalls: number;
+  };
 }
 
 @Injectable()
@@ -325,6 +330,20 @@ Bloques de Contenido: ${JSON.stringify(capsule.contentBlocks)}
         : skills?.default_assistant
           ? 'default-assistant'
           : undefined);
+
+    if (metadata?.tools || metadata?.toolCallback) {
+      return await this.ai.generateResponse(
+        userPrompt,
+        history,
+        agentModel,
+        persona,
+        channel,
+        tenantId,
+        effectiveAgentSlug,
+        metadata.tools,
+        metadata.toolCallback,
+      );
+    }
 
     return await this.ai.generateResponse(
       userPrompt,

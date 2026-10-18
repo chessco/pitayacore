@@ -156,6 +156,49 @@ describe('AgentsController', () => {
         { internalChat: true, operatorEmail: undefined },
       );
     });
+
+    it('debería pasar tools y toolCallback y retornar usage cuando se proporcionan', async () => {
+      conversationsService.handleIncomingMessage.mockResolvedValue({
+        content: 'Respuesta con tool',
+        conversationId: 'conv-tools',
+        usage: { promptTokens: 120, completionTokens: 40, toolCalls: 1 },
+      });
+
+      const tools = [{ name: 'get_client', description: 'Obtiene cliente' }];
+      const toolCallback = {
+        url: 'https://api.luxuryos.com/tools',
+        token: 'secret-tok',
+      };
+
+      const result = await controller.chat(
+        'aura',
+        { message: 'Buscar cliente', tools, toolCallback },
+        'tenant-cared',
+        'operator@cared.com',
+      );
+
+      expect(result).toEqual({
+        content: 'Respuesta con tool',
+        role: 'assistant',
+        conversationId: 'conv-tools',
+        usage: { promptTokens: 120, completionTokens: 40, toolCalls: 1 },
+      });
+      expect(conversationsService.handleIncomingMessage).toHaveBeenCalledWith(
+        'operator@cared.com',
+        'Buscar cliente',
+        'tenant-cared',
+        'operator@cared.com',
+        undefined,
+        'aura',
+        'internal',
+        {
+          internalChat: true,
+          operatorEmail: 'operator@cared.com',
+          tools,
+          toolCallback,
+        },
+      );
+    });
   });
 
   describe('update', () => {
