@@ -63,6 +63,9 @@ export class WhatsAppController {
       // falla (URL caída, formato) se envía solo el texto para no perder la notificación.
       const imageUrl = body.imageUrl || body.mediaUrl;
       let result: { id?: { _serialized?: string } } | undefined;
+      // Solo un error al enviar la imagen activa el respaldo: sendMedia puede devolver un valor
+      // vacío aunque el mensaje ya haya salido, y reenviar el texto duplicaría la notificación.
+      let mediaSent = false;
       if (imageUrl) {
         try {
           result = await this.whatsappProvider.sendMedia(
@@ -71,13 +74,14 @@ export class WhatsAppController {
             body.to,
             { imageUrl, caption: body.content },
           );
+          mediaSent = true;
         } catch (mediaError) {
           this.logger.warn(
             `No se pudo enviar la imagen (${(mediaError as Error)?.message}); se envía solo el texto`,
           );
         }
       }
-      if (!result) {
+      if (!mediaSent) {
         result = (await this.whatsappProvider.sendMessage(
           tenantId,
           channelId,
