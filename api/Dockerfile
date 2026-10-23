@@ -6,6 +6,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -
 
 COPY package*.json ./
 RUN npm install
+# Parche de whatsapp-web.js@1.34.7: al enviar medios, `message` hereda __x_id de mediaOptions y
+# WhatsApp Web falla con "Data passed to getter must include an id property". Se borra sobre el
+# objeto plano `message`, justo antes de instanciar el modelo (NO dentro de getMessageModel).
+RUN F=node_modules/whatsapp-web.js/src/util/Injected/Utils.js \
+    && (grep -q "delete message.__x_id" "$F" \
+    || sed -i "s/^\(\s*\)\/\/ Bot.s won.t reply if canonicalUrl is set (linking)/\1delete message.__x_id;\n&/" "$F") \
+    && grep -q "delete message.__x_id" "$F"
 
 COPY . .
 RUN npx prisma generate --schema=prisma/mysql.prisma
