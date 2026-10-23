@@ -6,12 +6,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -
 
 COPY package*.json ./
 RUN npm install
-# Parche de whatsapp-web.js@1.34.7: sin borrar __x_id, WhatsApp Web falla con
-# "Data passed to getter must include an id property" al enviar mensajes/medios.
-RUN F=node_modules/whatsapp-web.js/src/util/Injected/Utils.js \
-    && grep -q "delete message.__x_id" "$F" \
-    || (sed -i 's/window.WWebJS.getMessageModel = (message) => {/&\n        delete message.__x_id;/' "$F" \
-    && grep -q "delete message.__x_id" "$F")
 
 COPY . .
 RUN npx prisma generate --schema=prisma/mysql.prisma
