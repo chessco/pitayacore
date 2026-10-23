@@ -30,7 +30,14 @@ export class WhatsAppController {
   async sendWhatsAppMessage(
     @Headers('x-tenant-id') tenantId: string,
     @Body()
-    body: { to: string; content: string; agentSlug?: string; metadata?: any },
+    body: {
+      to: string;
+      content: string;
+      imageUrl?: string;
+      mediaUrl?: string;
+      agentSlug?: string;
+      metadata?: any;
+    },
   ) {
     if (!tenantId) {
       throw new BadRequestException('El encabezado x-tenant-id es requerido');
@@ -51,13 +58,33 @@ export class WhatsAppController {
     }
 
     try {
-      // 2. Enviar el mensaje usando el proveedor de whatsapp-web.js
-      const result = (await this.whatsappProvider.sendMessage(
-        tenantId,
-        channelId,
-        body.to,
-        body.content,
-      )) as { id?: { _serialized?: string } } | undefined;
+      // 2. Enviar el mensaje usando el proveedor de whatsapp-web.js.
+      // Con imageUrl/mediaUrl se envía como imagen nativa con el texto como pie; si la imagen
+      // falla (URL caída, formato) se envía solo el texto para no perder la notificación.
+      const imageUrl = body.imageUrl || body.mediaUrl;
+      let result: { id?: { _serialized?: string } } | undefined;
+      if (imageUrl) {
+        try {
+          result = await this.whatsappProvider.sendMedia(
+            tenantId,
+            channelId,
+            body.to,
+            { imageUrl, caption: body.content },
+          );
+        } catch (mediaError) {
+          this.logger.warn(
+            `No se pudo enviar la imagen (${(mediaError as Error)?.message}); se envía solo el texto`,
+          );
+        }
+      }
+      if (!result) {
+        result = (await this.whatsappProvider.sendMessage(
+          tenantId,
+          channelId,
+          body.to,
+          body.content,
+        )) as { id?: { _serialized?: string } } | undefined;
+      }
 
       const messageId = result?.id?._serialized || 'SUCCESS';
 
