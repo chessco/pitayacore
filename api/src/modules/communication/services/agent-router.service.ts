@@ -227,6 +227,18 @@ export class AgentRouterService {
         );
       });
 
+      this.forwardMessageToLuxuryOS({
+        tenantId: event.tenantId,
+        messageId: inboundMessage.id,
+        phone: cleanPhone,
+        content: finalContent,
+        receivedAt: inboundMessage.createdAt.toISOString(),
+      }).catch((err) => {
+        this.logger.warn(
+          `Forward to LuxuryOS failed for message ${inboundMessage.id}: ${err?.message}`,
+        );
+      });
+
       // 4. Check if human is active or if this is an authorization flow
       const convMetadata = (conversation.metadata as any) || {};
       const trimmedContent = (finalContent || '').trim();
@@ -524,6 +536,24 @@ export class AgentRouterService {
         error,
       );
     }
+  }
+
+  /** Mirrors inbound WhatsApp messages to LuxuryOS when that integration is enabled. */
+  private async forwardMessageToLuxuryOS(payload: {
+    tenantId: string;
+    messageId: string;
+    phone: string;
+    content: string;
+    receivedAt: string;
+  }): Promise<void> {
+    const url = process.env.LUXURYOS_INBOUND_WEBHOOK_URL;
+    const apiKey = process.env.INTERNAL_API_KEY;
+    if (!url || !apiKey) return;
+
+    await axios.post(url, payload, {
+      headers: { 'x-api-key': apiKey },
+      timeout: 10_000,
+    });
   }
   private async forwardMessageToProbuyer(params: {
     cleanPhone: string;
