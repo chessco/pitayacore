@@ -247,7 +247,7 @@ export class WhatsappWebProvider
     // Mexican numbers (country code 52): Prioritize 52 + 10 digits (current WA standard)
     // before trying legacy 521 + 10 digits prefix.
     const candidates: string[] = [];
-    if (/^521?\d{10}$/.test(digits)) {
+    if (/^(?:\d{10}|521?\d{10})$/.test(digits)) {
       const clean10 = digits.replace(/^521?/, '');
       candidates.push(`52${clean10}`);
       candidates.push(`521${clean10}`);
