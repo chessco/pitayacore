@@ -220,13 +220,11 @@ export class WhatsappWebProvider
       // "No LID for user".
       const chatId = await this.resolveChatId(client, to);
       const message = await client.sendMessage(chatId, content);
-      const deliveryConfirmed = await this.waitForDeliveryAck(clientKey, message);
-
-      this.logger.debug(
-        `Message ${deliveryConfirmed ? 'acknowledged' : 'not acknowledged'} by WhatsApp for ${chatId}, tenant ${tenantId}, channel ${channelId}`,
-      );
-
-      return { id: message.id, to: message.to, deliveryConfirmed };
+      // sendMessage confirms that WhatsApp Web accepted the message locally.
+      // Delivery acknowledgements are asynchronous and can arrive before this
+      // promise resolves (especially for LID chats), so they must not turn an
+      // accepted message into a false failed notification.
+      return { id: message.id, to: message.to, accepted: true };
     } catch (error) {
       this.logger.error(
         `Failed to send message for tenant ${tenantId}, channel ${channelId}`,
@@ -306,8 +304,7 @@ export class WhatsappWebProvider
     const message = await client.sendMessage(chatId, media, {
       caption: opts.caption || undefined,
     });
-    const deliveryConfirmed = await this.waitForDeliveryAck(clientKey, message);
-    return { id: message.id, to: message.to, deliveryConfirmed };
+    return { id: message.id, to: message.to, accepted: true };
   }
 
   /**

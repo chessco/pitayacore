@@ -65,7 +65,7 @@ export class WhatsAppController {
       let result: {
         id?: { _serialized?: string };
         to?: string;
-        deliveryConfirmed?: boolean;
+        accepted?: boolean;
       } | undefined;
       // Solo un error al enviar la imagen activa el respaldo: sendMedia puede devolver un valor
       // vacío aunque el mensaje ya haya salido, y reenviar el texto duplicaría la notificación.
@@ -95,11 +95,11 @@ export class WhatsAppController {
       }
 
       const messageId = result?.id?._serialized || 'UNKNOWN';
-      if (!result?.deliveryConfirmed) {
+      if (!result?.accepted) {
         return {
           success: false,
           messageId,
-          error: 'WhatsApp no confirmó la entrega del mensaje.',
+          error: 'WhatsApp no aceptó el mensaje para su envío.',
         };
       }
 
