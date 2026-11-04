@@ -62,7 +62,11 @@ export class WhatsAppController {
       // Con imageUrl/mediaUrl se envía como imagen nativa con el texto como pie; si la imagen
       // falla (URL caída, formato) se envía solo el texto para no perder la notificación.
       const imageUrl = body.imageUrl || body.mediaUrl;
-      let result: { id?: { _serialized?: string } } | undefined;
+      let result: {
+        id?: { _serialized?: string };
+        to?: string;
+        deliveryConfirmed?: boolean;
+      } | undefined;
       // Solo un error al enviar la imagen activa el respaldo: sendMedia puede devolver un valor
       // vacío aunque el mensaje ya haya salido, y reenviar el texto duplicaría la notificación.
       let mediaSent = false;
@@ -90,7 +94,14 @@ export class WhatsAppController {
         )) as { id?: { _serialized?: string } } | undefined;
       }
 
-      const messageId = result?.id?._serialized || 'SUCCESS';
+      const messageId = result?.id?._serialized || 'UNKNOWN';
+      if (!result?.deliveryConfirmed) {
+        return {
+          success: false,
+          messageId,
+          error: 'WhatsApp no confirmó la entrega del mensaje.',
+        };
+      }
 
       // 3. Persistir contacto, conversación y mensaje en DB para trazabilidad y flujo de agentes
       try {

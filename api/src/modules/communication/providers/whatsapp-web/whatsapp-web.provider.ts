@@ -20,6 +20,10 @@ export class WhatsappWebProvider
   private clients: Map<string, Client> = new Map(); // key = `${tenantId}:${channelId}`
   private clientStatuses: Map<string, string> = new Map(); // key = `${tenantId}:${channelId}` → status
   private clientQrs: Map<string, string> = new Map(); // key = `${tenantId}:${channelId}` → qr // key = `${tenantId}:${channelId}` → status
+  private deliveryAckWaiters = new Map<
+    string,
+    { resolve: (delivered: boolean) => void; timeout: NodeJS.Timeout }
+  >();
   private readonly PROVIDER_NAME = 'whatsapp';
 
   constructor(
@@ -216,14 +220,13 @@ export class WhatsappWebProvider
       // "No LID for user".
       const chatId = await this.resolveChatId(client, to);
       const message = await client.sendMessage(chatId, content);
+      const deliveryConfirmed = await this.waitForDeliveryAck(clientKey, message);
 
       this.logger.debug(
-        `Message sent to ${chatId} for tenant ${tenantId}, channel ${channelId}`,
+        `Message ${deliveryConfirmed ? 'acknowledged' : 'not acknowledged'} by WhatsApp for ${chatId}, tenant ${tenantId}, channel ${channelId}`,
       );
 
-      // Optionally publish a MESSAGE_SENT event here
-
-      return message;
+      return { id: message.id, to: message.to, deliveryConfirmed };
     } catch (error) {
       this.logger.error(
         `Failed to send message for tenant ${tenantId}, channel ${channelId}`,
@@ -300,9 +303,11 @@ export class WhatsappWebProvider
     }
 
     const chatId = await this.resolveChatId(client, to);
-    return client.sendMessage(chatId, media, {
+    const message = await client.sendMessage(chatId, media, {
       caption: opts.caption || undefined,
     });
+    const deliveryConfirmed = await this.waitForDeliveryAck(clientKey, message);
+    return { id: message.id, to: message.to, deliveryConfirmed };
   }
 
   /**
@@ -481,6 +486,37 @@ export class WhatsappWebProvider
           senderPhone,
         ),
       );
+    });
+
+    client.on('message_ack', (message: Message, ack: number) => {
+      const messageId = message?.id?._serialized;
+      if (!messageId) return;
+      const key = `${clientKey}:${messageId}`;
+      const waiter = this.deliveryAckWaiters.get(key);
+      if (!waiter) return;
+
+      // whatsapp-web.js: -1 failed, 0 pending, 1 accepted by server,
+      // 2 received on device, 3 read, 4 played.
+      if (ack === -1 || ack >= 1) {
+        clearTimeout(waiter.timeout);
+        this.deliveryAckWaiters.delete(key);
+        waiter.resolve(ack >= 1);
+      }
+    });
+  }
+
+  private waitForDeliveryAck(clientKey: string, message: Message): Promise<boolean> {
+    const messageId = message?.id?._serialized;
+    if (!messageId) return Promise.resolve(false);
+    const key = `${clientKey}:${messageId}`;
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        this.deliveryAckWaiters.delete(key);
+        this.logger.warn(`WhatsApp delivery acknowledgement timed out for message ${messageId}`);
+        resolve(false);
+      }, 15_000);
+      this.deliveryAckWaiters.set(key, { resolve, timeout });
     });
   }
 
