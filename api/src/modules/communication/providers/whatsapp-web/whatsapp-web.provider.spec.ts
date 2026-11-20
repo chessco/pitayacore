@@ -58,7 +58,9 @@ describe('WhatsappWebProvider outgoing messages', () => {
 
   it('normalizes a Mexican number and accepts the message without waiting for a late acknowledgement', async () => {
     const client = makeClient();
-    client.getNumberId.mockResolvedValue({ _serialized: '203396917276682@lid' });
+    client.getNumberId.mockResolvedValue({
+      _serialized: '203396917276682@lid',
+    });
     client.sendMessage.mockResolvedValue({
       id: { _serialized: 'message-1' },
       to: '203396917276682@lid',
@@ -73,7 +75,10 @@ describe('WhatsappWebProvider outgoing messages', () => {
       accepted: true,
     });
     expect(client.getNumberId).toHaveBeenCalledWith('526442221844');
-    expect(client.sendMessage).toHaveBeenCalledWith('203396917276682@lid', 'Hola');
+    expect(client.sendMessage).toHaveBeenCalledWith(
+      '203396917276682@lid',
+      'Hola',
+    );
   });
 
   it('tries the legacy Mexican prefix if the current prefix is not resolved', async () => {
@@ -81,7 +86,10 @@ describe('WhatsappWebProvider outgoing messages', () => {
     client.getNumberId
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ _serialized: 'legacy@c.us' });
-    client.sendMessage.mockResolvedValue({ id: { _serialized: 'message-2' }, to: 'legacy@c.us' });
+    client.sendMessage.mockResolvedValue({
+      id: { _serialized: 'message-2' },
+      to: 'legacy@c.us',
+    });
     registerClient(client);
 
     await provider.sendMessage(tenantId, channelId, '6442221844', 'Hola');
@@ -104,7 +112,9 @@ describe('WhatsappWebProvider outgoing messages', () => {
   it('propagates a real provider failure so the caller can notify the user', async () => {
     const client = makeClient();
     client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
-    client.sendMessage.mockRejectedValue(new Error('WhatsApp Web disconnected'));
+    client.sendMessage.mockRejectedValue(
+      new Error('WhatsApp Web disconnected'),
+    );
     registerClient(client);
 
     await expect(
@@ -138,6 +148,33 @@ describe('WhatsappWebProvider outgoing messages', () => {
     expect(client.sendMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('recovers the provider id from message_create when sendMessage returns undefined', async () => {
+    const client = makeClient();
+    const createdMessage = {
+      id: { _serialized: 'created-1', fromMe: true },
+      to: 'client@lid',
+      body: 'Hola',
+      timestamp: Math.floor(Date.now() / 1000),
+    };
+    client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
+    client.sendMessage.mockImplementation(async () => {
+      (provider as any).handleCreatedOutboundMessage(key, createdMessage);
+      return undefined;
+    });
+    client.pupPage.evaluate.mockResolvedValue(null);
+    registerClient(client);
+
+    await expect(
+      provider.sendMessage(tenantId, channelId, '6442221844', 'Hola'),
+    ).resolves.toEqual({
+      id: createdMessage.id,
+      to: createdMessage.to,
+      accepted: true,
+    });
+    expect(client.pupPage.evaluate).not.toHaveBeenCalled();
+    expect(client.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('fails media sends without an image before trying WhatsApp', async () => {
     const client = makeClient();
     registerClient(client);
@@ -152,7 +189,10 @@ describe('WhatsappWebProvider outgoing messages', () => {
     const media = { mimetype: 'image/png' };
     (MessageMedia.fromUrl as jest.Mock).mockResolvedValue(media);
     client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
-    client.sendMessage.mockResolvedValue({ id: { _serialized: 'image-1' }, to: 'client@lid' });
+    client.sendMessage.mockResolvedValue({
+      id: { _serialized: 'image-1' },
+      to: 'client@lid',
+    });
     registerClient(client);
 
     await expect(
@@ -160,7 +200,13 @@ describe('WhatsappWebProvider outgoing messages', () => {
         imageUrl: 'https://example.test/qr.png',
         caption: 'Tu orden',
       }),
-    ).resolves.toEqual({ id: { _serialized: 'image-1' }, to: 'client@lid', accepted: true });
-    expect(client.sendMessage).toHaveBeenCalledWith('client@lid', media, { caption: 'Tu orden' });
+    ).resolves.toEqual({
+      id: { _serialized: 'image-1' },
+      to: 'client@lid',
+      accepted: true,
+    });
+    expect(client.sendMessage).toHaveBeenCalledWith('client@lid', media, {
+      caption: 'Tu orden',
+    });
   });
 });

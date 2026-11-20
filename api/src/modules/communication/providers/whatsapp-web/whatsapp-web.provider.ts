@@ -24,6 +24,15 @@ export class WhatsappWebProvider
     string,
     { resolve: (delivered: boolean) => void; timeout: NodeJS.Timeout }
   >();
+  private outboundMessageWaiters = new Map<
+    string,
+    Array<{
+      chatId: string;
+      content: string;
+      resolve: (message?: Message) => void;
+      timeout: NodeJS.Timeout;
+    }>
+  >();
   private readonly PROVIDER_NAME = 'whatsapp';
 
   constructor(
@@ -71,10 +80,7 @@ export class WhatsappWebProvider
     );
 
     // Clean up Chromium singleton locks left from previous containers/crashes
-    const sessionDir = path.join(
-      dataPath,
-      `session-channel_${channelId}`,
-    );
+    const sessionDir = path.join(dataPath, `session-channel_${channelId}`);
     try {
       if (fs.existsSync(sessionDir)) {
         const files = fs.readdirSync(sessionDir);
@@ -222,14 +228,37 @@ export class WhatsappWebProvider
       // "No LID for user".
       const chatId = await this.resolveChatId(client, to);
       const sentAfter = Math.floor(Date.now() / 1000) - 2;
+      // Register before sending: message_create may fire before sendMessage's
+      // promise settles, and recent WhatsApp Web builds sometimes settle it
+      // with undefined even though the message was accepted.
+      const createdMessageWaiter = this.waitForCreatedOutboundMessage(
+        clientKey,
+        chatId,
+        content,
+      );
       const message = await client.sendMessage(chatId, content);
+      if (message) {
+        createdMessageWaiter.cancel();
+      }
       if (!message) {
+        const createdMessage = await createdMessageWaiter.promise;
+        if (createdMessage?.id?._serialized) {
+          return {
+            id: createdMessage.id,
+            to: createdMessage.to || chatId,
+            accepted: true,
+          };
+        }
         // whatsapp-web.js can return undefined after WhatsApp has already
         // accepted the message. Recover it from the live chat instead of
         // retrying and sending a duplicate.
         await new Promise((resolve) => setTimeout(resolve, 250));
         const recoveredMessage = await (client as any).pupPage.evaluate(
-          (targetChatId: string, expectedContent: string, minimumTime: number) => {
+          (
+            targetChatId: string,
+            expectedContent: string,
+            minimumTime: number,
+          ) => {
             const collections = (window as any).require('WAWebCollections');
             const chat = collections.Chat.get(targetChatId);
             const messages = chat?.msgs?.getModelsArray?.() || [];
@@ -532,6 +561,10 @@ export class WhatsappWebProvider
       );
     });
 
+    client.on('message_create', (message: Message) => {
+      this.handleCreatedOutboundMessage(clientKey, message);
+    });
+
     client.on('message_ack', (message: Message, ack: number) => {
       const messageId = message?.id?._serialized;
       if (!messageId) return;
@@ -552,7 +585,75 @@ export class WhatsappWebProvider
     });
   }
 
-  private async forwardAckToLuxuryOS(tenantId: string, messageId: string, ack: number): Promise<void> {
+  private waitForCreatedOutboundMessage(
+    clientKey: string,
+    chatId: string,
+    content: string,
+  ): { promise: Promise<Message | undefined>; cancel: () => void } {
+    let waiter: {
+      chatId: string;
+      content: string;
+      resolve: (message?: Message) => void;
+      timeout: NodeJS.Timeout;
+    };
+    const remove = () => {
+      const waiters = this.outboundMessageWaiters.get(clientKey) || [];
+      const remaining = waiters.filter((candidate) => candidate !== waiter);
+      if (remaining.length)
+        this.outboundMessageWaiters.set(clientKey, remaining);
+      else this.outboundMessageWaiters.delete(clientKey);
+    };
+    const promise = new Promise<Message | undefined>((resolve) => {
+      waiter = {
+        chatId,
+        content,
+        resolve,
+        timeout: setTimeout(() => {
+          remove();
+          resolve(undefined);
+        }, 1000),
+      };
+      const waiters = this.outboundMessageWaiters.get(clientKey) || [];
+      waiters.push(waiter);
+      this.outboundMessageWaiters.set(clientKey, waiters);
+    });
+    return {
+      promise,
+      cancel: () => {
+        clearTimeout(waiter.timeout);
+        remove();
+      },
+    };
+  }
+
+  private handleCreatedOutboundMessage(
+    clientKey: string,
+    message: Message,
+  ): void {
+    if (!message?.id?.fromMe || !message?.id?._serialized) return;
+    const waiters = this.outboundMessageWaiters.get(clientKey) || [];
+    const destination =
+      typeof message.to === 'string'
+        ? message.to
+        : (message.to as any)?._serialized;
+    const content = message.body || (message as any).caption;
+    const waiter = waiters.find(
+      (candidate) =>
+        candidate.chatId === destination && candidate.content === content,
+    );
+    if (!waiter) return;
+    clearTimeout(waiter.timeout);
+    const remaining = waiters.filter((candidate) => candidate !== waiter);
+    if (remaining.length) this.outboundMessageWaiters.set(clientKey, remaining);
+    else this.outboundMessageWaiters.delete(clientKey);
+    waiter.resolve(message);
+  }
+
+  private async forwardAckToLuxuryOS(
+    tenantId: string,
+    messageId: string,
+    ack: number,
+  ): Promise<void> {
     const inboundUrl = process.env.LUXURYOS_INBOUND_WEBHOOK_URL;
     const apiKey = process.env.INTERNAL_API_KEY;
     if (!inboundUrl || !apiKey || !inboundUrl.endsWith('/incoming')) return;
@@ -567,15 +668,21 @@ export class WhatsappWebProvider
           signal: AbortSignal.timeout(5000),
         });
         if (!response.ok) return;
-        const result = await response.json() as { status?: string };
+        const result = (await response.json()) as { status?: string };
         if (result.status !== 'pending') return;
       } catch (error) {
-        if (delay === 4000) this.logger.warn(`LuxuryOS ACK callback failed for ${messageId}: ${error}`);
+        if (delay === 4000)
+          this.logger.warn(
+            `LuxuryOS ACK callback failed for ${messageId}: ${error}`,
+          );
       }
     }
   }
 
-  private waitForDeliveryAck(clientKey: string, message: Message): Promise<boolean> {
+  private waitForDeliveryAck(
+    clientKey: string,
+    message: Message,
+  ): Promise<boolean> {
     const messageId = message?.id?._serialized;
     if (!messageId) return Promise.resolve(false);
     const key = `${clientKey}:${messageId}`;
@@ -583,7 +690,9 @@ export class WhatsappWebProvider
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         this.deliveryAckWaiters.delete(key);
-        this.logger.warn(`WhatsApp delivery acknowledgement timed out for message ${messageId}`);
+        this.logger.warn(
+          `WhatsApp delivery acknowledgement timed out for message ${messageId}`,
+        );
         resolve(false);
       }, 15_000);
       this.deliveryAckWaiters.set(key, { resolve, timeout });
@@ -609,10 +718,7 @@ export class WhatsappWebProvider
     return this.clientStatuses.get(`${tenantId}:${channelId}`);
   }
 
-  getActiveClientQr(
-    tenantId: string,
-    channelId: string,
-  ): string | undefined {
+  getActiveClientQr(tenantId: string, channelId: string): string | undefined {
     return this.clientQrs.get(`${tenantId}:${channelId}`);
   }
 
