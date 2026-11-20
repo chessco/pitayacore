@@ -175,6 +175,31 @@ describe('WhatsappWebProvider outgoing messages', () => {
     expect(client.sendMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('correlates message_create when WhatsApp exposes fromMe on the message and rewrites the destination id', async () => {
+    const client = makeClient();
+    const createdMessage = {
+      id: { _serialized: 'true_526441003039@c.us_created-2' },
+      fromMe: true,
+      to: '526441003039@c.us',
+      body: 'Hola',
+    };
+    client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
+    client.sendMessage.mockImplementation(async () => {
+      (provider as any).handleCreatedOutboundMessage(key, createdMessage);
+      return undefined;
+    });
+    client.pupPage.evaluate.mockResolvedValue(null);
+    registerClient(client);
+
+    await expect(
+      provider.sendMessage(tenantId, channelId, '6442221844', 'Hola'),
+    ).resolves.toMatchObject({
+      id: createdMessage.id,
+      accepted: true,
+    });
+    expect(client.pupPage.evaluate).not.toHaveBeenCalled();
+  });
+
   it('fails media sends without an image before trying WhatsApp', async () => {
     const client = makeClient();
     registerClient(client);

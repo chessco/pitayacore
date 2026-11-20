@@ -566,6 +566,9 @@ export class WhatsappWebProvider
     });
 
     client.on('message_ack', (message: Message, ack: number) => {
+      // Some WhatsApp Web builds expose the outbound model first through ACK
+      // and rewrite @lid to @c.us. Reuse it to resolve a pending send.
+      this.handleCreatedOutboundMessage(clientKey, message);
       const messageId = message?.id?._serialized;
       if (!messageId) return;
       if (message?.id?.fromMe && (ack === -1 || ack >= 1)) {
@@ -630,17 +633,25 @@ export class WhatsappWebProvider
     clientKey: string,
     message: Message,
   ): void {
-    if (!message?.id?.fromMe || !message?.id?._serialized) return;
+    const messageId = message?.id?._serialized;
+    const fromMe =
+      Boolean((message as any)?.fromMe) ||
+      Boolean(message?.id?.fromMe) ||
+      Boolean(messageId?.startsWith('true_'));
+    if (!fromMe || !messageId) return;
     const waiters = this.outboundMessageWaiters.get(clientKey) || [];
     const destination =
       typeof message.to === 'string'
         ? message.to
         : (message.to as any)?._serialized;
     const content = message.body || (message as any).caption;
-    const waiter = waiters.find(
-      (candidate) =>
-        candidate.chatId === destination && candidate.content === content,
-    );
+    // The destination can change from a resolved @lid to @c.us between send
+    // and message_create/message_ack. Exact content is the stable correlation
+    // key; use destination only when the model omits its body/caption.
+    const waiter = content
+      ? waiters.find((candidate) => candidate.content === content)
+      : waiters.find((candidate) => candidate.chatId === destination) ||
+        (waiters.length === 1 ? waiters[0] : undefined);
     if (!waiter) return;
     clearTimeout(waiter.timeout);
     const remaining = waiters.filter((candidate) => candidate !== waiter);
