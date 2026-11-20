@@ -221,7 +221,35 @@ export class WhatsappWebProvider
       // by hand — recent WhatsApp Web versions reject unresolved ids with
       // "No LID for user".
       const chatId = await this.resolveChatId(client, to);
+      const sentAfter = Math.floor(Date.now() / 1000) - 2;
       const message = await client.sendMessage(chatId, content);
+      if (!message) {
+        // whatsapp-web.js can return undefined after WhatsApp has already
+        // accepted the message. Recover it from the live chat instead of
+        // retrying and sending a duplicate.
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        const chat = await client.getChatById(chatId);
+        const recentMessages = await chat.fetchMessages({
+          limit: 10,
+          fromMe: true,
+        });
+        const recoveredMessage = [...recentMessages]
+          .reverse()
+          .find(
+            (candidate) =>
+              candidate.body === content && candidate.timestamp >= sentAfter,
+          );
+        if (!recoveredMessage) {
+          throw new Error(
+            'WhatsApp no devolvió confirmación del mensaje enviado',
+          );
+        }
+        return {
+          id: recoveredMessage.id,
+          to: recoveredMessage.to || chatId,
+          accepted: true,
+        };
+      }
       // sendMessage confirms that WhatsApp Web accepted the message locally.
       // Delivery acknowledgements are asynchronous and can arrive before this
       // promise resolves (especially for LID chats), so they must not turn an

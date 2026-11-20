@@ -16,6 +16,7 @@ describe('WhatsappWebProvider outgoing messages', () => {
   const makeClient = () => ({
     getNumberId: jest.fn(),
     sendMessage: jest.fn(),
+    getChatById: jest.fn(),
   });
 
   const registerClient = (client: ReturnType<typeof makeClient>) => {
@@ -109,6 +110,31 @@ describe('WhatsappWebProvider outgoing messages', () => {
     await expect(
       provider.sendMessage(tenantId, channelId, '6442221844', 'Hola'),
     ).rejects.toThrow('WhatsApp Web disconnected');
+  });
+
+  it('recovers an accepted message when whatsapp-web.js returns undefined', async () => {
+    const client = makeClient();
+    const recoveredMessage = {
+      id: { _serialized: 'recovered-1' },
+      to: 'client@lid',
+      body: 'Hola',
+      timestamp: Math.floor(Date.now() / 1000),
+    };
+    client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
+    client.sendMessage.mockResolvedValue(undefined);
+    client.getChatById.mockResolvedValue({
+      fetchMessages: jest.fn().mockResolvedValue([recoveredMessage]),
+    });
+    registerClient(client);
+
+    await expect(
+      provider.sendMessage(tenantId, channelId, '6442221844', 'Hola'),
+    ).resolves.toEqual({
+      id: recoveredMessage.id,
+      to: recoveredMessage.to,
+      accepted: true,
+    });
+    expect(client.sendMessage).toHaveBeenCalledTimes(1);
   });
 
   it('fails media sends without an image before trying WhatsApp', async () => {
