@@ -16,7 +16,7 @@ describe('WhatsappWebProvider outgoing messages', () => {
   const makeClient = () => ({
     getNumberId: jest.fn(),
     sendMessage: jest.fn(),
-    getChatById: jest.fn(),
+    pupPage: { evaluate: jest.fn() },
   });
 
   const registerClient = (client: ReturnType<typeof makeClient>) => {
@@ -122,8 +122,9 @@ describe('WhatsappWebProvider outgoing messages', () => {
     };
     client.getNumberId.mockResolvedValue({ _serialized: 'client@lid' });
     client.sendMessage.mockResolvedValue(undefined);
-    client.getChatById.mockResolvedValue({
-      fetchMessages: jest.fn().mockResolvedValue([recoveredMessage]),
+    client.pupPage.evaluate.mockResolvedValue({
+      id: recoveredMessage.id,
+      to: recoveredMessage.to,
     });
     registerClient(client);
 

@@ -228,17 +228,30 @@ export class WhatsappWebProvider
         // accepted the message. Recover it from the live chat instead of
         // retrying and sending a duplicate.
         await new Promise((resolve) => setTimeout(resolve, 250));
-        const chat = await client.getChatById(chatId);
-        const recentMessages = await chat.fetchMessages({
-          limit: 10,
-          fromMe: true,
-        });
-        const recoveredMessage = [...recentMessages]
-          .reverse()
-          .find(
-            (candidate) =>
-              candidate.body === content && candidate.timestamp >= sentAfter,
-          );
+        const recoveredMessage = await (client as any).pupPage.evaluate(
+          (targetChatId: string, expectedContent: string, minimumTime: number) => {
+            const collections = (window as any).require('WAWebCollections');
+            const chat = collections.Chat.get(targetChatId);
+            const messages = chat?.msgs?.getModelsArray?.() || [];
+            const match = [...messages]
+              .reverse()
+              .find(
+                (candidate: any) =>
+                  candidate.id?.fromMe &&
+                  (candidate.body === expectedContent ||
+                    candidate.caption === expectedContent) &&
+                  candidate.t >= minimumTime,
+              );
+            if (!match?.id?._serialized) return null;
+            return {
+              id: { _serialized: match.id._serialized },
+              to: match.to?._serialized || targetChatId,
+            };
+          },
+          chatId,
+          content,
+          sentAfter,
+        );
         if (!recoveredMessage) {
           throw new Error(
             'WhatsApp no devolvió confirmación del mensaje enviado',
@@ -246,7 +259,7 @@ export class WhatsappWebProvider
         }
         return {
           id: recoveredMessage.id,
-          to: recoveredMessage.to || chatId,
+          to: recoveredMessage.to,
           accepted: true,
         };
       }
