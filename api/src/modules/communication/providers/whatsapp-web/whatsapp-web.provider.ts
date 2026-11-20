@@ -142,6 +142,8 @@ export class WhatsappWebProvider
         error,
       );
       this.clients.delete(clientKey);
+      this.clientStatuses.delete(clientKey);
+      this.clientQrs.delete(clientKey);
       this.eventBus.publish(
         COMMUNICATION_EVENTS.SESSION_STATUS_CHANGED,
         new SessionStatusEvent(
@@ -314,7 +316,11 @@ export class WhatsappWebProvider
   getFirstReadyChannel(tenantId: string): string | undefined {
     const prefix = `${tenantId}:`;
     for (const [key, status] of this.clientStatuses.entries()) {
-      if (key.startsWith(prefix) && status === 'READY') {
+      if (
+        key.startsWith(prefix) &&
+        status === 'READY' &&
+        this.clients.has(key)
+      ) {
         return key.slice(prefix.length);
       }
     }
@@ -488,6 +494,9 @@ export class WhatsappWebProvider
     client.on('message_ack', (message: Message, ack: number) => {
       const messageId = message?.id?._serialized;
       if (!messageId) return;
+      if (message?.id?.fromMe && (ack === -1 || ack >= 1)) {
+        void this.forwardAckToLuxuryOS(tenantId, messageId, ack);
+      }
       const key = `${clientKey}:${messageId}`;
       const waiter = this.deliveryAckWaiters.get(key);
       if (!waiter) return;
@@ -500,6 +509,29 @@ export class WhatsappWebProvider
         waiter.resolve(ack >= 1);
       }
     });
+  }
+
+  private async forwardAckToLuxuryOS(tenantId: string, messageId: string, ack: number): Promise<void> {
+    const inboundUrl = process.env.LUXURYOS_INBOUND_WEBHOOK_URL;
+    const apiKey = process.env.INTERNAL_API_KEY;
+    if (!inboundUrl || !apiKey || !inboundUrl.endsWith('/incoming')) return;
+    const url = `${inboundUrl.slice(0, -'/incoming'.length)}/ack`;
+    for (const delay of [0, 1000, 2000, 4000]) {
+      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+          body: JSON.stringify({ tenantId, messageId, ack }),
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok) return;
+        const result = await response.json() as { status?: string };
+        if (result.status !== 'pending') return;
+      } catch (error) {
+        if (delay === 4000) this.logger.warn(`LuxuryOS ACK callback failed for ${messageId}: ${error}`);
+      }
+    }
   }
 
   private waitForDeliveryAck(clientKey: string, message: Message): Promise<boolean> {

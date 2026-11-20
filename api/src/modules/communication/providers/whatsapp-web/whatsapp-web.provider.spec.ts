@@ -36,6 +36,15 @@ describe('WhatsappWebProvider outgoing messages', () => {
     ).rejects.toThrow('No active WhatsApp client');
   });
 
+  it('does not expose a stale READY status without a live client', () => {
+    (provider as any).clientStatuses.set(key, 'READY');
+
+    expect(provider.getFirstReadyChannel(tenantId)).toBeUndefined();
+
+    registerClient(makeClient());
+    expect(provider.getFirstReadyChannel(tenantId)).toBe(channelId);
+  });
+
   it('rejects a recipient without digits before calling WhatsApp', async () => {
     const client = makeClient();
     registerClient(client);
